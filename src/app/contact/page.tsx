@@ -50,7 +50,7 @@ export default function ContactPage() {
                 </div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">Message Sent!</h1>
                 <p className="text-lg text-gray-600 mb-8">
-                  Thank you for contacting us! We've received your message and will get back to you within 24 hours.
+                  Thank you for contacting us! We&apos;ve received your message and will get back to you within 24 hours.
                 </p>
                 <button 
                   onClick={() => setIsSubmitted(false)}
@@ -96,7 +96,7 @@ export default function ContactPage() {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Contact Us</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Have questions about our services? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+              Have questions about our services? We&apos;d love to hear from you. Send us a message and we&apos;ll respond as soon as possible.
             </p>
           </div>
           
@@ -190,7 +190,7 @@ export default function ContactPage() {
               <div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-6">Get in Touch</h3>
                 <p className="text-gray-600 mb-8">
-                  We're here to help you showcase your properties in the best possible light. Reach out to us through any of the channels below.
+                  We&apos;re here to help you showcase your properties in the best possible light. Reach out to us through any of the channels below.
                 </p>
               </div>
 
@@ -239,7 +239,7 @@ export default function ContactPage() {
               <div className="bg-blue-50 rounded-xl p-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-3">Quick Response Guarantee</h4>
                 <p className="text-gray-600 text-sm">
-                  We understand that real estate moves fast. That's why we guarantee a response to all inquiries within 24 hours, and often much sooner.
+                  We understand that real estate moves fast. That&apos;s why we guarantee a response to all inquiries within 24 hours, and often much sooner.
                 </p>
               </div>
             </div>

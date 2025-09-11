@@ -173,7 +173,7 @@ export default function BookingPage() {
                 </div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">Booking Request Submitted!</h1>
                 <p className="text-lg text-gray-600 mb-8">
-                  Thank you for choosing BrightOne.ca! We've received your booking request and will contact you within 24 hours to confirm your session details.
+                  Thank you for choosing BrightOne.ca! We&apos;ve received your booking request and will contact you within 24 hours to confirm your session details.
                 </p>
                 <div className="space-y-4">
                   <button 
@@ -300,7 +300,7 @@ export default function BookingPage() {
             <div className="text-center mb-12">
               <h2 className="text-4xl uppercase text-white mb-4">Get Your Free Quote</h2>
               <p className="text-xl text-white">
-                Fill out the form below and we'll get back to you within 24 hours with a personalized quote
+                Fill out the form below and we&apos;ll get back to you within 24 hours with a personalized quote
               </p>
               {formData.serviceTier && (
                 <div className="mt-6 inline-block bg-blue-50 border border-blue-200 rounded-lg px-6 py-3">
@@ -513,7 +513,7 @@ export default function BookingPage() {
                   </svg>
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">24-Hour Response</h3>
-                <p className="text-gray-600">We'll get back to you within 24 hours with a personalized quote</p>
+                <p className="text-gray-600">We&apos;ll get back to you within 24 hours with a personalized quote</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">

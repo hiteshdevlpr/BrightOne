@@ -1,7 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-
 const services = [
   {
     name: "Real Estate Photography",
