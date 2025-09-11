@@ -48,7 +48,7 @@ export default function PortfolioPage() {
               <span className="gradient-text">Portfolio</span>
             </h1>
             <p className="text-xl text-white/90 max-w-3xl mx-auto">
-              Explore our recent work and see how we've helped real estate agents and property owners showcase their listings
+              Explore our recent work and see how we&apos;ve helped real estate agents and property owners showcase their listings
             </p>
           </div>
         </div>

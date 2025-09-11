@@ -32,7 +32,7 @@ export default function AboutPage() {
             <div className="text-center mb-16">
               <h2 className="text-4xl font-bold text-gray-900 mb-6">Our Story</h2>
               <p className="text-xl text-gray-600 leading-relaxed">
-                BrightOne.ca was founded with a simple mission: to help real estate professionals and property owners showcase their listings in the best possible light. We believe that exceptional photography and virtual services are essential tools in today's competitive real estate market.
+                BrightOne.ca was founded with a simple mission: to help real estate professionals and property owners showcase their listings in the best possible light. We believe that exceptional photography and virtual services are essential tools in today&apos;s competitive real estate market.
               </p>
             </div>
 
@@ -78,7 +78,7 @@ export default function AboutPage() {
               <div className="bg-gray-100 rounded-2xl p-8">
                 <h4 className="text-2xl font-bold text-gray-900 mb-4">Our Commitment</h4>
                 <p className="text-gray-600 mb-6">
-                  We're committed to providing exceptional service and results that help our clients succeed. Every project is approached with attention to detail and a focus on delivering value.
+                  We&apos;re committed to providing exceptional service and results that help our clients succeed. Every project is approached with attention to detail and a focus on delivering value.
                 </p>
                 <div className="space-y-4">
                   <div className="flex items-center">

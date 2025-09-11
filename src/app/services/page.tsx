@@ -41,7 +41,7 @@ export default function ServicesPage() {
               <div className="max-w-lg">
                 <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">Real Estate Photography</h2>
                 <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                  Professional photography that showcases your property's best features and creates lasting impressions that drive sales.
+                  Professional photography that showcases your property&apos;s best features and creates lasting impressions that drive sales.
                 </p>
                 <ul className="space-y-4 mb-8">
                   <li className="flex items-center">
