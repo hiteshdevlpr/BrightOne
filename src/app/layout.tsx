@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { League_Spartan } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const leagueSpartan = League_Spartan({ 
+  subsets: ["latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-league-spartan"
+});
 
 export const metadata: Metadata = {
   title: "BrightOne.ca - Professional Real Estate Photography & Virtual Services",
@@ -23,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${leagueSpartan.className} ${leagueSpartan.variable}`}>
         <div className="min-h-screen bg-white">
           {children}
         </div>
