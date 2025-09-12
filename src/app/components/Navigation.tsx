@@ -29,12 +29,15 @@ export default function Navigation() {
             </Link>
           </div>
           <div className="hidden md:flex md:space-x-8 xl:space-x-16">
+            <Link href="/" className="text-white text-shadow-lg uppercase 2xl:text-3xl xl:text-2xl md:text-xl text-2xl hover:text-blue-600 transition-colors">
+              Home
+            </Link>
             <Link href="/services" className="text-white uppercase 2xl:text-3xl xl:text-2xl md:text-xl text-2xl hover:text-blue-600 transition-colors">
               Services
             </Link>
-            <Link href="/portfolio" className="text-white uppercase 2xl:text-3xl xl:text-2xl md:text-xl text-2xl hover:text-blue-600 transition-colors">
+            {/* <Link href="/portfolio" className="text-white uppercase 2xl:text-3xl xl:text-2xl md:text-xl text-2xl hover:text-blue-600 transition-colors">
               Portfolio
-            </Link>
+            </Link> */}
             <Link href="/booking" className="text-white uppercase 2xl:text-3xl xl:text-2xl md:text-xl text-2xl hover:text-blue-600 transition-colors">
               Book Now
             </Link>

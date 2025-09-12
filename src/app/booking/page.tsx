@@ -173,7 +173,7 @@ export default function BookingPage() {
                 </div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">Booking Request Submitted!</h1>
                 <p className="text-lg text-gray-600 mb-8">
-                  Thank you for choosing BrightOne.ca! We&apos;ve received your booking request and will contact you within 24 hours to confirm your session details.
+                  Thank you for choosing BrightOne! We&apos;ve received your booking request and will contact you within 24 hours to confirm your session details.
                 </p>
                 <div className="space-y-4">
                   <button 
@@ -198,25 +198,6 @@ export default function BookingPage() {
   return (
     <div className="min-h-screen">
       <Navigation />
-      
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br h-screen overflow-hidden from-blue-50 to-purple-50 pt-20">
-        <div className="bg-video">
-          <video src="/videos/hero-bg.mp4" autoPlay muted loop className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-black bg-opacity-65"></div>
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center z-10">
-          <div className="text-center px-4">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-              <span className='gradient-text-gray'>Book Your</span><br />
-              <span className="gradient-text">Photography Session</span>
-            </h1>
-            <p className="text-xl text-white/90 max-w-3xl mx-auto">
-              Get a personalized quote and schedule your professional real estate photography session
-            </p>
-          </div>
-        </div>
-      </section>
 
       {/* Service Tiers Section */}
       <section className="section-padding bg-white">
@@ -496,7 +477,7 @@ export default function BookingPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="btn-primary bg-black uppercase rounded-none text-lg px-12 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="btn-primary btn-primary-animation bg-black uppercase rounded-none text-lg px-12 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? 'Submitting...' : 'Get Free Quote'}
                   </button>

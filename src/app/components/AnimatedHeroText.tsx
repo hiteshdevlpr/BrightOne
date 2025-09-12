@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 const services = [
@@ -47,7 +48,7 @@ export default function AnimatedHeroText() {
       }
     };
 
-    const timer = setTimeout(typeText, isDeleting ? 50 : 100); // Faster deletion, slower typing
+    const timer = setTimeout(typeText, isDeleting ? 100 : 150); // Faster deletion, slower typing
     
     return () => clearTimeout(timer);
   }, [displayText, isDeleting, currentIndex, isPaused]);
@@ -56,21 +57,21 @@ export default function AnimatedHeroText() {
     <div className="absolute inset-0 flex items-center justify-center z-10">
       <div className="text-center px-4">
         <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-          <span className='gradient-text-gray'>We help properties shine with </span><br />
-          <span className="inline-block gradient-text">
+          <span className='gradient-text-gray font-semibold'>We help properties shine with </span><br />
+          <span className="inline-block gradient-text font-semibold">
             {displayText}
             <span className="animate-pulse">|</span>
           </span> <br />
-          <span className='gradient-text-gray'>that helps you stand out.</span>
+          <span className='gradient-text-gray font-semibold'>that helps you stand out.</span>
         </h1>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="btn-primary text-lg px-8 py-4">
-            Get Started
-          </button>
-          <a href="#portfolio" className="btn-secondary text-center text-lg px-8 py-4">
+          <Link className="btn-primary text-lg px-8 py-4" href={'/booking'}>
+            Book Your Shoot!
+          </Link>
+          <Link href="#portfolio" className="btn-secondary text-center text-lg px-8 py-4">
             View Portfolio
-          </a>
+          </Link>
         </div>
       </div>
     </div>
