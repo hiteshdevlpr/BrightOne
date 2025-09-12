@@ -9,12 +9,12 @@ const leagueSpartan = League_Spartan({
 });
 
 export const metadata: Metadata = {
-  title: "BrightOne.ca - Professional Real Estate Photography & Virtual Services",
+  title: "BrightOne Inc - Professional Real Estate Photography & Virtual Services",
   description: "Premium real estate photography, videography, 3D tours, and virtual staging services for real estate agents and property owners in Canada.",
   keywords: "real estate photography, real estate videography, 3D tours, virtual staging, real estate marketing, property photography",
-  authors: [{ name: "BrightOne.ca" }],
+  authors: [{ name: "BrightOne Inc" }],
   openGraph: {
-    title: "BrightOne.ca - Professional Real Estate Services",
+    title: "BrightOne Inc - Professional Real Estate Services",
     description: "Premium real estate photography, videography, 3D tours, and virtual staging services",
     type: "website",
   },

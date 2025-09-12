@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import logo from '@/assets/images/Logo-final@0.25x.png';
+import logo from '@/assets/images/Logo-final@0.5x.png';
 
 export default function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
