@@ -35,7 +35,7 @@ export default function ServiceCarousel() {
         {[...services, ...services].map((service, index) => (
           <div
             key={index}
-            className="flex-shrink-0 flex flex-col items-center justify-center px-6 py-8 mx-3 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 min-w-[360px] transition-all duration-500 hover:bg-white/20 hover:scale-105 hover:shadow-lg"
+            className="flex-shrink-0 flex flex-col items-center justify-center px-6 py-8 mx-3 bg-white/10 backdrop-blur-sm rounded-md border border-white/20 min-w-[360px] transition-all duration-500 hover:bg-white/20 hover:scale-105 hover:shadow-lg"
           >
             <div className="text-5xl mb-4">
               {service.icon}

@@ -9,7 +9,7 @@ export default function Home() {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br h-screen overflow-hidden from-blue-50 to-purple-50">
+      <section className="relative bg-gradient-to-br overflow-hidden from-blue-50 to-purple-50">
         <div className="bg-video">
           <video src="/videos/hero-bg.mp4" autoPlay muted loop className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black bg-opacity-65"></div>
@@ -18,9 +18,9 @@ export default function Home() {
       </section>
 
       {/* Service Carousel */}
-      <div className="">
+      {/* <div className="">
         <ServiceCarousel />
-      </div>
+      </div> */}
 
       <Footer />
     </div>
