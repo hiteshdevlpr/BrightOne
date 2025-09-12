@@ -1,6 +1,5 @@
 import AnimatedHeroText from './components/AnimatedHeroText';
 import Image from 'next/image';
-import ServiceCarousel from './components/ServiceCarousel';
 import rePhoto1 from '@/assets/images/re-photo-1.jpg';
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
@@ -54,7 +53,7 @@ export default function Home() {
                     </div>
                     <h3 className="text-white text-xl lg:text-2xl font-bold uppercase mb-4">INTERIOR PHOTOGRAPHY</h3>
                     <p className="text-white/80 text-lg leading-relaxed mb-6">
-                      Professional interior shots that showcase every room's potential with perfect lighting and composition to create lasting impressions.
+                      Professional interior shots that showcase every room&apos;s potential with perfect lighting and composition to create lasting impressions.
                     </p>
                   </div>
                   {/* <button className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center ml-4 flex-shrink-0 hover:bg-yellow-300 transition-colors">
