@@ -26,11 +26,12 @@ export default function AboutPage() {
               />
             </div>
             <div>
-              <div className="space-y-6 text-gray-700 text-xl">
-                <p>BrightOne.ca was founded with a simple mission: to help real estate professionals and property owners showcase their listings in the best possible light. In today’s fast-paced and highly competitive real estate market, we believe that exceptional photography and immersive visual services aren’t just “nice-to-have” — they’re essential tools for standing out, building trust, and driving results.</p>
-                <p>With over 12 years of professional experience as a software engineer, I’ve spent much of my career working at the intersection of technology, design, and user experience. Photography and visual storytelling, however, have always been a personal passion — one that I’ve nurtured alongside my professional journey. Over the years, I came to realize that great visuals have the power to influence decisions, spark emotions, and create meaningful connections.</p>
-                <p>BrightOne.ca is the result of taking that passion full-time: combining a deep technical background with a creative eye for design and detail. From high-quality real estate photography and virtual tours to digital media that elevates your brand, our goal is to deliver work that not only looks stunning but also works hard for your business.</p>
-                <p>Whether you’re a realtor aiming to capture attention online, a property owner preparing to list, or a developer looking to showcase a project, BrightOne.ca is here to help bring your vision to life — bright, clear, and unforgettable.</p>
+            
+            <div className="space-y-6 text-gray-700 text-xl">
+              <p>At BrightOne, our mission is simple: to help real estate professionals and property owners showcase their listings in the best possible light. In today&apos;s competitive market, outstanding visuals are more than just marketing tools — they&apos;re essential to capturing attention, building trust, and driving results.</p>
+              <p>What sets BrightOne apart is the combination of technical expertise, creative design, and a deep appreciation for storytelling. With a foundation built on over a decade of professional experience in technology and design, our approach blends precision, innovation, and artistry to deliver visuals that make an impact.</p>
+              <p>We specialize in real estate photography, virtual tours, and digital media services that highlight each property&apos;s unique features and character. From crisp, polished images to immersive virtual experiences, every project is handled with the same commitment to quality, consistency, and client success.</p>
+              <p>BrightOne is more than a photography service — it&apos;s a trusted partner for real estate professionals and property owners who want their listings to stand out, sell faster, and leave a lasting impression.</p>
               </div>
             </div>
           </div>

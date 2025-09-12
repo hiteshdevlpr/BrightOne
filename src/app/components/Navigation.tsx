@@ -32,9 +32,9 @@ export default function Navigation() {
             <Link href="/" className="text-white text-shadow-lg uppercase 2xl:text-3xl xl:text-2xl md:text-xl text-2xl hover:text-blue-600 transition-colors">
               Home
             </Link>
-            <Link href="/services" className="text-white uppercase 2xl:text-3xl xl:text-2xl md:text-xl text-2xl hover:text-blue-600 transition-colors">
+            {/* <Link href="/services" className="text-white uppercase 2xl:text-3xl xl:text-2xl md:text-xl text-2xl hover:text-blue-600 transition-colors">
               Services
-            </Link>
+            </Link> */}
             {/* <Link href="/portfolio" className="text-white uppercase 2xl:text-3xl xl:text-2xl md:text-xl text-2xl hover:text-blue-600 transition-colors">
               Portfolio
             </Link> */}

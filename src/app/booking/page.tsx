@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
+import Link from 'next/link';
 
 export default function BookingPage() {
   const [formData, setFormData] = useState({
@@ -69,7 +70,7 @@ export default function BookingPage() {
   const serviceTiers = [
     {
       id: 'basic',
-      name: 'Basic Package',
+      name: 'Basic',
       price: 'Starting at $299',
       description: 'Perfect for quick listings and budget-conscious clients',
       features: [
@@ -83,7 +84,7 @@ export default function BookingPage() {
     },
     {
       id: 'premium',
-      name: 'Premium Package',
+      name: 'Premium',
       price: 'Starting at $499',
       description: 'Our most popular choice for serious real estate professionals',
       features: [
@@ -99,7 +100,7 @@ export default function BookingPage() {
     },
     {
       id: 'luxury',
-      name: 'Luxury Package',
+      name: 'Luxury',
       price: 'Starting at $799',
       description: 'Complete marketing solution for luxury properties',
       features: [
@@ -176,15 +177,16 @@ export default function BookingPage() {
                   Thank you for choosing BrightOne! We&apos;ve received your booking request and will contact you within 24 hours to confirm your session details.
                 </p>
                 <div className="space-y-4">
-                  <button 
+                  <Link 
+                  href={"/booking"}
                     onClick={() => setIsSubmitted(false)}
                     className="btn-primary mr-4"
                   >
                     Book Another Session
-                  </button>
-                  <a href="/portfolio" className="btn-secondary">
-                    View Our Portfolio
-                  </a>
+                  </Link>
+                  <Link href="/" className="btn-secondary">
+                    Homepage
+                  </Link>
                 </div>
               </div>
             </div>
@@ -200,7 +202,7 @@ export default function BookingPage() {
       <Navigation />
 
       {/* Service Tiers Section */}
-      <section className="section-padding bg-white">
+      <section className="section-padding pt-64 bg-white">
         <div className="container-custom">
           <div className="text-center mb-16">
             <h2 className="text-4xl text-gray-500 mb-4 uppercase">Choose Your Service Package</h2>
@@ -213,11 +215,11 @@ export default function BookingPage() {
             {serviceTiers.map((tier) => (
               <div
                 key={tier.id}
-                className={`relative bg-white rounded-2xl shadow-lg border-2 transition-all duration-300 cursor-pointer ${
+                className={`relative rounded-2xl shadow-lg border-2 transition-all duration-300 cursor-pointer ${
                   formData.serviceTier === tier.id
-                    ? 'border-gray-800 shadow-xl bg-gray-200'
-                    : 'border-gray-200 hover:border-blue-300 hover:shadow-xl'
-                } ${tier.popular ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}
+                    ? 'border-gray-800 shadow-xl bg-gray-600 text-gray-200'
+                    : 'border-gray-200 hover:border-blue-300 hover:shadow-xl bg-white'
+                } ${tier.popular && formData.serviceTier !== tier.id ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}
                 onClick={() => handleTierChange(tier.id)}
               >
                 {tier.popular && (
@@ -228,25 +230,25 @@ export default function BookingPage() {
                   </div>
                 )}
                 
-                <div className="p-8">
+                <div className="p-8 flex flex-col">
                   <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{tier.name}</h3>
-                    <p className="text-3xl font-bold text-blue-600 mb-2">{tier.price}</p>
-                    <p className="text-gray-600">{tier.description}</p>
+                    <h3 className="text-2xl font-bold mb-2">{tier.name}</h3>
+                    <p className="text-3xl font-bold mb-2">{tier.price}</p>
+                    <p className="">{tier.description}</p>
                   </div>
 
                   <ul className="space-y-3 mb-8">
                     {tier.features.map((feature, index) => (
                       <li key={index} className="flex items-start">
-                        <svg className="w-5 h-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5  mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        <span className="text-gray-700">{feature}</span>
+                        <span className=" text-lg">{feature}</span>
                       </li>
                     ))}
                   </ul>
 
-                  <div className="text-center">
+                  {/* <div className="text-center">
                     <div className={`w-6 h-6 rounded-full border-2 mx-auto ${
                       formData.serviceTier === tier.id
                         ? 'border-blue-500 bg-blue-500'
@@ -256,21 +258,21 @@ export default function BookingPage() {
                         <div className="w-2 h-2 bg-white rounded-full mx-auto mt-1"></div>
                       )}
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             ))}
           </div>
 
-          {formData.serviceTier && (
+          {/* {formData.serviceTier && (
             <div className="text-center mt-8">
-              <p className="text-lg text-gray-600">
-                Selected: <span className="font-semibold text-blue-600">
+              <p className="text-2xl text-gray-600">
+                Selected: <span className="font-semibold text-lg text-blue-600">
                   {serviceTiers.find(tier => tier.id === formData.serviceTier)?.name}
                 </span>
               </p>
             </div>
-          )}
+          )} */}
         </div>
       </section>
 
@@ -284,8 +286,8 @@ export default function BookingPage() {
                 Fill out the form below and we&apos;ll get back to you within 24 hours with a personalized quote
               </p>
               {formData.serviceTier && (
-                <div className="mt-6 inline-block bg-blue-50 border border-blue-200 rounded-lg px-6 py-3">
-                  <p className="text-blue-800 font-medium">
+                <div className="mt-6 inline-block text-xl px-6 py-3">
+                  <p className="text-gray-200 font-medium">
                     Selected Package: {serviceTiers.find(tier => tier.id === formData.serviceTier)?.name}
                   </p>
                 </div>
