@@ -69,9 +69,9 @@ export default function AnimatedHeroText() {
           <Link className="btn-primary text-lg px-8 py-4" href={'/booking'}>
             Book Your Shoot!
           </Link>
-          <Link href="#portfolio" className="btn-secondary text-center text-lg px-8 py-4">
+          {/* <Link href="#portfolio" className="btn-secondary text-center text-lg px-8 py-4">
             View Portfolio
-          </Link>
+          </Link> */}
         </div>
       </div>
     </div>
