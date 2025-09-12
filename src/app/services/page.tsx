@@ -22,11 +22,11 @@ export default function ServicesPage() {
           </h1>
           
           <p className="text-2xl text-gray-600 mb-8 leading-relaxed">
-            We're putting the finishing touches on our comprehensive services page
+            We&apos;re putting the finishing touches on our comprehensive services page
           </p>
           
           <div className="bg-white rounded-lg shadow-xl p-8 mb-8 max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">What's Coming</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">What&apos;s Coming</h2>
             <div className="grid md:grid-cols-2 gap-4 text-left">
               <div className="flex items-center">
                 <div className="w-2 h-2 bg-blue-600 rounded-full mr-3"></div>
