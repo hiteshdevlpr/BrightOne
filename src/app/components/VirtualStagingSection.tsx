@@ -1,5 +1,4 @@
 import VirtualStagingSlider from './VirtualStagingSlider';
-import Image from 'next/image';
 
 // Using existing service images as placeholders - you can replace these with actual virtual staging before/after images
 import service1 from '@/assets/images/staging-after.jpg';
@@ -26,7 +25,7 @@ export default function VirtualStagingSection() {
               </p>
               
               <p>
-                Perfect for vacant properties, outdated spaces, or when physical staging isn't feasible. We provide high-quality virtual staging that showcases your property's true potential to potential buyers.
+                Perfect for vacant properties, outdated spaces, or when physical staging isn&apos;t feasible. We provide high-quality virtual staging that showcases your property&apos;s true potential to potential buyers.
               </p>
             </div>
 
