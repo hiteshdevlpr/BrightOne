@@ -43,30 +43,9 @@ jobs:
 
             echo "🛑 Stopping existing containers..."
             sudo docker-compose -f docker-compose.prod.yml down || true
-
-            echo "🔍 Killing processes on ports 3000 and 3001..."
-            for port in 3000 3001; do
-              pids=$(sudo lsof -ti:$port || true)
-              if [ -n "$pids" ]; then
-                for pid in $pids; do
-                  if [ "$pid" != "$$" ] && [ "$pid" != "1" ]; then
-                    echo "Killing process $pid on port $port"
-                    sudo kill -9 $pid || true
-                  fi
-                done
-              else
-                echo "No processes on port $port"
-              fi
-            done
-
-            echo "🧹 Killing leftover Node.js/Next.js processes..."
-            ps aux | grep "node" | grep "/home/brightone/website" | awk '{print $2}' | xargs -r sudo kill -9 || echo "No app node processes found"
-            ps aux | grep "next" | grep "/home/brightone/website" | awk '{print $2}' | xargs -r sudo kill -9 || echo "No app next processes found"
-
+            
             echo "🧹 Cleaning up Docker..."
             sudo docker system prune -f || true
-
-
 
       - name: Build and start services
         uses: appleboy/ssh-action@v1
