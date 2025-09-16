@@ -1,6 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Navigation from '../components/Navigation';
+import Footer from '../components/Footer';
+import Link from 'next/link';
+import Image from 'next/image';
+import heroBg from '@/assets/images/booking-bg.jpg';
+import { handleBookingSubmission } from './booking-form-handler';
 
 // Google Maps TypeScript declarations
 interface GoogleMapsPlacePrediction {
@@ -41,11 +47,6 @@ declare global {
     google: GoogleMaps;
   }
 }
-import Navigation from '../components/Navigation';
-import Footer from '../components/Footer';
-import Link from 'next/link';
-import Image from 'next/image';
-import heroBg from '@/assets/images/booking-bg.jpg';
 
 export default function BookingPage() {
   const [formData, setFormData] = useState({
@@ -57,15 +58,16 @@ export default function BookingPage() {
     propertyAddress: '',
     preferredDate: '',
     preferredTime: '',
-    services: [] as string[],
-    specialRequests: '',
     budget: '',
     timeline: '',
-    serviceTier: ''
+    serviceType: 'Real Estate Photography',
+    serviceTier: '',
+    message: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [errors, setErrors] = useState<string[]>([]);
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const autocompleteRef = useRef<HTMLInputElement>(null);
@@ -164,39 +166,41 @@ export default function BookingPage() {
     'Airbnb Photography',
     'Aerial Photography',
     '3D Tours',
-    'Cinematic Videos'
+    'Property Video',
+    'Floor Plans',
+    'Listing Website'
   ];
 
-  const propertyTypes = [
-    'Single Family Home',
-    'Condo/Apartment',
+  const propertyTypeOptions = [
+    'House',
+    'Condo',
     'Townhouse',
-    'Commercial Property',
-    'Vacation Rental',
+    'Commercial',
+    'Land',
     'Other'
   ];
 
-  const propertySizes = [
-    'Under 1,000 sq ft',
-    '1,000 - 2,000 sq ft',
-    '2,000 - 3,000 sq ft',
-    '3,000 - 4,000 sq ft',
-    '4,000+ sq ft'
+  const propertySizeOptions = [
+    'Under 1000 sq ft',
+    '1000-2000 sq ft',
+    '2000-3000 sq ft',
+    '3000-4000 sq ft',
+    '4000+ sq ft'
   ];
 
-  const budgetRanges = [
+  const budgetOptions = [
     'Under $500',
-    '$500 - $1,000',
-    '$1,000 - $2,000',
-    '$2,000 - $3,000',
-    '$3,000+'
+    '$500-1000',
+    '$1000-2000',
+    '$2000-3000',
+    '$3000+'
   ];
 
   const timelineOptions = [
-    'ASAP (Within 48 hours)',
-    'Within 1 week',
-    'Within 2 weeks',
-    'Within 1 month',
+    'ASAP',
+    '1-2 weeks',
+    '2-4 weeks',
+    '1-2 months',
     'Flexible'
   ];
 
@@ -252,7 +256,7 @@ export default function BookingPage() {
     }
   ];
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -260,16 +264,7 @@ export default function BookingPage() {
     }));
   };
 
-  const handleServiceChange = (service: string) => {
-    setFormData(prev => ({
-      ...prev,
-      services: prev.services.includes(service)
-        ? prev.services.filter(s => s !== service)
-        : [...prev.services, service]
-    }));
-  };
-
-  const handleTierChange = (tierId: string) => {
+  const handleServiceTierSelect = (tierId: string) => {
     setFormData(prev => ({
       ...prev,
       serviceTier: tierId
@@ -279,47 +274,43 @@ export default function BookingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.serviceTier) {
-      alert('Please select a service package before submitting.');
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+    await handleBookingSubmission(
+      formData,
+      setIsSubmitting,
+      setIsSubmitted,
+      setErrors
+    );
   };
 
   if (isSubmitted) {
     return (
       <div className="min-h-screen">
         <Navigation />
-        <div className="pt-32 pb-16 bg-gray-50">
+        <div className="pt-32 pb-16 bg-gray-900">
           <div className="container-custom">
             <div className="max-w-2xl mx-auto text-center">
-              <div className="bg-white rounded-2xl shadow-xl p-12">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-gray-800 rounded-2xl shadow-xl p-12 border border-gray-700">
+                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">Booking Request Submitted!</h1>
-                <p className="text-lg text-gray-600 mb-8">
-                  Thank you for choosing BrightOne! We&apos;ve received your booking request and will contact you within 24 hours to confirm your session details.
+                <h1 className="text-3xl font-bold text-white mb-4 font-heading">Booking Submitted!</h1>
+                <p className="text-lg text-white/80 mb-8 font-montserrat">
+                  Thank you for your booking request! We&apos;ve received your information and will get back to you within 24 hours with a personalized quote and next steps.
                 </p>
-                <div className="space-y-4">
-                  <Link 
-                  href={"/booking"}
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <button 
                     onClick={() => setIsSubmitted(false)}
-                    className="btn-primary mr-4"
+                    className="bg-white text-gray-900 py-3 px-8 rounded-lg font-semibold font-montserrat hover:bg-gray-100 transition-colors duration-300 border-x-0 border-y-2 border-white"
                   >
-                    Book Another Session
-                  </Link>
-                  <Link href="/" className="btn-secondary">
-                    Homepage
+                    Submit Another Booking
+                  </button>
+                  <Link 
+                    href="/"
+                    className="bg-transparent text-white py-3 px-8 rounded-lg font-semibold font-montserrat hover:bg-white/10 transition-colors duration-300 border border-white"
+                  >
+                    Back to Home
                   </Link>
                 </div>
               </div>
@@ -334,36 +325,36 @@ export default function BookingPage() {
   return (
     <div className="min-h-screen">
       <Navigation />
-
+      
       {/* Hero Section */}
       <section className="relative overflow-hidden h-[70vh] pt-60">
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
             src={heroBg.src}
-            alt="Professional Real Estate Photography Services"
+            alt="Book Your Photography Session"
             fill
             className="object-cover"
             priority
           />
-          <div className="absolute inset-0 bg-black bg-opacity-50"></div>
+          <div className="absolute inset-0 bg-black bg-opacity-60"></div>
         </div>
         
         {/* Content */}
         <div className="relative z-10 flex items-center justify-center h-full">
           <div className="text-center px-4 max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight font-heading">
-              <span className="bright-text-shadow text-black bright-text-shadow">Book Your</span>
-              <span className=""> Session</span>
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight font-heading">
+              <span className="bright-text-shadow text-black">Book Your</span>
+              <span className="bright-text-shadow-dark"> Session</span>
             </h1>
-            <p className="text-xl md:text-2xl text-white/90 mb-8 leading-relaxed font-montserrat">
-              Ready to showcase your property with professional photography? Let&apos;s create stunning visuals that sell.
+            <p className="text-2xl text-white/90 mb-8 leading-relaxed font-montserrat">
+              Get a personalized quote and book your professional real estate photography session
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="#booking-form" className="btn-primary font-light border-y-2 border-x-0 border-white">
+              <a href="#booking-form" className="btn-primary font-light border-x-0 border-y-2 border-white">
                 Start Booking
               </a>
-              <a href="/contact" className="btn-secondary border-white border-y-2 font-light">
+              <a href="/contact" className="btn-secondary font-light">
                 Ask Questions
               </a>
             </div>
@@ -371,25 +362,21 @@ export default function BookingPage() {
         </div>
       </section>
 
-      {/* Service Tiers Section */}
-      <section className="section-padding pt-16 bg-gray-900" id="booking-form">
+      {/* Service Packages Section */}
+      <section className="py-16 md:py-24 lg:py-32 bg-gray-900">
         <div className="container-custom">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 font-heading">
-              <span className="bright-text-shadow-dark">Choose Your Package</span>
+              <span className="bright-text-shadow-dark">Choose Your</span> <span className="bright-text-shadow text-black">Package</span>
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto font-montserrat">
-              Select the perfect package for your property. All packages include professional photography and editing.
+            <p className="text-xl text-white/80 font-montserrat max-w-3xl mx-auto">
+              Select the perfect package for your property. All packages include professional editing and fast delivery.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {serviceTiers.map((tier) => (
-              <div
-                key={tier.id}
-                className={`relative group transition-all duration-500 cursor-pointer`}
-                onClick={() => handleTierChange(tier.id)}
-              >
+              <div key={tier.id} className="relative">
                 {tier.popular && (
                   <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
                     <span className="bg-black text-white px-6 py-2 rounded-md border-x-0 border-y-2 border-white text-sm font-light font-montserrat shadow-lg">
@@ -409,14 +396,11 @@ export default function BookingPage() {
                   <div className="relative p-8 lg:p-10 h-full flex flex-col">
                     {/* Header */}
                     <div className="text-center mb-8">
-                      <h3 className="text-2xl lg:text-5xl font-bold text-gray-900 bright-text-shadow mt-4 mb-8 border-b-2 border-gray-500 rounded-md pb-6 font-montserrat">
+                      <h3 className="text-2xl lg:text-3xl font-bold text-white mb-2 font-heading">
                         {tier.name}
                       </h3>
-                      <div className="mb-4">
-                        <span className="text-4xl lg:text-2xl font-bold text-white font-heading">Starting at</span>
-                        <span className="text-4xl block lg:text-4xl mt-4 font-bold text-white font-heading">
-                          {tier.price}
-                        </span>
+                      <div className="text-4xl lg:text-5xl font-bold text-white mb-4 font-heading">
+                        {tier.price}
                       </div>
                       <p className="text-gray-300 text-lg font-montserrat leading-relaxed">
                         {tier.description}
@@ -432,323 +416,257 @@ export default function BookingPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                           </div>
-                          <span className="text-gray-200 text-lg font-montserrat leading-relaxed group-hover/item:text-white transition-colors duration-300">
+                          <span className="text-white/90 font-montserrat group-hover/item:text-white transition-colors duration-200">
                             {feature}
                           </span>
                         </li>
                       ))}
                     </ul>
 
-                    {/* Selection indicator */}
-                    <div className="text-center">
-                      <div className={`w-8 h-8 rounded-full border-2 mx-auto transition-all duration-300 ${
+                    {/* Selection Button */}
+                    <button
+                      onClick={() => handleServiceTierSelect(tier.id)}
+                      className={`w-full py-4 px-6 rounded-xl font-semibold font-montserrat transition-all duration-300 ${
                         formData.serviceTier === tier.id
-                          ? 'border-white bg-white'
-                          : 'border-gray-500 group-hover:border-gray-400'
-                      }`}>
-                        {formData.serviceTier === tier.id && (
-                          <div className="w-3 h-3 bg-gray-900 rounded-full mx-auto mt-1.5"></div>
-                        )}
-                      </div>
-                    </div>
+                          ? 'bg-white text-gray-900 hover:bg-gray-100'
+                          : 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600'
+                      }`}
+                    >
+                      {formData.serviceTier === tier.id ? 'Selected' : 'Select Package'}
+                    </button>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-
-          {formData.serviceTier && (
-            <div className="text-center mt-12">
-              <div className="inline-flex items-center space-x-3 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl px-8 py-4">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <p className="text-xl text-white font-montserrat">
-                  Selected: <span className="font-bold text-blue-400">
-                    {serviceTiers.find(tier => tier.id === formData.serviceTier)?.name}
-                  </span>
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       </section>
 
       {/* Booking Form Section */}
-      <section className="section-padding bg-gray-800">
+      <section id="booking-form" className="py-16 md:py-24 lg:py-32 bg-gray-800">
         <div className="container-custom">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-4xl uppercase text-white mb-4 font-bold bright-text-shadow-dark">Get Your Free Quote</h2>
-              <p className="text-xl text-white">
+              <p className="text-xl text-white font-montserrat">
                 Fill out the form below and we&apos;ll get back to you within 24 hours with a personalized quote
               </p>
-              {formData.serviceTier && (
-                <div className="mt-6 inline-block text-xl px-6 py-3">
-                  <p className="text-gray-200 font-medium">
-                    Selected Package: {serviceTiers.find(tier => tier.id === formData.serviceTier)?.name}
-                  </p>
-                </div>
-              )}
             </div>
 
-            <div className="bg-gray-700 rounded-s shadow-xl p-8 lg:p-12">
-              <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Personal Information */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium uppercase text-white mb-2">Full Name *</label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      required
-                      className="form-input"
-                      placeholder="Your full name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-2">Email Address *</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      className="form-input"
-                      placeholder="your@email.com"
-                    />
-                  </div>
-                </div>
+            {/* Error Display */}
+            {errors.length > 0 && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-8">
+                <ul className="list-disc list-inside">
+                  {errors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-2">Phone Number *</label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      onBlur={handlePhoneBlur}
-                      required
-                      className="form-input"
-                      placeholder="(555) 123-4567"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-2">Property Type *</label>
-                    <select
-                      name="propertyType"
-                      value={formData.propertyType}
-                      onChange={handleInputChange}
-                      required
-                      className="form-select"
-                    >
-                      <option value="">Select property type</option>
-                      {propertyTypes.map(type => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Property Details */}
-                <div className="relative">
-                  <label className="block text-sm font-medium text-white mb-2">Property Address *</label>
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Personal Information */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2 font-montserrat">Full Name *</label>
                   <input
-                    ref={autocompleteRef}
                     type="text"
-                    name="propertyAddress"
-                    value={formData.propertyAddress}
-                    onChange={(e) => {
-                      handleInputChange(e);
-                      handleAddressSearch(e.target.value);
-                    }}
-                    onFocus={() => {
-                      if (addressSuggestions.length > 0) {
-                        setShowSuggestions(true);
-                      }
-                    }}
-                    onBlur={() => {
-                      // Delay hiding suggestions to allow for click selection
-                      setTimeout(() => setShowSuggestions(false), 200);
-                    }}
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
                     required
                     className="form-input"
-                    placeholder="Start typing your address..."
-                    autoComplete="off"
+                    placeholder="Your full name"
                   />
-                  
-                  {/* Address Suggestions Dropdown */}
-                  {showSuggestions && addressSuggestions.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {addressSuggestions.map((suggestion, index) => (
-                        <div
-                          key={index}
-                          className="px-4 py-3 text-white hover:bg-gray-700 cursor-pointer border-b border-gray-700 last:border-b-0 transition-colors duration-200"
-                          onClick={() => handleAddressSelect(suggestion)}
-                        >
-                          <div className="flex items-center">
-                            <svg className="w-4 h-4 text-gray-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span className="text-sm">{suggestion}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-2">Property Size</label>
-                    <select
-                      name="propertySize"
-                      value={formData.propertySize}
-                      onChange={handleInputChange}
-                      className="form-select"
-                    >
-                      <option value="">Select size range</option>
-                      {propertySizes.map(size => (
-                        <option key={size} value={size}>{size}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-2">Budget Range</label>
-                    <select
-                      name="budget"
-                      value={formData.budget}
-                      onChange={handleInputChange}
-                      className="form-select"
-                    >
-                      <option value="">Select budget range</option>
-                      {budgetRanges.map(range => (
-                        <option key={range} value={range}>{range}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Services */}
                 <div>
-                  <label className="block text-sm font-medium text-white mb-4">Services Needed *</label>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {serviceOptions.map(service => (
-                      <label key={service} className="flex items-center space-x-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.services.includes(service)}
-                          onChange={() => handleServiceChange(service)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-white">{service}</span>
-                      </label>
+                  <label className="block text-sm font-medium text-white mb-2 font-montserrat">Email Address *</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                    className="form-input"
+                    placeholder="your@email.com"
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2 font-montserrat">Phone Number</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    onBlur={handlePhoneBlur}
+                    className="form-input"
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2 font-montserrat">Service Type *</label>
+                  <select
+                    name="serviceType"
+                    value={formData.serviceType}
+                    onChange={handleInputChange}
+                    required
+                    className="form-select"
+                  >
+                    {serviceOptions.map((service) => (
+                      <option key={service} value={service}>
+                        {service}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Property Details */}
+              <div className="relative">
+                <label className="block text-sm font-medium text-white mb-2 font-montserrat">Property Address *</label>
+                <input
+                  ref={autocompleteRef}
+                  type="text"
+                  name="propertyAddress"
+                  value={formData.propertyAddress}
+                  onChange={(e) => {
+                    handleInputChange(e);
+                    handleAddressSearch(e.target.value);
+                  }}
+                  onFocus={() => {
+                    if (addressSuggestions.length > 0) {
+                      setShowSuggestions(true);
+                    }
+                  }}
+                  onBlur={() => {
+                    // Delay hiding suggestions to allow for click selection
+                    setTimeout(() => setShowSuggestions(false), 200);
+                  }}
+                  required
+                  className="form-input"
+                  placeholder="Start typing your address..."
+                  autoComplete="off"
+                />
+                
+                {/* Address Suggestions Dropdown */}
+                {showSuggestions && addressSuggestions.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {addressSuggestions.map((suggestion, index) => (
+                      <div
+                        key={index}
+                        className="px-4 py-3 text-white hover:bg-gray-700 cursor-pointer border-b border-gray-700 last:border-b-0 transition-colors duration-200"
+                        onClick={() => handleAddressSelect(suggestion)}
+                      >
+                        <div className="flex items-center">
+                          <svg className="w-4 h-4 text-gray-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <span className="text-sm">{suggestion}</span>
+                        </div>
+                      </div>
                     ))}
                   </div>
-                </div>
+                )}
+              </div>
 
-                {/* Scheduling */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-2">Preferred Date</label>
-                    <input
-                      type="date"
-                      name="preferredDate"
-                      value={formData.preferredDate}
-                      onChange={handleInputChange}
-                      className="form-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-2">Preferred Time</label>
-                    <select
-                      name="preferredTime"
-                      value={formData.preferredTime}
-                      onChange={handleInputChange}
-                      className="form-select"
-                    >
-                      <option value="">Select time preference</option>
-                      <option value="morning">Morning (8 AM - 12 PM)</option>
-                      <option value="afternoon">Afternoon (12 PM - 4 PM)</option>
-                      <option value="evening">Evening (4 PM - 8 PM)</option>
-                      <option value="flexible">Flexible</option>
-                    </select>
-                  </div>
-                </div>
-
+              <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">Timeline</label>
+                  <label className="block text-sm font-medium text-white mb-2 font-montserrat">Property Type</label>
+                  <select
+                    name="propertyType"
+                    value={formData.propertyType}
+                    onChange={handleInputChange}
+                    className="form-select"
+                  >
+                    <option value="">Select property type</option>
+                    {propertyTypeOptions.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2 font-montserrat">Property Size</label>
+                  <select
+                    name="propertySize"
+                    value={formData.propertySize}
+                    onChange={handleInputChange}
+                    className="form-select"
+                  >
+                    <option value="">Select property size</option>
+                    {propertySizeOptions.map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2 font-montserrat">Budget Range</label>
+                  <select
+                    name="budget"
+                    value={formData.budget}
+                    onChange={handleInputChange}
+                    className="form-select"
+                  >
+                    <option value="">Select budget range</option>
+                    {budgetOptions.map((budget) => (
+                      <option key={budget} value={budget}>
+                        {budget}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2 font-montserrat">Timeline</label>
                   <select
                     name="timeline"
                     value={formData.timeline}
                     onChange={handleInputChange}
                     className="form-select"
                   >
-                    <option value="">When do you need the photos?</option>
-                    {timelineOptions.map(timeline => (
-                      <option key={timeline} value={timeline}>{timeline}</option>
+                    <option value="">Select timeline</option>
+                    {timelineOptions.map((timeline) => (
+                      <option key={timeline} value={timeline}>
+                        {timeline}
+                      </option>
                     ))}
                   </select>
                 </div>
-
-                {/* Special Requests */}
-                <div>
-                  <label className="block text-sm font-medium text-white mb-2">Special Requests or Additional Information</label>
-                  <textarea
-                    name="specialRequests"
-                    value={formData.specialRequests}
-                    onChange={handleInputChange}
-                    rows={4}
-                    className="form-textarea"
-                    placeholder="Any specific requirements, property features to highlight, or other details..."
-                  />
-                </div>
-
-                {/* Submit Button */}
-                <div className="text-center">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="btn-primary btn-primary-animation bg-black uppercase rounded-none text-lg px-12 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? 'Submitting...' : 'Get Free Quote'}
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* Additional Information */}
-            {/* <div className="mt-12 grid md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">24-Hour Response</h3>
-                <p className="text-gray-600">We&apos;ll get back to you within 24 hours with a personalized quote</p>
               </div>
-              <div className="text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Free Consultation</h3>
-                <p className="text-gray-600">No obligation consultation to discuss your specific needs</p>
+
+              {/* Additional Message */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2 font-montserrat">Additional Message</label>
+                <textarea
+                  name="message"
+                  value={formData.message}
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="form-textarea"
+                  placeholder="Tell us more about your project, special requirements, or any questions you have..."
+                />
               </div>
+
+              {/* Submit Button */}
               <div className="text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Fast Turnaround</h3>
-                <p className="text-gray-600">Quick delivery to keep your listings competitive</p>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="bg-white text-gray-900 py-4 px-12 rounded-lg font-semibold font-montserrat hover:bg-gray-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed border-x-0 border-y-2 border-white text-lg"
+                >
+                  {isSubmitting ? 'Submitting...' : 'Get My Free Quote'}
+                </button>
               </div>
-            </div> */}
+            </form>
           </div>
         </div>
       </section>
@@ -757,4 +675,3 @@ export default function BookingPage() {
     </div>
   );
 }
-
