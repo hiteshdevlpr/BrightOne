@@ -56,8 +56,8 @@ export default function AnimatedHeroText() {
   return (
     <div className="absolute inset-0 flex items-center justify-center z-10">
       <div className="text-center px-4">
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-          <span className='gradient-text-gray font-semibold'>We help properties shine with </span><br />
+        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold text-white mb-6 leading-tight">
+          <span className='gradient-text-gray font-semibold font-montserrat'>We help properties shine with </span><br />
           <span className="inline-block gradient-text font-semibold">
             {displayText}
             <span className="animate-pulse">|</span>
@@ -66,8 +66,8 @@ export default function AnimatedHeroText() {
         </h1>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link className="btn-primary text-lg px-8 py-4" href={'/booking'}>
-            Book Your Shoot!
+          <Link className="btn-primary font-light font-montserrat text-base sm:text-lg lg:text-xl px-6 sm:px-8 py-3 sm:py-4" href={'/booking'}>
+            Book Your Shoot
           </Link>
           {/* <Link href="#portfolio" className="btn-secondary text-center text-lg px-8 py-4">
             View Portfolio
