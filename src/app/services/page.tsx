@@ -3,6 +3,7 @@ import Footer from '../components/Footer';
 import VirtualStagingSection from '../components/VirtualStagingSection';
 import Image from 'next/image';
 import rePhoto1 from '@/assets/images/re-photo-1.jpg';
+import floorPlanImg from '@/assets/images/floor-plan.png';
 import servicebg from '@/assets/images/service-bg-2.jpg';
 import Link from 'next/link';
 
@@ -119,6 +120,168 @@ export default function ServicesPage() {
 
       {/* Virtual Staging Section */}
       <VirtualStagingSection />
+
+      {/* Listing Website Section */}
+      <section className="py-16 md:py-24 lg:py-32 bg-gray-800">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 w-full">
+            {/* Left Side - Visual */}
+            <div className="relative order-1 lg:order-1">
+              <div className="bg-gray-900 rounded-lg p-8 border border-gray-600">
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-10 h-10 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-4 font-heading">Custom Listing Website</h3>
+                  <p className="text-white/80 font-montserrat mb-6">
+                    Dedicated property websites that showcase your listings with professional design and functionality
+                  </p>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between bg-gray-700 rounded p-3">
+                      <span className="text-white text-sm">Photo Gallery</span>
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    </div>
+                    <div className="flex items-center justify-between bg-gray-700 rounded p-3">
+                      <span className="text-white text-sm">Virtual Tour</span>
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    </div>
+                    <div className="flex items-center justify-between bg-gray-700 rounded p-3">
+                      <span className="text-white text-sm">Floor Plans</span>
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    </div>
+                    <div className="flex items-center justify-between bg-gray-700 rounded p-3">
+                      <span className="text-white text-sm">Contact Forms</span>
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Right Side - Content */}
+            <div className="flex flex-col justify-center order-2 lg:order-2">
+              <div className="text-center lg:text-left">
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight font-heading">
+                  <span className="bright-text-shadow text-black">Listing</span> <span className="bright-text-shadow-dark">Website</span>
+                </h2>
+                <p className="text-xl text-white/80 mb-8 leading-relaxed font-montserrat">
+                  Create a dedicated website for each property listing with professional design, interactive features, and seamless user experience that converts visitors into buyers.
+                </p>
+                <div className="space-y-6 mb-8">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-white mb-2 font-heading">Custom Design</h4>
+                      <p className="text-white/80 font-montserrat">Tailored website design that matches your brand and property style</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-white mb-2 font-heading">Mobile Optimized</h4>
+                      <p className="text-white/80 font-montserrat">Responsive design that works perfectly on all devices</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-white mb-2 font-heading">Lead Generation</h4>
+                      <p className="text-white/80 font-montserrat">Built-in contact forms and lead capture tools</p>
+                    </div>
+                  </div>
+                </div>
+                <Link href={'/booking'} className="btn-secondary font-light border-x-0 border-y-2 mt-6 border-white">
+                  Create Website
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Floor Plans Section */}
+      <section className="py-16 md:py-24 lg:py-32 bg-white">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 w-full">
+            {/* Left Side - Content */}
+            <div className="flex flex-col justify-center order-2 lg:order-1">
+              <div className="text-center lg:text-left">
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight font-heading">
+                  Professional <span className="text-gray-600">Floor Plans</span>
+                </h2>
+                <p className="text-xl text-gray-700 mb-8 leading-relaxed font-montserrat">
+                  Detailed, accurate floor plans that help buyers visualize the property layout and make informed decisions. Our professional floor plans are created with precision and clarity.
+                </p>
+                <div className="space-y-6 mb-8">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-6 h-6 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2 font-heading">Accurate Measurements</h4>
+                      <p className="text-gray-700 font-montserrat">Precise room dimensions and square footage calculations</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-6 h-6 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2 font-heading">Professional Design</h4>
+                      <p className="text-gray-700 font-montserrat">Clean, modern layouts that enhance property presentations</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-6 h-6 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2 font-heading">Multiple Formats</h4>
+                      <p className="text-gray-700 font-montserrat">Available in PDF, JPG, and interactive digital formats</p>
+                    </div>
+                  </div>
+                </div>
+                <Link href={'/booking'} className="bg-gray-900 text-white py-4 px-8 rounded-lg font-semibold font-montserrat hover:bg-gray-800 transition-colors duration-300 border-x-0 border-y-2 border-gray-900">
+                  Get Floor Plans
+                </Link>
+              </div>
+            </div>
+            
+            {/* Right Side - Image */}
+            <div className="relative order-1 lg:order-2">
+              <div className="relative w-full h-[400px] md:h-[500px] lg:h-[600px]">
+                <Image
+                  src={floorPlanImg.src}
+                  alt="Professional Floor Plans"
+                  fill
+                  className="object-cover rounded-lg"
+                />
+                {/* <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent rounded-lg"></div> */}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <Footer />
     </div>
