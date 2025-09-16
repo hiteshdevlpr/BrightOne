@@ -3,9 +3,42 @@
 import { useState, useRef, useEffect } from 'react';
 
 // Google Maps TypeScript declarations
+interface GoogleMapsPlacePrediction {
+  description: string;
+  place_id: string;
+  structured_formatting: {
+    main_text: string;
+    secondary_text: string;
+  };
+}
+
+interface GoogleMapsAutocompleteService {
+  getPlacePredictions(
+    request: {
+      input: string;
+      types?: string[];
+      componentRestrictions?: { country: string };
+    },
+    callback: (predictions: GoogleMapsPlacePrediction[] | null, status: string) => void
+  ): void;
+}
+
+interface GoogleMapsPlaces {
+  AutocompleteService: new () => GoogleMapsAutocompleteService;
+  PlacesServiceStatus: {
+    OK: string;
+  };
+}
+
+interface GoogleMaps {
+  maps: {
+    places: GoogleMapsPlaces;
+  };
+}
+
 declare global {
   interface Window {
-    google: any;
+    google: GoogleMaps;
   }
 }
 import Navigation from '../components/Navigation';
@@ -36,7 +69,7 @@ export default function BookingPage() {
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const autocompleteRef = useRef<HTMLInputElement>(null);
-  const autocompleteService = useRef<any>(null);
+  const autocompleteService = useRef<GoogleMapsAutocompleteService | null>(null);
 
   // Initialize Google Maps Autocomplete
   useEffect(() => {
@@ -79,9 +112,9 @@ export default function BookingPage() {
       componentRestrictions: { country: 'ca' } // Restrict to Canada
     };
 
-    autocompleteService.current.getPlacePredictions(request, (predictions: any, status: any) => {
+    autocompleteService.current.getPlacePredictions(request, (predictions, status) => {
       if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-        const suggestions = predictions.map((prediction: any) => prediction.description);
+        const suggestions = predictions.map((prediction) => prediction.description);
         setAddressSuggestions(suggestions);
         setShowSuggestions(true);
       } else {
@@ -323,7 +356,7 @@ export default function BookingPage() {
               <span className=""> Session</span>
             </h1>
             <p className="text-xl md:text-2xl text-white/90 mb-8 leading-relaxed font-montserrat">
-              Ready to showcase your property with professional photography? Let's create stunning visuals that sell.
+              Ready to showcase your property with professional photography? Let&apos;s create stunning visuals that sell.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a href="#booking-form" className="btn-primary font-light border-y-2 border-x-0 border-white">
