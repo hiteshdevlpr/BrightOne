@@ -13,27 +13,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build Next.js
-        run: npm run build
-
       - name: Copy files to server
         uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          source: ".next,package.json,package-lock.json,public,next.config.js"
+          source: "."
           target: "/home/brightone/website"
+          strip_components: 1
 
-      - name: SSH and restart app
+      - name: SSH and deploy
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.DROPLET_IP }}
@@ -41,6 +31,31 @@ jobs:
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
             cd /home/brightone/website
-            npm install --production
-            pm2 stop all || true
-            pm2 start npm --name "nextjs-app" -- start
+            
+            # Create production environment file
+            cat > .env.production << EOF
+            NODE_ENV=production
+            DATABASE_URL=postgresql://brightone:${{ secrets.DB_PASSWORD }}@db:5432/brightone_db
+            NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }}
+            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+            NEXTAUTH_URL=https://${{ secrets.DOMAIN }}
+            REDIS_URL=redis://redis:6379
+            EOF
+            
+            # Stop existing containers
+            docker-compose -f docker-compose.prod.yml down || true
+            
+            # Build and start services
+            docker-compose -f docker-compose.prod.yml build --no-cache
+            docker-compose -f docker-compose.prod.yml up -d
+            
+            # Wait for services to be healthy
+            sleep 30
+            
+            # Check if services are running
+            docker-compose -f docker-compose.prod.yml ps
+            
+            # Test the application
+            curl -f http://localhost:3000/api/admin/dashboard || exit 1
+            
+            echo "✅ Deployment completed successfully!"
