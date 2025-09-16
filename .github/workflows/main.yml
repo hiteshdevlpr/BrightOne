@@ -30,32 +30,65 @@ jobs:
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
+            set -e  # Exit on any error
+            
             cd /home/brightone/website
             
-            # Create production environment file
-            cat > .env.production << EOF
-            NODE_ENV=production
-            DATABASE_URL=postgresql://brightone:${{ secrets.DB_PASSWORD }}@db:5432/brightone_db
+            echo "🔍 Debugging environment variables..."
+            echo "DB_PASSWORD length: $(echo '${{ secrets.DB_PASSWORD }}' | wc -c)"
+            echo "GOOGLE_MAPS_API_KEY length: $(echo '${{ secrets.GOOGLE_MAPS_API_KEY }}' | wc -c)"
+            echo "NEXTAUTH_SECRET length: $(echo '${{ secrets.NEXTAUTH_SECRET }}' | wc -c)"
+            
+            echo "📝 Creating .env file..."
+            # Create .env file for Docker Compose
+            cat > .env << 'EOF'
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }}
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             NEXTAUTH_URL=https://brightone.ca
-            REDIS_URL=redis://redis:6379
             EOF
             
-            # Stop existing containers
-            docker-compose -f docker-compose.prod.yml down || true
+            echo "📋 Verifying .env file content:"
+            cat .env
             
+            echo "🐳 Setting up Docker..."
+            sudo systemctl start docker || true
+            sudo systemctl enable docker || true
+            sudo usermod -aG docker $USER || true
+            sleep 10
+            
+            echo " Stopping existing containers..."
+            sudo docker-compose -f docker-compose.prod.yml down || true
+            
+            echo "🧹 Cleaning up..."
+            sudo docker system prune -f || true
+            
+            echo "🏗️ Building and starting services..."
             # Build and start services
-            docker-compose -f docker-compose.prod.yml build --no-cache
-            docker-compose -f docker-compose.prod.yml up -d
+            sudo docker-compose -f docker-compose.prod.yml build --no-cache
+            sudo docker-compose -f docker-compose.prod.yml up -d
             
-            # Wait for services to be healthy
-            sleep 30
+            echo "⏳ Waiting for services to be healthy..."
+            sleep 60
             
-            # Check if services are running
-            docker-compose -f docker-compose.prod.yml ps
+            echo "📊 Checking service status..."
+            sudo docker-compose -f docker-compose.prod.yml ps
             
-            # Test the application
-            curl -f http://localhost:3000/api/admin/dashboard || exit 1
+            echo "🔍 Checking application health..."
+            for i in {1..12}; do
+              echo "Health check attempt $i/12..."
+              if curl -f http://localhost:3000/api/admin/dashboard > /dev/null 2>&1; then
+                echo "✅ Application is healthy!"
+                break
+              fi
+              if [ $i -eq 12 ]; then
+                echo "❌ Application health check failed"
+                echo "📋 Container logs:"
+                sudo docker-compose -f docker-compose.prod.yml logs app
+                exit 1
+              fi
+              echo "Application not ready yet, waiting 10 seconds..."
+              sleep 10
+            done
             
             echo "✅ Deployment completed successfully!"
