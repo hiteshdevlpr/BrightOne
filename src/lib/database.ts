@@ -6,9 +6,13 @@ import { Pool } from 'pg';
 //   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 // });
 
+// Determine SSL configuration based on environment
+const isProduction = process.env.NODE_ENV === 'production';
+const isDocker = process.env.DATABASE_URL?.includes('@db:') || process.env.DATABASE_URL?.includes('@localhost:');
+
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    ssl: false, // Disable SSL for Docker development
     // Add connection timeout
     connectionTimeoutMillis: 5000,
     idleTimeoutMillis: 30000,
@@ -17,6 +21,10 @@ const pool = new Pool({
 // Test database connection
 export async function testConnection() {
   try {
+    console.log('Attempting to connect to database...');
+    console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+    
     const client = await pool.connect();
     const result = await client.query('SELECT NOW()');
     client.release();
@@ -24,6 +32,11 @@ export async function testConnection() {
     return true;
   } catch (error) {
     console.error('Database connection failed:', error);
+    console.error('Connection details:', {
+      hasUrl: !!process.env.DATABASE_URL,
+      nodeEnv: process.env.NODE_ENV,
+      ssl: false
+    });
     return false;
   }
 }

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, query } from '@/lib/database';
 
-// POST /api/bookings - Create a new booking
+// POST /api/contact - Create a new contact message
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
     // Validate required fields
-    const requiredFields = ['name', 'email', 'serviceType', 'propertyAddress'];
+    const requiredFields = ['name', 'email', 'subject', 'message'];
     const missingFields = requiredFields.filter(field => !body[field]);
     
     if (missingFields.length > 0) {
@@ -37,50 +37,45 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create booking in database
-    const booking = await db.createBooking({
+    // Validate message length
+    if (body.message.length > 2000) {
+      return NextResponse.json(
+        { error: 'Message is too long. Maximum 2000 characters allowed.' },
+        { status: 400 }
+      );
+    }
+
+    // Create contact message in database
+    const message = await db.createContactMessage({
       name: body.name.trim(),
       email: body.email.trim().toLowerCase(),
       phone: body.phone?.trim() || undefined,
-      serviceType: body.serviceType,
-      propertyAddress: body.propertyAddress.trim(),
-      propertyType: body.propertyType || undefined,
-      propertySize: body.propertySize || undefined,
-      budget: body.budget || undefined,
-      timeline: body.timeline || undefined,
-      serviceTier: body.serviceTier || undefined,
-      message: body.message?.trim() || undefined,
+      subject: body.subject.trim(),
+      message: body.message.trim(),
     });
 
     // Return success response
     return NextResponse.json(
       {
         success: true,
-        message: 'Booking request submitted successfully',
-        booking: {
-          id: booking.id,
-          name: booking.name,
-          email: booking.email,
-          serviceType: booking.service_type,
-          status: booking.status,
-          createdAt: booking.created_at,
+        message: 'Contact message submitted successfully',
+        contact: {
+          id: message.id,
+          name: message.name,
+          email: message.email,
+          subject: message.subject,
+          status: message.status,
+          createdAt: message.created_at,
         },
       },
       { status: 201 }
     );
 
   } catch (error) {
-    console.error('Booking creation error:', error);
+    console.error('Contact message creation error:', error);
     
     // Handle specific database errors
     if (error instanceof Error) {
-      if (error.message.includes('duplicate key')) {
-        return NextResponse.json(
-          { error: 'A booking with this email already exists' },
-          { status: 409 }
-        );
-      }
-      
       if (error.message.includes('connection')) {
         return NextResponse.json(
           { error: 'Database connection error. Please try again later.' },
@@ -96,7 +91,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/bookings - Get all bookings (admin only)
+// GET /api/contact - Get all contact messages (admin only)
 export async function GET(request: NextRequest) {
   try {
     // In a real app, you'd check for admin authentication here
@@ -105,31 +100,31 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const status = searchParams.get('status');
 
-    let bookings;
+    let messages;
     if (status) {
       // Filter by status if provided
-      bookings = await query(
-        'SELECT * FROM bookings WHERE status = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
+      messages = await query(
+        'SELECT * FROM contact_messages WHERE status = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
         [status, limit, offset]
       );
     } else {
-      bookings = await db.getBookings(limit, offset);
+      messages = await db.getContactMessages(limit, offset);
     }
 
     return NextResponse.json({
       success: true,
-      bookings: Array.isArray(bookings) ? bookings : bookings.rows,
+      messages: Array.isArray(messages) ? messages : messages.rows,
       pagination: {
         limit,
         offset,
-        hasMore: (Array.isArray(bookings) ? bookings : bookings.rows).length === limit,
+        hasMore: (Array.isArray(messages) ? messages : messages.rows).length === limit,
       },
     });
 
   } catch (error) {
-    console.error('Get bookings error:', error);
+    console.error('Get contact messages error:', error);
     return NextResponse.json(
-      { error: 'Failed to retrieve bookings' },
+      { error: 'Failed to retrieve contact messages' },
       { status: 500 }
     );
   }

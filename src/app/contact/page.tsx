@@ -5,6 +5,7 @@ import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 import Image from 'next/image';
 import servicebg from '@/assets/images/service-bg-2.jpg';
+import { handleContactSubmission } from './contact-form-handler';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ export default function ContactPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [errors, setErrors] = useState<string[]>([]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -28,13 +30,13 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+    await handleContactSubmission(
+      formData,
+      setIsSubmitting,
+      setIsSubmitted,
+      setErrors
+    );
   };
 
   if (isSubmitted) {
@@ -117,6 +119,18 @@ export default function ContactPage() {
             {/* Contact Form */}
             <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700">
               <h3 className="text-3xl font-bold text-white mb-6 font-heading">Send us a Message</h3>
+              
+              {/* Error Display */}
+              {errors.length > 0 && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+                  <ul className="list-disc list-inside">
+                    {errors.map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
