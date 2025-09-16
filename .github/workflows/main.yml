@@ -61,14 +61,22 @@ jobs:
             # Stop existing containers
             sudo docker-compose -f docker-compose.prod.yml down || true
             
-            # Kill any process using port 3000
-            sudo lsof -ti:3000 | xargs sudo kill -9 || true
+            echo "🔍 Checking what's using port 3000..."
+            # Check what's using port 3000
+            PIDS=$(sudo lsof -ti:3000 2>/dev/null || echo "")
+            if [ -n "$PIDS" ]; then
+              echo "Found processes on port 3000: $PIDS"
+              echo "$PIDS" | xargs sudo kill -9
+              sleep 2
+            else
+              echo "No processes found on port 3000"
+            fi
             
-            # Alternative: kill by process name
+            # Alternative cleanup methods
             sudo pkill -f "node.*3000" || true
             sudo pkill -f "next" || true
             
-            echo "🧹 Cleaning up..."
+            echo "🧹 Cleaning up Docker..."
             sudo docker system prune -f || true
             
             echo "🏗️ Building and starting services..."
