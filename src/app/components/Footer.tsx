@@ -2,35 +2,35 @@ import Link from 'next/link';
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-900 text-white py-12">
-      <div className="container-custom">
-        <div className="grid md:grid-cols-4 gap-8">
-          <div>
-            <h3 className="text-2xl font-bold mb-4">BrightOne.ca</h3>
-            <p className="text-gray-400">
+    <footer className="bg-gray-900 text-white py-12 lg:py-16">
+      <div className="container-custom px-4 sm:px-6 lg:px-8">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+          <div className="sm:col-span-2 lg:col-span-1">
+            <h3 className="text-xl lg:text-2xl font-bold mb-4">BrightOne Inc.</h3>
+            <p className="text-gray-400 text-sm lg:text-base">
               Professional real estate photography and virtual services to help you sell properties faster and for more money.
             </p>
           </div>
           <div>
-            <h4 className="text-lg font-semibold mb-4">Services</h4>
+            <h4 className="text-base lg:text-lg font-semibold mb-4">Services</h4>
             <ul className="space-y-2 text-gray-400">
-              <li><Link href="/" className="hover:text-white transition-colors">Real Estate Photography</Link></li>
-              <li><Link href="/" className="hover:text-white transition-colors">Real Estate Videography</Link></li>
-              <li><Link href="/" className="hover:text-white transition-colors">3D Virtual Tours</Link></li>
-              <li><Link href="/" className="hover:text-white transition-colors">Virtual Staging</Link></li>
+              <li><Link href="/" className="hover:text-white transition-colors text-sm lg:text-base">Real Estate Photography</Link></li>
+              <li><Link href="/" className="hover:text-white transition-colors text-sm lg:text-base">Real Estate Videography</Link></li>
+              <li><Link href="/" className="hover:text-white transition-colors text-sm lg:text-base">3D Virtual Tours</Link></li>
+              <li><Link href="/" className="hover:text-white transition-colors text-sm lg:text-base">Virtual Staging</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className="text-lg font-semibold mb-4">Company</h4>
+            <h4 className="text-base lg:text-lg font-semibold mb-4">Company</h4>
             <ul className="space-y-2 text-gray-400">
-              <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
-              <li><Link href="/portfolio" className="hover:text-white transition-colors">Portfolio</Link></li>
-              <li><Link href="/booking" className="hover:text-white transition-colors">Book Now</Link></li>
-              <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
+              <li><Link href="/about" className="hover:text-white transition-colors text-sm lg:text-base">About Us</Link></li>
+              <li><Link href="/portfolio" className="hover:text-white transition-colors text-sm lg:text-base">Portfolio</Link></li>
+              <li><Link href="/booking" className="hover:text-white transition-colors text-sm lg:text-base">Book Now</Link></li>
+              <li><Link href="/contact" className="hover:text-white transition-colors text-sm lg:text-base">Contact</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className="text-lg font-semibold mb-4">Connect</h4>
+            <h4 className="text-base lg:text-lg font-semibold mb-4">Connect</h4>
             <div className="flex space-x-4">
               {/* Facebook */}
               <a href="https://www.facebook.com/BrightOneInc" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
@@ -69,8 +69,8 @@ export default function Footer() {
             </div>
           </div>
         </div>
-        <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-          <p>&copy; 2025 BrightOne Inc. All rights reserved.</p>
+        <div className="border-t border-gray-800 mt-8 lg:mt-12 pt-8 lg:pt-10 text-center text-gray-400">
+          <p className="text-sm lg:text-base">&copy; 2025 BrightOne Inc. All rights reserved.</p>
         </div>
       </div>
     </footer>

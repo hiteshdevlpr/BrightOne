@@ -1,11 +1,23 @@
 import type { Metadata } from "next";
-import { League_Spartan } from "next/font/google";
+import { League_Spartan, Abril_Fatface, Montserrat } from "next/font/google";
 import "./globals.css";
 
 const leagueSpartan = League_Spartan({ 
   subsets: ["latin"],
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
   variable: "--font-league-spartan"
+});
+
+const abrilFatface = Abril_Fatface({ 
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-abril-fatface"
+});
+
+const montserrat = Montserrat({ 
+  subsets: ["latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-montserrat"
 });
 
 export const metadata: Metadata = {
@@ -27,7 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${leagueSpartan.className} ${leagueSpartan.variable}`}>
+      <body className={`${leagueSpartan.className} ${leagueSpartan.variable} ${abrilFatface.variable} ${montserrat.variable}`}>
         <div className="min-h-screen bg-white">
           {children}
         </div>

@@ -18,6 +18,9 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['var(--font-league-spartan)', 'sans-serif'],
+        heading: ['var(--font-montserrat)', 'sans-serif'],
+        montserrat: ['var(--font-montserrat)', 'sans-serif'],
+        abril: ['var(--font-abril-fatface)', 'serif'],
       },
       colors: {
         background: "var(--background)",
