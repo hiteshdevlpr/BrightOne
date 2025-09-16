@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://brightone:${DB_PASSWORD}@db:5432/brightone_db
@@ -19,7 +19,6 @@ services:
     networks:
       - brightone-network
     restart: unless-stopped
-    user: "1001:1001"
 
   # PostgreSQL Database
   db:
