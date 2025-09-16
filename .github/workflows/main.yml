@@ -29,7 +29,7 @@ jobs:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          timeout: 5m
+          timeout: 3m
           script: |
             cd /home/brightone/website
             
@@ -41,34 +41,19 @@ jobs:
             NEXTAUTH_URL=https://brightone.ca
             EOF
             
-            echo "�� Stopping existing containers..."
+            echo " Stopping existing containers..."
             sudo docker-compose -f docker-compose.prod.yml down || true
             
-            echo "🔍 Aggressive port cleanup..."
-            # Kill the specific process we saw (PID 138188)
-            sudo kill -9 138188 2>/dev/null || echo "PID 138188 not found"
-            
-            # Multiple methods to kill processes on port 3000
-            sudo lsof -ti:3000 | xargs -r sudo kill -9 || echo "No processes found with lsof"
-            sudo fuser -k 3000/tcp || echo "No processes found with fuser"
+            echo "🔍 Killing processes on ports 3000 and 3001..."
+            # Kill processes on both ports
+            sudo lsof -ti:3000 | xargs -r sudo kill -9 || echo "No processes on port 3000"
+            sudo lsof -ti:3001 | xargs -r sudo kill -9 || echo "No processes on port 3001"
+            sudo fuser -k 3000/tcp || echo "No processes on port 3000"
+            sudo fuser -k 3001/tcp || echo "No processes on port 3001"
             
             # Kill any Node.js processes
             sudo pkill -f "node" || echo "No node processes found"
             sudo pkill -f "next" || echo "No next processes found"
-            
-            # Wait for processes to die
-            sleep 3
-            
-            echo "🔍 Verifying port 3000 is free..."
-            if sudo lsof -i :3000; then
-              echo "❌ Port 3000 is still in use, showing details:"
-              sudo lsof -i :3000
-              echo "Force killing remaining processes..."
-              sudo lsof -ti:3000 | xargs -r sudo kill -9
-              sleep 2
-            else
-              echo "✅ Port 3000 is free"
-            fi
             
             echo "🧹 Cleaning up Docker..."
             sudo docker system prune -f || true
@@ -105,10 +90,10 @@ jobs:
             echo "📊 Checking service status..."
             sudo docker-compose -f docker-compose.prod.yml ps
             
-            echo "🔍 Testing application health..."
+            echo "🔍 Testing application health on port 3001..."
             for i in {1..6}; do
               echo "Health check attempt $i/6..."
-              if curl -f http://localhost:3000/api/admin/dashboard > /dev/null 2>&1; then
+              if curl -f http://localhost:3001/api/admin/dashboard > /dev/null 2>&1; then
                 echo "✅ Application is healthy!"
                 exit 0
               fi
