@@ -50,8 +50,9 @@ jobs:
             sudo lsof -ti:3001 | xargs -r sudo kill -9 || echo "No processes on port 3001"
 
             echo "🧹 Killing leftover Node.js/Next.js processes..."
-            sudo pkill -f "node" || echo "No node processes found"
-            sudo pkill -f "next" || echo "No next processes found"
+            ps aux | grep "node" | grep "/home/brightone/website" | awk '{print $2}' | xargs -r sudo kill -9 || echo "No app node processes found"
+            ps aux | grep "next" | grep "/home/brightone/website" | awk '{print $2}' | xargs -r sudo kill -9 || echo "No app next processes found"
+
 
             echo "🧹 Cleaning up Docker..."
             sudo docker system prune -f || true
