@@ -208,10 +208,11 @@ export default function BookingPage() {
       description: 'Perfect for quick listings and budget-conscious clients',
       features: [
         'Up to 20 high-quality photos',
-        'Basic photo editing',
+        'Premium photo editing & retouching',
         '24-48 hour delivery',
         'Mobile-optimized images',
-        'Email delivery'
+        'Email delivery',
+        'Listing Website'
       ],
       popular: false
     },
@@ -222,12 +223,13 @@ export default function BookingPage() {
       description: 'Our most popular choice for serious real estate professionals',
       features: [
         'Up to 35 high-quality photos',
-        'Professional photo editing',
         'Virtual Staging (4 Photos)',
         'Aerial photography (if applicable)',
-        '24-hour delivery',
+        '24-hour delivery of photos',
         'Cloud storage access',
-        'Social media ready images'
+        'Social media ready images',
+        'Listing Website',
+        'Property Social Media Reel'
       ],
       popular: true
     },
@@ -238,14 +240,13 @@ export default function BookingPage() {
       description: 'Complete marketing solution for luxury properties',
       features: [
         'Up to 50 high-quality photos',
-        'Premium photo editing & retouching',
         'Virtual Staging (7 Photos)',
         'Aerial photography & drone video',
         '3D virtual tour',
-        'Cinematic property video (2-3 min)',
-        'Same-day delivery',
-        'Priority support',
-        'Marketing consultation'
+        'Cinematic property video (1-2 min)',
+        'Listing Website',
+        'Property Social Media Reel',
+        'Agent Promotion Video'
       ],
       popular: false
     }
@@ -391,7 +392,7 @@ export default function BookingPage() {
               >
                 {tier.popular && (
                   <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
-                    <span className="bg-black text-white px-6 py-2 rounded-md border-x-0 border-y-2 border-white text-sm font-semibold font-montserrat shadow-lg">
+                    <span className="bg-black text-white px-6 py-2 rounded-md border-x-0 border-y-2 border-white text-sm font-light font-montserrat shadow-lg">
                       Most Popular
                     </span>
                   </div>

@@ -3,7 +3,6 @@ import Navigation from './components/Navigation';
 import Footer from './components/Footer';
 import ServicesOverview from './components/ServicesOverview';
 import RecentWork from './components/RecentWork';
-import ServicesStrip from './components/ServicesStrip';
 
 export default function Home() {
   return (
