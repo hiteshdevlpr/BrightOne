@@ -32,7 +32,7 @@ jobs:
           timeout: 3m
           script: |
             cd /home/brightone/website
-            
+
             echo "📝 Creating .env file..."
             cat > .env << 'EOF'
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
@@ -40,23 +40,22 @@ jobs:
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             NEXTAUTH_URL=https://brightone.ca
             EOF
-            
-            echo " Stopping existing containers..."
+
+            echo "🛑 Stopping existing containers..."
             sudo docker-compose -f docker-compose.prod.yml down || true
-            
+
             echo "🔍 Killing processes on ports 3000 and 3001..."
-            # Kill processes on both ports
+            # Kill processes using lsof (safer than fuser)
             sudo lsof -ti:3000 | xargs -r sudo kill -9 || echo "No processes on port 3000"
             sudo lsof -ti:3001 | xargs -r sudo kill -9 || echo "No processes on port 3001"
-            sudo fuser -k 3000/tcp || echo "No processes on port 3000"
-            sudo fuser -k 3001/tcp || echo "No processes on port 3001"
-            
-            # Kill any Node.js processes
+
+            echo "🧹 Killing leftover Node.js/Next.js processes..."
             sudo pkill -f "node" || echo "No node processes found"
             sudo pkill -f "next" || echo "No next processes found"
-            
+
             echo "🧹 Cleaning up Docker..."
             sudo docker system prune -f || true
+
 
       - name: Build and start services
         uses: appleboy/ssh-action@v1
