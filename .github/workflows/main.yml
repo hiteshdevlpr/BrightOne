@@ -43,8 +43,27 @@ jobs:
             echo "�� Stopping existing containers..."
             sudo docker-compose -f docker-compose.prod.yml down || true
             
-            echo "�� Checking port 3000..."
-            sudo fuser -k 3000/tcp || echo "Port 3000 is free"
+            echo "�� Checking what's using port 3000..."
+            # Multiple methods to kill processes on port 3000
+            sudo lsof -ti:3000 | xargs -r sudo kill -9 || echo "No processes found with lsof"
+            sudo fuser -k 3000/tcp || echo "No processes found with fuser"
+            sudo netstat -tulpn | grep :3000 | awk '{print $7}' | cut -d'/' -f1 | xargs -r sudo kill -9 || echo "No processes found with netstat"
+            
+            # Kill any Node.js processes
+            sudo pkill -f "node" || echo "No node processes found"
+            sudo pkill -f "next" || echo "No next processes found"
+            
+            # Wait a moment for processes to die
+            sleep 5
+            
+            echo "�� Verifying port 3000 is free..."
+            if sudo lsof -i :3000; then
+              echo "❌ Port 3000 is still in use"
+              sudo lsof -i :3000
+              exit 1
+            else
+              echo "✅ Port 3000 is free"
+            fi
             
             echo "🧹 Cleaning up Docker..."
             sudo docker system prune -f || true
