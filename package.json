@@ -27,7 +27,10 @@
     "@types/redis": "^4.0.11",
     "typescript": "^5",
     "autoprefixer": "^10.4.21",
-    "tailwindcss": "^3.4.17"
+    "tailwindcss": "^3.4.17",
+    "@aws-sdk/client-ses": "^3.490.0",
+    "nodemailer": "^6.9.8",
+    "@types/nodemailer": "^6.4.14"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
