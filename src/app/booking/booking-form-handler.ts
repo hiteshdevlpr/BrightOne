@@ -1,6 +1,7 @@
-// Updated booking form handler with API integration
+// Updated booking form handler with API integration and email notifications
 import { submitBooking } from '@/lib/booking-api';
 import { validateBookingForm } from '@/lib/validation';
+import { EmailService, BookingEmailData } from '@/lib/email-service';
 
 export interface BookingFormData {
   name: string;
@@ -14,6 +15,10 @@ export interface BookingFormData {
   timeline?: string;
   serviceTier?: string;
   message?: string;
+  preferredDate?: string;
+  preferredTime?: string;
+  packageType?: string;
+  totalPrice?: string;
 }
 
 export async function handleBookingSubmission(
@@ -34,9 +39,38 @@ export async function handleBookingSubmission(
   setErrors([]);
 
   try {
+    // Submit booking to database
     const response = await submitBooking(formData);
     
     if (response.success) {
+      // Send email notifications
+      const emailData: BookingEmailData = {
+        customerName: formData.name,
+        customerEmail: formData.email,
+        customerPhone: formData.phone || 'Not provided',
+        serviceType: formData.serviceType,
+        propertyAddress: formData.propertyAddress,
+        preferredDate: formData.preferredDate || 'Not specified',
+        preferredTime: formData.preferredTime || 'Not specified',
+        message: formData.message || '',
+        packageType: formData.packageType || formData.serviceTier || 'Standard',
+        totalPrice: formData.totalPrice || 'To be determined',
+      };
+
+      // Send emails in parallel (don't wait for them to complete)
+      Promise.all([
+        EmailService.sendBookingConfirmationToCustomer(emailData),
+        EmailService.sendBookingNotificationToAdmin(emailData)
+      ]).then(([customerEmailSent, adminEmailSent]) => {
+        console.log('Email notifications:', {
+          customerEmailSent,
+          adminEmailSent
+        });
+      }).catch((emailError) => {
+        console.error('Email sending failed:', emailError);
+        // Don't fail the booking submission if emails fail
+      });
+
       setIsSubmitted(true);
     } else {
       setErrors([response.error || 'Failed to submit booking']);

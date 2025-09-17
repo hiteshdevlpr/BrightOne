@@ -106,14 +106,14 @@ export default function ContactPage() {
       {/* Contact Section */}
       <section className="section-padding bg-gray-900">
         <div className="container-custom">
-          <div className="text-center mb-16">
+          {/* <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 font-heading">
               <span className="bright-text-shadow-dark">Contact</span> <span className="bright-text-shadow text-black">Us</span>
             </h2>
             <p className="text-xl text-white/80 font-montserrat max-w-3xl mx-auto">
               Have questions about our services? We&apos;d love to hear from you. Send us a message and we&apos;ll respond as soon as possible.
             </p>
-          </div>
+          </div> */}
           
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Contact Form */}

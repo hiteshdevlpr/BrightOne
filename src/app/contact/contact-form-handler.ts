@@ -1,6 +1,7 @@
-// Updated contact form handler with API integration
+// Updated contact form handler with API integration and email notifications
 import { submitContact } from '@/lib/booking-api';
 import { validateContactForm } from '@/lib/validation';
+import { EmailService, ContactEmailData } from '@/lib/email-service';
 
 export interface ContactFormData {
   name: string;
@@ -28,9 +29,33 @@ export async function handleContactSubmission(
   setErrors([]);
 
   try {
+    // Submit contact message to database
     const response = await submitContact(formData);
     
     if (response.success) {
+      // Send email notifications
+      const emailData: ContactEmailData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || 'Not provided',
+        subject: formData.subject,
+        message: formData.message,
+      };
+
+      // Send emails in parallel (don't wait for them to complete)
+      Promise.all([
+        EmailService.sendContactConfirmationToCustomer(emailData),
+        EmailService.sendContactNotificationToAdmin(emailData)
+      ]).then(([customerEmailSent, adminEmailSent]) => {
+        console.log('Email notifications:', {
+          customerEmailSent,
+          adminEmailSent
+        });
+      }).catch((emailError) => {
+        console.error('Email sending failed:', emailError);
+        // Don't fail the contact submission if emails fail
+      });
+
       setIsSubmitted(true);
     } else {
       setErrors([response.error || 'Failed to submit contact message']);

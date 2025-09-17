@@ -286,7 +286,7 @@ export default function BookingPage() {
     return (
       <div className="min-h-screen">
         <Navigation />
-        <div className="pt-32 pb-16 bg-gray-900">
+        <div className="pt- pb-16 bg-gray-900">
           <div className="container-custom">
             <div className="max-w-2xl mx-auto text-center">
               <div className="bg-gray-800 rounded-2xl shadow-xl p-12 border border-gray-700">
@@ -400,7 +400,7 @@ export default function BookingPage() {
                         {tier.name}
                       </h3>
                       <div className="text-4xl lg:text-5xl font-bold text-white mb-4 font-heading">
-                        {tier.price}
+                        <span>Starting at</span> {tier.price}
                       </div>
                       <p className="text-gray-300 text-lg font-montserrat leading-relaxed">
                         {tier.description}
