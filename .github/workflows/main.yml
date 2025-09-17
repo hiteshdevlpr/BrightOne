@@ -79,10 +79,10 @@ jobs:
             echo "📊 Checking service status..."
             sudo docker-compose -f docker-compose.prod.yml ps
             
-            echo "🔍 Testing application health on port 3001..."
+            echo "🔍 Testing application health on port 3000..."
             for i in {1..6}; do
               echo "Health check attempt $i/6..."
-              if curl -f http://localhost:3001/api/admin/dashboard > /dev/null 2>&1; then
+              if curl -f http://localhost:3000/api/admin/dashboard > /dev/null 2>&1; then
                 echo "✅ Application is healthy!"
                 exit 0
               fi
