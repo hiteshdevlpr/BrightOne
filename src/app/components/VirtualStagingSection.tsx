@@ -13,10 +13,9 @@ export default function VirtualStagingSection() {
           <div className="space-y-6 md:space-y-8 lg:space-y-10 order-2 lg:order-1">
             <div className="space-y-3 md:space-y-4">
               <h2 className="text-3xl md:text-4xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold text-gray-900 uppercase leading-tight">
-                Virtual Staging
-                <span className="block text-gray-600">Services</span>
+                <span className="text-white bright-text-shadow-dark ">Virtual </span> 
+                <span className="text-black "> Staging</span>
               </h2>
-              <div className="w-16 md:w-20 lg:w-24 h-1 bg-gradient-to-r from-blue-600 to-purple-600"></div>
             </div>
 
             <div className="space-y-4 md:space-y-6 text-base md:text-lg lg:text-lg xl:text-xl text-gray-700 leading-relaxed">

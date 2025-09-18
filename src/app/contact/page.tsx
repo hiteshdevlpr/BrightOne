@@ -39,37 +39,6 @@ export default function ContactPage() {
     );
   };
 
-  if (isSubmitted) {
-    return (
-      <div className="min-h-screen">
-        <Navigation />
-        <div className="pt-32 pb-16 bg-gray-900">
-          <div className="container-custom">
-            <div className="max-w-2xl mx-auto text-center">
-              <div className="bg-gray-800 rounded-2xl shadow-xl p-12 border border-gray-700">
-                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h1 className="text-3xl font-bold text-white mb-4 font-heading">Message Sent!</h1>
-                <p className="text-lg text-white/80 mb-8 font-montserrat">
-                  Thank you for contacting us! We&apos;ve received your message and will get back to you within 24 hours.
-                </p>
-                <button 
-                  onClick={() => setIsSubmitted(false)}
-                  className="bg-white text-gray-900 py-3 px-8 rounded-lg font-semibold font-montserrat hover:bg-gray-100 transition-colors duration-300 border-x-0 border-y-2 border-white"
-                >
-                  Send Another Message
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen">
@@ -103,7 +72,32 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* Contact Section */}
+      {/* Success Message Section */}
+      {isSubmitted ? (
+        <section className="py-16 bg-gray-900">
+          <div className="container-custom">
+            <div className="max-w-2xl mx-auto text-center">
+              <div className="bg-gray-800 rounded-2xl shadow-xl p-12 border border-gray-700">
+                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-4 font-heading">Message Sent!</h2>
+                <p className="text-lg text-white/80 mb-8 font-montserrat">
+                  Thank you for contacting us! We&apos;ve received your message and will get back to you within 24 hours.
+                </p>
+                <button 
+                  onClick={() => setIsSubmitted(false)}
+                  className="bg-white text-gray-900 py-3 px-8 rounded-lg font-semibold font-montserrat hover:bg-gray-100 transition-colors duration-300 border-x-0 border-y-2 border-white"
+                >
+                  Send Another Message
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : (
       <section className="section-padding bg-gray-900">
         <div className="container-custom">
           {/* <div className="text-center mb-16">
@@ -243,7 +237,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h4 className="text-xl font-semibold text-white mb-2 font-heading">Email</h4>
-                    <p className="text-white/90 text-lg font-montserrat">contact@brightone.ca</p>
+                    <a href="mailto:contact@brightone.ca" className="text-white/90 text-lg font-montserrat">contact@brightone.ca</a>
                     <p className="text-sm text-white/60 font-montserrat">We respond within 24 hours</p>
                   </div>
                 </div>
@@ -256,8 +250,12 @@ export default function ContactPage() {
                     </svg>
                   </div>
                   <div>
-                    <h4 className="text-xl font-semibold text-white mb-2 font-heading">Location</h4>
+                    <h4 className="text-xl font-semibold text-white mb-2 font-heading">Locations Served</h4>
                     <p className="text-white/90 text-lg font-montserrat">Greater Toronto Area, ON</p>
+                    <p className="text-white/90 text-lg font-montserrat">Durham Region, ON</p>
+                    <p className="text-white/90 text-lg font-montserrat">Peel Region, ON</p>
+                    <p className="text-white/90 text-lg font-montserrat">York Region, ON</p>
+                    <p className="text-white/90 text-lg font-montserrat">Kawartha Lakes, ON</p>
                     <p className="text-sm text-white/60 font-montserrat">Serving GTA and surrounding areas</p>
                   </div>
                 </div>
@@ -272,7 +270,7 @@ export default function ContactPage() {
             </div>
           </div>
         </div>
-      </section>
+      </section>)}
 
       <Footer />
     </div>

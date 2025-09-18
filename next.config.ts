@@ -15,11 +15,8 @@ const nextConfig: NextConfig = {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
   
-  // Experimental features
-  experimental: {
-    // Enable server components
-    serverComponentsExternalPackages: ['pg'],
-  },
+  // External packages for server components
+  serverExternalPackages: ['pg'],
 };
 
 export default nextConfig;
