@@ -1,4 +1,4 @@
-import AnimatedHeroText from './components/AnimatedHeroText';
+import HeroCarousel from './components/HeroCarousel';
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
 import ServicesOverview from './components/ServicesOverview';
@@ -10,13 +10,7 @@ export default function Home() {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br overflow-hidden from-blue-50 to-purple-50 min-h-screen">
-        <div className="absolute inset-0">
-          <video src="/videos/hero-bg.mp4" autoPlay muted loop className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-black bg-opacity-50"></div>
-        </div>
-        <AnimatedHeroText />
-      </section>
+      <HeroCarousel />
 
       {/* Services Overview Section */}
       <ServicesOverview />
