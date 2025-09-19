@@ -8,6 +8,12 @@ const sesClient = new SESClient({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
   },
 });
+console.log("APP_LOG:: SES Client initialized");
+console.log("APP_LOG:: AWS_REGION", process.env.AWS_REGION);
+console.log("APP_LOG:: AWS_ACCESS_KEY_ID", process.env.AWS_ACCESS_KEY_ID);
+console.log("APP_LOG:: AWS_SECRET_ACCESS_KEY", process.env.AWS_SECRET_ACCESS_KEY);
+console.log("APP_LOG:: FROM_EMAIL", process.env.FROM_EMAIL);
+console.log("APP_LOG:: ADMIN_EMAIL", process.env.ADMIN_EMAIL);
 
 export interface EmailData {
   to: string;
