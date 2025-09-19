@@ -30,7 +30,7 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    console.log("APP_LOG:: Form Submitted formData", formData);
     await handleContactSubmission(
       formData,
       setIsSubmitting,
