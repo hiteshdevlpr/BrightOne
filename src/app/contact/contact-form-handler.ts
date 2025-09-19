@@ -19,7 +19,7 @@ export async function handleContactSubmission(
 ) {
   // Validate form data
   const validationErrors = validateContactForm(formData);
-  
+  console.log("APP_LOG:: Validation Errors", validationErrors);
   if (validationErrors.length > 0) {
     setErrors(validationErrors.map(error => error.message));
     return;
@@ -27,13 +27,14 @@ export async function handleContactSubmission(
 
   setIsSubmitting(true);
   setErrors([]);
-
+  console.log("APP_LOG:: Submitting contact message to database");
   try {
     // Submit contact message to database
     const response = await submitContact(formData);
-    
+    console.log("APP_LOG:: Contact message submitted to database", response);
     if (response.success) {
       // Send email notifications
+      console.log("APP_LOG:: Sending email notifications");
       const emailData: ContactEmailData = {
         name: formData.name,
         email: formData.email,
@@ -41,18 +42,18 @@ export async function handleContactSubmission(
         subject: formData.subject,
         message: formData.message,
       };
-
+      console.log("APP_LOG:: Email data", emailData);
       // Send emails in parallel (don't wait for them to complete)
       Promise.all([
         EmailService.sendContactConfirmationToCustomer(emailData),
         EmailService.sendContactNotificationToAdmin(emailData)
       ]).then(([customerEmailSent, adminEmailSent]) => {
-        console.log('Email notifications:', {
+        console.log("APP_LOG:: Email notifications:", {
           customerEmailSent,
           adminEmailSent
         });
       }).catch((emailError) => {
-        console.error('Email sending failed:', emailError);
+        console.error("APP_LOG:: Email sending failed:", emailError);
         // Don't fail the contact submission if emails fail
       });
 
