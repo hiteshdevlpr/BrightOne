@@ -36,7 +36,7 @@ jobs:
             echo "📝 Creating .env file..."
             cat > .env << 'EOF'
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }}
+            NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             NEXTAUTH_URL=https://brightone.ca
             AWS_REGION=${{ secrets.AWS_REGION }}
@@ -44,6 +44,7 @@ jobs:
             AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
             FROM_EMAIL=${{ secrets.FROM_EMAIL }}
             ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
+            DATABASE_URL=postgresql://brightone:${{ secrets.DB_PASSWORD }}@db:5432/brightone_db
             EOF
 
             echo "🛑 Stopping existing containers..."
