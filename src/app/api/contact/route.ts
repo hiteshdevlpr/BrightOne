@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, query } from '@/lib/database';
+import { handleContactSubmissionServer } from '@/lib/server-form-handlers';
 
 // POST /api/contact - Create a new contact message
 export async function POST(request: NextRequest) {
@@ -45,31 +46,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create contact message in database
-    const message = await db.createContactMessage({
-      name: body.name.trim(),
-      email: body.email.trim().toLowerCase(),
-      phone: body.phone?.trim() || undefined,
-      subject: body.subject.trim(),
-      message: body.message.trim(),
+    // Use server-side form handler to handle submission and emails
+    const result = await handleContactSubmissionServer({
+      name: body.name,
+      email: body.email,
+      phone: body.phone,
+      subject: body.subject,
+      message: body.message,
     });
 
-    // Return success response
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Contact message submitted successfully',
-        contact: {
-          id: message.id,
-          name: message.name,
-          email: message.email,
-          subject: message.subject,
-          status: message.status,
-          createdAt: message.created_at,
+    if (result.success) {
+      return NextResponse.json(
+        {
+          success: true,
+          message: 'Contact message submitted successfully',
+          contact: result.contact,
         },
-      },
-      { status: 201 }
-    );
+        { status: 201 }
+      );
+    } else {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 400 }
+      );
+    }
 
   } catch (error) {
     console.error('Contact message creation error:', error);
