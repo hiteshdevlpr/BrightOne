@@ -188,7 +188,7 @@ export default function HeroCarousel() {
               <div className="grid grid-cols-2 gap-12 items-center h-full">
                 {/* Left side - Image */}
                 <div className="flex items-center justify-center">
-                  <div className="relative w-full h-[70vh] rounded-lg overflow-hidden">
+                  <div className="relative w-full h-[90vh] rounded-lg overflow-hidden">
                     <Image
                       src={heroSlide1.src}
                       alt={currentSection.title}
