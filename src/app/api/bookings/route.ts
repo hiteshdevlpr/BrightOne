@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, query } from '@/lib/database';
+import { handleBookingSubmissionServer } from '@/lib/server-form-handlers';
 
 // POST /api/bookings - Create a new booking
 export async function POST(request: NextRequest) {
@@ -37,37 +38,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create booking in database
-    const booking = await db.createBooking({
-      name: body.name.trim(),
-      email: body.email.trim().toLowerCase(),
-      phone: body.phone?.trim() || undefined,
+    // Use server-side form handler to handle submission and emails
+    const result = await handleBookingSubmissionServer({
+      name: body.name,
+      email: body.email,
+      phone: body.phone,
       serviceType: body.serviceType,
-      propertyAddress: body.propertyAddress.trim(),
-      propertyType: body.propertyType || undefined,
-      propertySize: body.propertySize || undefined,
-      budget: body.budget || undefined,
-      timeline: body.timeline || undefined,
-      serviceTier: body.serviceTier || undefined,
-      message: body.message?.trim() || undefined,
+      propertyAddress: body.propertyAddress,
+      propertyType: body.propertyType,
+      propertySize: body.propertySize,
+      budget: body.budget,
+      timeline: body.timeline,
+      serviceTier: body.serviceTier,
+      message: body.message,
+      preferredDate: body.preferredDate,
+      preferredTime: body.preferredTime,
+      packageType: body.packageType,
+      totalPrice: body.totalPrice,
     });
 
-    // Return success response
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Booking request submitted successfully',
-        booking: {
-          id: booking.id,
-          name: booking.name,
-          email: booking.email,
-          serviceType: booking.service_type,
-          status: booking.status,
-          createdAt: booking.created_at,
+    if (result.success) {
+      return NextResponse.json(
+        {
+          success: true,
+          message: 'Booking request submitted successfully',
+          booking: result.booking,
         },
-      },
-      { status: 201 }
-    );
+        { status: 201 }
+      );
+    } else {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 400 }
+      );
+    }
 
   } catch (error) {
     console.error('Booking creation error:', error);
