@@ -78,16 +78,16 @@ export class EmailTestService {
 }
 
 // Example usage in a test script or API endpoint
-/*
+
 // In a test API endpoint (e.g., /api/test-emails)
-import { EmailTestService } from '@/lib/email-test';
+// import { EmailTestService } from '@/lib/email-test';
 
 export async function GET() {
   try {
     await EmailTestService.testAllEmails();
     return Response.json({ success: true, message: 'Email tests completed' });
-  } catch (error) {
+  } catch (error: any) {
     return Response.json({ success: false, error: error.message }, { status: 500 });
   }
 }
-*/
+

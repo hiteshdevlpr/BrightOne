@@ -39,7 +39,7 @@ export interface ContactEmailData {
 
 export class EmailService {
   private static readonly FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@brightone.ca';
-  private static readonly ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@brightone.ca';
+  private static readonly ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'hitesh@brightone.ca';
 
   /**
    * Send email using Amazon SES
