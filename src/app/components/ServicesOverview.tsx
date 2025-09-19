@@ -98,35 +98,35 @@ export default function ServicesOverview() {
     <section className="py-16 md:py-24 bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl lg:text-6xl space-x-2 font-bold text-black mb-6">
+        <div className="text-center mb-8 sm:mb-12 md:mb-16">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl space-x-2 font-bold text-black mb-6">
             <span className="bright-text-shadow pr-3">Our</span> 
             <span className="text-white">Services</span>
           </h2>
-          <p className="text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed font-montserrat">
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed font-montserrat">
             Comprehensive photography and marketing solutions designed to showcase your properties in the best possible light
           </p>
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
           {services.map((service) => (
             <div
               key={service.id}
-              className="group bg-transparrent rounded-md shadow-2xl hover:bg-gray-950 hover:shadow-3xl transition-all duration-500 p-6 border"
+              className="group bg-transparrent rounded-md shadow-2xl hover:bg-gray-950 hover:shadow-3xl transition-all duration-500 p-3 sm:p-4 md:p-6 border"
             >
               {/* Icon */}
-              <div className="w-16 h-16 mx-auto mb-6 text-gray-300 group-hover:text-white transition-colors duration-300">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 mx-auto mb-3 sm:mb-4 md:mb-6 text-gray-300 group-hover:text-white transition-colors duration-300">
                 {service.icon}
               </div>
 
               {/* Service Name */}
-              <h3 className="text-xl uppercase text-gray-300 mb-4 text-center group-hover:text-white transition-colors duration-300">
+              <h3 className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl uppercase text-gray-300 mb-2 sm:mb-3 md:mb-4 text-center group-hover:text-white transition-colors duration-300">
                 {service.name}
               </h3>
 
               {/* Description */}
-              <p className="text-gray-300 text-center leading-relaxed group-hover:text-white transition-colors duration-300">
+              <p className="text-xs sm:text-sm md:text-base text-gray-300 text-center leading-relaxed group-hover:text-white transition-colors duration-300">
                 {service.description}
               </p>
             </div>
@@ -134,12 +134,12 @@ export default function ServicesOverview() {
         </div>
 
         {/* Call to Action */}
-        <div className="text-center mt-16">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/services" className="btn-primary font-light border-white border-y font-montserrat">
+        <div className="text-center mt-8 sm:mt-12 md:mt-16">
+          <div className="flex flex-row gap-2 sm:gap-4 justify-center">
+            <a href="/services" className="btn-primary font-light border-white border-y font-montserrat text-xs sm:text-sm md:text-base px-2 sm:px-4 md:px-6 py-1.5 sm:py-3 md:py-4">
               View All Services
             </a>
-            <a href="/booking" className="btn-secondary font-light font-montserrat">
+            <a href="/booking" className="btn-secondary font-light font-montserrat text-xs sm:text-sm md:text-base px-2 sm:px-4 md:px-6 py-1.5 sm:py-3 md:py-4">
               Book Now
             </a>
           </div>

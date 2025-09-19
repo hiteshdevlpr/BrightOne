@@ -14,19 +14,19 @@ export default function Footer() {
           <div>
             <h4 className="text-base lg:text-lg font-semibold mb-4">Services</h4>
             <ul className="space-y-2 text-gray-400">
-              <li><Link href="/" className="hover:text-white transition-colors text-sm lg:text-base">Real Estate Photography</Link></li>
-              <li><Link href="/" className="hover:text-white transition-colors text-sm lg:text-base">Real Estate Videography</Link></li>
-              <li><Link href="/" className="hover:text-white transition-colors text-sm lg:text-base">3D Virtual Tours</Link></li>
-              <li><Link href="/" className="hover:text-white transition-colors text-sm lg:text-base">Virtual Staging</Link></li>
+              <li><Link href="/" className="hover:text-white transition-colors text-sm lg:text-base font-montserrat">Real Estate Photography</Link></li>
+              <li><Link href="/" className="hover:text-white transition-colors text-sm lg:text-base font-montserrat">Real Estate Videography</Link></li>
+              <li><Link href="/" className="hover:text-white transition-colors text-sm lg:text-base font-montserrat">3D Virtual Tours</Link></li>
+              <li><Link href="/" className="hover:text-white transition-colors text-sm lg:text-base font-montserrat">Virtual Staging</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="text-base lg:text-lg font-semibold mb-4">Company</h4>
             <ul className="space-y-2 text-gray-400">
-              <li><Link href="/about" className="hover:text-white transition-colors text-sm lg:text-base">About Us</Link></li>
-              <li><Link href="/portfolio" className="hover:text-white transition-colors text-sm lg:text-base">Portfolio</Link></li>
-              <li><Link href="/booking" className="hover:text-white transition-colors text-sm lg:text-base">Book Now</Link></li>
-              <li><Link href="/contact" className="hover:text-white transition-colors text-sm lg:text-base">Contact</Link></li>
+              <li><Link href="/about" className="hover:text-white transition-colors text-sm lg:text-base font-montserrat">About Us</Link></li>
+              <li><Link href="/portfolio" className="hover:text-white transition-colors text-sm lg:text-base font-montserrat">Portfolio</Link></li>
+              <li><Link href="/booking" className="hover:text-white transition-colors text-sm lg:text-base font-montserrat">Book Now</Link></li>
+              <li><Link href="/contact" className="hover:text-white transition-colors text-sm lg:text-base font-montserrat">Contact</Link></li>
             </ul>
           </div>
           <div>

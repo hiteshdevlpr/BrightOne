@@ -66,7 +66,7 @@ export default function AnimatedHeroText() {
         </h1>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link className="btn-primary font-light font-montserrat text-base sm:text-lg lg:text-xl px-6 sm:px-8 py-3 sm:py-4" href={'/booking'}>
+          <Link className="btn-primary font-light font-montserrat text-xs sm:text-lg lg:text-xl px-3 sm:px-8 py-1.5 sm:py-4" href={'/booking'}>
             Book Your Shoot
           </Link>
           {/* <Link href="#portfolio" className="btn-secondary text-center text-lg px-8 py-4">

@@ -6,7 +6,7 @@ import service2 from '@/assets/images/staging-before.jpg';
 
 export default function VirtualStagingSection() {
   return (
-    <section className="py-12 md:py-16 lg:py-20 xl:py-24 bg-white">
+    <section id="virtual-staging" className="py-12 md:py-16 lg:py-20 xl:py-24 bg-white">
       <div className="container-custom px-4 md:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-8 md:gap-12 lg:gap-16 xl:gap-20 items-center">
           {/* Left Side - Text Content */}
@@ -57,7 +57,7 @@ export default function VirtualStagingSection() {
             <div className="pt-2 md:pt-4">
               <a 
                 href="/services" 
-                className="btn-primary inline-block text-sm md:text-base lg:text-lg py-3 px-6 md:py-4 md:px-8"
+                className="btn-primary font-light bg-white text-black border-black border-y font-montserrat inline-block text-xs md:text-base lg:text-lg py-1.5 px-3 md:py-2 md:px-8"
               >
                 Learn More
               </a>

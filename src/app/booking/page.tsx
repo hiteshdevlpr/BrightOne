@@ -294,7 +294,7 @@ export default function BookingPage() {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden h-[70vh] pt-60">
+      <section className="relative overflow-hidden h-[50vh] sm:h-[70vh] pt-20 sm:pt-20">
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
@@ -309,19 +309,19 @@ export default function BookingPage() {
 
         {/* Content */}
         <div className="relative z-10 flex items-center justify-center h-full">
-          <div className="text-center px-4 max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight font-heading">
+          <div className="text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight font-heading">
               <span className="bright-text-shadow text-black">Book Your</span>
               <span className="bright-text-shadow-dark"> Session</span>
             </h1>
-            <p className="text-2xl text-white/90 mb-8 leading-relaxed font-montserrat">
+            <p className="text-sm sm:text-lg md:text-xl lg:text-2xl text-white/90 mb-6 sm:mb-8 leading-relaxed font-montserrat">
               Get a personalized quote and book your professional real estate photography session
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="#booking-form" className="btn-primary font-light border-x-0 border-y-2 border-white">
+            <div className="flex flex-row sm:flex-row gap-3 sm:gap-4 justify-center">
+              <a href="#booking-form" className="btn-primary font-light font-montserrat border-x-0 border-y-2 border-white text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
                 Start Booking
               </a>
-              <a href="/contact" className="btn-secondary font-light">
+              <a href="/contact" className="btn-secondary font-light font-montserrat text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
                 Ask Questions
               </a>
             </div>
@@ -331,29 +331,29 @@ export default function BookingPage() {
 
       {/* Success Message Section */}
       {isSubmitted ? (
-        <section className="py-16 bg-gray-900">
+        <section className="py-12 sm:py-16 bg-gray-900">
           <div className="container-custom">
             <div className="max-w-2xl mx-auto text-center">
-              <div className="bg-gray-800 rounded-2xl shadow-xl p-12 border border-gray-700">
-                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8 lg:p-12 border border-gray-700">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                  <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h2 className="text-3xl font-bold text-white mb-4 font-heading">Booking Submitted!</h2>
-                <p className="text-lg text-white/80 mb-8 font-montserrat">
+                <h2 className="text-xl sm:text-3xl font-bold text-white mb-3 sm:mb-4 font-heading">Booking Submitted!</h2>
+                <p className="text-sm sm:text-lg text-white/80 mb-6 sm:mb-8 font-montserrat">
                   Thank you for your booking request! We&apos;ve received your information and will get back to you within 24 hours with a personalized quote and next steps.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <div className="flex flex-row sm:flex-row gap-3 sm:gap-4 justify-center">
                   <button
                     onClick={() => setIsSubmitted(false)}
-                    className="bg-white text-gray-900 py-3 px-8 rounded-lg font-semibold font-montserrat hover:bg-gray-100 transition-colors duration-300 border-x-0 border-y-2 border-white"
+                    className="bg-white text-gray-900 py-1.5 sm:py-3 px-4 sm:px-8 rounded-lg font-semibold font-montserrat hover:bg-gray-100 transition-colors duration-300 border-x-0 border-y-2 border-white text-xs sm:text-base"
                   >
                     Submit Another Booking
                   </button>
                   <Link
                     href="/"
-                    className="bg-transparent text-white py-3 px-8 rounded-lg font-semibold font-montserrat hover:bg-white/10 transition-colors duration-300 border border-white"
+                    className="bg-transparent text-white py-1.5 sm:py-3 px-4 sm:px-8 rounded-lg font-semibold font-montserrat hover:bg-white/10 transition-colors duration-300 border border-white text-xs sm:text-base"
                   >
                     Back to Home
                   </Link>
@@ -364,59 +364,59 @@ export default function BookingPage() {
         </section>
       ) : (
         <>
-          <section className="py-16 md:py-24 lg:py-32 bg-gray-900">
-            <div className="container-custom">
-              <div className="text-center mb-16">
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 font-heading">
+          <section className="py-12 sm:py-16 md:py-24 lg:py-32 bg-gray-900">
+            <div className="container-custom px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-12 sm:mb-16">
+                <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6 font-heading">
                   <span className="bright-text-shadow-dark">Choose Your</span> <span className="bright-text-shadow text-black">Package</span>
                 </h2>
-                <p className="text-xl text-white/80 font-montserrat max-w-3xl mx-auto">
+                <p className="text-sm sm:text-lg md:text-xl text-white/80 font-montserrat max-w-3xl mx-auto">
                   Select the perfect package for your property. All packages include professional editing and fast delivery.
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
                 {serviceTiers.map((tier) => (
                   <div key={tier.id} className="relative">
                     {tier.popular && (
                       <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
-                        <span className="bg-black text-white px-6 py-2 rounded-md border-x-0 border-y-2 border-white text-sm font-light font-montserrat shadow-lg">
+                        <span className="bg-black text-white px-3 sm:px-6 py-1 sm:py-2 rounded-md border-x-0 border-y-2 border-white text-xs sm:text-sm font-light font-montserrat shadow-lg">
                           Most Popular
                         </span>
                       </div>
                     )}
 
-                    <div className={`relative overflow-hidden rounded-3xl transition-all duration-500 border-y-2 border-x-0 border-white h-full ${formData.serviceTier === tier.id
+                    <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl transition-all duration-500 border-y-2 border-x-0 border-white h-full ${formData.serviceTier === tier.id
                         ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-white shadow-2xl'
                         : 'bg-gray-800/50 backdrop-blur-sm border border-gray-700 hover:border-gray-500 hover:shadow-xl'
                       }`}>
                       {/* Background gradient overlay */}
                       <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-gray-900/20"></div>
 
-                      <div className="relative p-8 lg:p-10 h-full flex flex-col">
+                      <div className="relative p-4 sm:p-6 lg:p-8 xl:p-10 h-full flex flex-col">
                         {/* Header */}
-                        <div className="text-center mb-8">
-                          <h3 className="text-2xl lg:text-3xl font-bold mb-2 text-black bright-text-shadow font-heading">
+                        <div className="text-center mb-6 sm:mb-8">
+                          <h3 className="text-lg sm:text-2xl lg:text-3xl font-bold mb-2 text-black bright-text-shadow font-heading">
                             {tier.name}
                           </h3>
-                          <div className="text-4xl lg:text-5xl font-bold text-white mb-4 font-heading">
-                            <span className='text-xl block font-montserrat font-light mt-8 mb-2'>Starting at</span> {tier.price}
+                          <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 font-heading">
+                            <span className='text-sm sm:text-lg lg:text-xl block font-montserrat font-light mt-4 sm:mt-6 lg:mt-8 mb-1 sm:mb-2'>Starting at</span> {tier.price}
                           </div>
-                          <p className="text-gray-300 text-lg font-montserrat leading-relaxed">
+                          <p className="text-gray-300 text-xs sm:text-base lg:text-lg font-montserrat leading-relaxed">
                             {tier.description}
                           </p>
                         </div>
 
                         {/* Features */}
-                        <ul className="space-y-4 flex-grow mb-8">
+                        <ul className="space-y-3 sm:space-y-4 flex-grow mb-6 sm:mb-8">
                           {tier.features.map((feature, index) => (
                             <li key={index} className="flex items-start group/item">
-                              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-300  flex items-center justify-center mr-4 mt-0.5">
-                                <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-300 flex items-center justify-center mr-3 sm:mr-4 mt-0.5">
+                                <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
                               </div>
-                              <span className="text-white/90 font-montserrat group-hover/item:text-white transition-colors duration-200">
+                              <span className="text-white/90 font-montserrat group-hover/item:text-white transition-colors duration-200 text-xs sm:text-base">
                                 {feature}
                               </span>
                             </li>
@@ -426,7 +426,7 @@ export default function BookingPage() {
                         {/* Selection Button */}
                         <button
                           onClick={() => handleServiceTierSelect(tier.id)}
-                          className={`w-full py-4 px-6 rounded-xl font-semibold font-montserrat transition-all duration-300 ${formData.serviceTier === tier.id
+                          className={`w-full py-2 sm:py-4 px-3 sm:px-6 rounded-xl font-semibold font-montserrat transition-all duration-300 text-xs sm:text-base ${formData.serviceTier === tier.id
                               ? 'bg-white text-gray-900 hover:bg-gray-100'
                               : 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600'
                             }`}
@@ -442,19 +442,19 @@ export default function BookingPage() {
           </section>
 
           {/* Booking Form Section */}
-          <section id="booking-form" className="py-16 md:py-24 lg:py-32 bg-gray-800">
-            <div className="container-custom">
+          <section id="booking-form" className="py-12 sm:py-16 md:py-24 lg:py-32 bg-gray-800">
+            <div className="container-custom px-4 sm:px-6 lg:px-8">
               <div className="max-w-4xl mx-auto">
-                <div className="text-center mb-12">
-                  <h2 className="text-4xl uppercase text-white mb-4 font-bold bright-text-shadow-dark">Get Your Free Quote</h2>
-                  <p className="text-xl text-white font-montserrat">
+                <div className="text-center mb-8 sm:mb-12">
+                  <h2 className="text-xl sm:text-3xl md:text-4xl uppercase text-white mb-3 sm:mb-4 font-bold bright-text-shadow-dark">Get Your Free Quote</h2>
+                  <p className="text-sm sm:text-lg md:text-xl text-white font-montserrat">
                     Fill out the form below and we&apos;ll get back to you within 24 hours with a personalized quote
                   </p>
                 </div>
 
                 {/* Error Display */}
                 {errors.length > 0 && (
-                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-8">
+                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 sm:mb-8">
                     <ul className="list-disc list-inside">
                       {errors.map((error, index) => (
                         <li key={index}>{error}</li>
@@ -463,11 +463,11 @@ export default function BookingPage() {
                   </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-8">
+                <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
                   {/* Personal Information */}
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-white mb-2 font-montserrat">Full Name *</label>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Full Name *</label>
                       <input
                         type="text"
                         name="name"
@@ -479,7 +479,7 @@ export default function BookingPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-white mb-2 font-montserrat">Email Address *</label>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Email Address *</label>
                       <input
                         type="email"
                         name="email"
@@ -492,9 +492,9 @@ export default function BookingPage() {
                     </div>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-white mb-2 font-montserrat">Phone Number</label>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Phone Number</label>
                       <input
                         type="tel"
                         name="phone"
@@ -506,7 +506,7 @@ export default function BookingPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-white mb-2 font-montserrat">Service Type *</label>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Service Type *</label>
                       <select
                         name="serviceType"
                         value={formData.serviceType}
@@ -525,7 +525,7 @@ export default function BookingPage() {
 
                   {/* Property Details */}
                   <div className="relative">
-                    <label className="block text-sm font-medium text-white mb-2 font-montserrat">Property Address *</label>
+                    <label className="block text-xs font-medium text-white mb-2 font-montserrat">Property Address *</label>
                     <input
                       ref={autocompleteRef}
                       type="text"
@@ -572,9 +572,9 @@ export default function BookingPage() {
                     )}
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-white mb-2 font-montserrat">Property Type</label>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Property Type</label>
                       <select
                         name="propertyType"
                         value={formData.propertyType}
@@ -590,7 +590,7 @@ export default function BookingPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-white mb-2 font-montserrat">Property Size</label>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Property Size</label>
                       <select
                         name="propertySize"
                         value={formData.propertySize}
@@ -607,9 +607,9 @@ export default function BookingPage() {
                     </div>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-white mb-2 font-montserrat">Budget Range</label>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Budget Range</label>
                       <select
                         name="budget"
                         value={formData.budget}
@@ -625,7 +625,7 @@ export default function BookingPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-white mb-2 font-montserrat">Timeline</label>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Timeline</label>
                       <select
                         name="timeline"
                         value={formData.timeline}
@@ -644,7 +644,7 @@ export default function BookingPage() {
 
                   {/* Additional Message */}
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2 font-montserrat">Additional Message</label>
+                    <label className="block text-xs font-medium text-white mb-2 font-montserrat">Additional Message</label>
                     <textarea
                       name="message"
                       value={formData.message}
@@ -660,7 +660,7 @@ export default function BookingPage() {
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="bg-white text-gray-900 py-4 px-12 rounded-lg font-semibold font-montserrat hover:bg-gray-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed border-x-0 border-y-2 border-white text-lg"
+                      className="bg-white text-gray-900 py-2 sm:py-4 px-6 sm:px-12 rounded-lg font-semibold font-montserrat hover:bg-gray-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed border-x-0 border-y-2 border-white text-sm sm:text-lg"
                     >
                       {isSubmitting ? 'Submitting...' : 'Get My Free Quote'}
                     </button>

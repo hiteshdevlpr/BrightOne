@@ -16,13 +16,13 @@ export async function handleContactSubmission(
   setIsSubmitting: (value: boolean) => void,
   setIsSubmitted: (value: boolean) => void,
   setErrors: (errors: string[]) => void
-) {
+): Promise<boolean> {
   // Validate form data
   const validationErrors = validateContactForm(formData);
   console.log("APP_LOG:: Validation Errors", validationErrors);
   if (validationErrors.length > 0) {
     setErrors(validationErrors.map(error => error.message));
-    return;
+    return false;
   }
 
   setIsSubmitting(true);
@@ -58,12 +58,15 @@ export async function handleContactSubmission(
       });
 
       setIsSubmitted(true);
+      return true;
     } else {
       setErrors([response.error || 'Failed to submit contact message']);
+      return false;
     }
   } catch (error) {
     console.error('Contact submission error:', error);
     setErrors([error instanceof Error ? error.message : 'Failed to submit contact message. Please try again.']);
+    return false;
   } finally {
     setIsSubmitting(false);
   }
