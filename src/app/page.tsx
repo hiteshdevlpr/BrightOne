@@ -10,7 +10,9 @@ export default function Home() {
       <Navigation />
 
       {/* Hero Section */}
-      <HeroCarousel />
+      <div className="pt-20 md:pt-24">
+        <HeroCarousel />
+      </div>
 
       {/* Services Overview Section */}
       <ServicesOverview />

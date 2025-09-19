@@ -8,6 +8,7 @@ import logo from '@/assets/images/Logo-final@0.5x.png';
 
 export default function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
   // Helper function to check if a link is active based on pathname
@@ -33,29 +34,29 @@ export default function Navigation() {
     <div className="fixed w-full top-0 z-50">
       {/* Top Contact Strip */}
       <div className="bg-gray-900 text-white py-1 px-2 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center text-sm">
+        <div className="max-w-7xl mx-auto flex flex-row justify-between items-center text-xs sm:text-sm">
           {/* Contact Details */}
-          <div className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-4">
-            <div className="flex items-center space-x-2">
-              <span>📞</span>
-              <a href="tel:+1234567890" className="hover:text-blue-300 transition-colors">
-                (123) 456-7890
+          <div className="flex flex-row items-center space-x-4 sm:space-x-4">
+            <div className="flex  space-x-2 font-montserrat">
+              <span className="hidden sm:inline">📞</span>
+              <a href="tel: (416) 419-9689" className="hover:text-blue-300 transition-colors">
+                (416) 419-9689
               </a>
             </div>
-            <div className="flex items-center space-x-2">
-              <span>✉️</span>
-              <a href="mailto:info@brightone.ca" className="hover:text-blue-300 transition-colors">
-                info@brightone.ca
+            <div className="flex space-x-2 font-montserrat">
+              <span className="hidden sm:inline">✉️</span>
+              <a href="mailto:contact@brightone.ca" className="hover:text-blue-300 transition-colors">
+                contact@brightone.ca
               </a>
             </div>
-            <div className="flex items-center space-x-2">
+            {/* <div className="flex items-center space-x-2">
               <span>📍</span>
-              <span>Toronto, ON</span>
-            </div>
+              <span>Greater Toronto Area, ON</span>
+            </div> */}
           </div>
 
           {/* Social Media Links */}
-          <div className="flex items-center space-x-3 mt-1 sm:mt-0">
+          <div className="flex items-center space-x-2">
             {/* Facebook */}
             <a 
               href="https://www.facebook.com/BrightOneInc" 
@@ -129,11 +130,11 @@ export default function Navigation() {
         isScrolled ? 'bg-black bg-opacity-50 backdrop-blur-sm' : 'bg-slate-950'
       }`}>
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-        <div className={`flex justify-between items-center transition-all duration-300 ${
+        <div className={`relative flex justify-center md:justify-between items-center transition-all duration-300 ${
           isScrolled ? 'py-1' : 'py-2'
         }`}>
-          <div className="flex items-center">
-            <Link href="/">
+          <div className="flex items-center md:block">
+            <Link href="/" className="flex justify-center">
               <Image 
                 src={logo.src} 
                 alt="BrightOne" 
@@ -223,12 +224,84 @@ export default function Navigation() {
               Contact
             </Link>
           </div>
-          <button className="btn-primary md:hidden text-xs px-3 py-1">
-            Menu
+          <button 
+            className="md:hidden absolute right-4 top-1/2 transform -translate-y-1/2 text-white p-2 rounded-md hover:bg-white/10 transition-colors"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle mobile menu"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {isMobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
           </button>
         </div>
       </div>
       </nav>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden bg-slate-950 border-t border-gray-800">
+          <div className="px-4 py-2 space-y-1">
+            <Link 
+              href="/" 
+              className={`block px-3 py-2 text-white uppercase font-montserrat text-xs sm:text-sm rounded-md transition-colors ${
+                isActive('/') ? 'bg-white/10' : 'hover:bg-white/5'
+              }`}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Home
+            </Link>
+            <Link 
+              href="/services" 
+              className={`block px-3 py-2 text-white uppercase font-montserrat text-xs sm:text-sm rounded-md transition-colors ${
+                isActive('/services') ? 'bg-white/10' : 'hover:bg-white/5'
+              }`}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Services
+            </Link>
+            <Link 
+              href="/portfolio" 
+              className={`block px-3 py-2 text-white uppercase font-montserrat text-xs sm:text-sm rounded-md transition-colors ${
+                isActive('/portfolio') ? 'bg-white/10' : 'hover:bg-white/5'
+              }`}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Portfolio
+            </Link>
+            <Link 
+              href="/booking" 
+              className={`block px-3 py-2 text-white uppercase font-montserrat text-xs sm:text-sm rounded-md transition-colors ${
+                isActive('/booking') ? 'bg-white/10' : 'hover:bg-white/5'
+              }`}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Book Now
+            </Link>
+            <Link 
+              href="/about" 
+              className={`block px-3 py-2 text-white uppercase font-montserrat text-xs sm:text-sm rounded-md transition-colors ${
+                isActive('/about') ? 'bg-white/10' : 'hover:bg-white/5'
+              }`}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              About
+            </Link>
+            <Link 
+              href="/contact" 
+              className={`block px-3 py-2 text-white uppercase font-montserrat text-xs sm:text-sm rounded-md transition-colors ${
+                isActive('/contact') ? 'bg-white/10' : 'hover:bg-white/5'
+              }`}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Contact
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

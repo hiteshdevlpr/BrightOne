@@ -80,11 +80,11 @@ export default function RecentWork() {
       <div className=" mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white  mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-6">
             <span className='bright-text-shadow-dark'>Recent </span>
             <span className="text-black">Work</span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Explore our latest projects and see how we bring properties to life through professional photography and marketing
           </p>
         </div>
@@ -113,7 +113,7 @@ export default function RecentWork() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
                     </svg>
                   </div>
-                  <p className="text-white text-sm font-medium">Click to view</p>
+                  <p className="text-white text-xs sm:text-sm font-medium">Click to view</p>
                 </div>
               </div>
             </div>
@@ -121,12 +121,12 @@ export default function RecentWork() {
         </div>
 
         {/* Call to Action */}
-        <div className="text-center mt-16">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/portfolio" className="btn-primary">
+        <div className="text-center mt-8 sm:mt-12 md:mt-16">
+          <div className="flex flex-row gap-2 sm:gap-4 justify-center">
+            <a href="/portfolio" className="btn-primary font-light  font-montserrat text-xs sm:text-sm md:text-base px-2 sm:px-4 md:px-6 py-1.5 sm:py-3 md:py-4">
               View Full Portfolio
             </a>
-            <a href="/booking" className="btn-secondary border-y-2 border-x-0 bg-white">
+            <a href="/booking" className="btn-secondary border-y-2 border-x-0 bg-white font-light font-montserrat text-xs sm:text-sm md:text-base px-2 sm:px-4 md:px-6 py-1.5 sm:py-3 md:py-4">
               Book Your Shoot
             </a>
           </div>
