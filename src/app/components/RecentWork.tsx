@@ -30,7 +30,11 @@ const recentWorkImages = [
   { src: service3.src, alt: "Property Photography", title: "Elegant Bedroom" }
 ];
 
-export default function RecentWork() {
+interface RecentWorkProps {
+  isPortfolioPage?: boolean;
+}
+
+export default function RecentWork({ isPortfolioPage = false }: RecentWorkProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -131,12 +135,19 @@ export default function RecentWork() {
         {/* Call to Action */}
         <div className="text-center mt-8 sm:mt-12 md:mt-16">
           <div className="flex flex-row gap-2 sm:gap-4 justify-center">
-            <a href="/portfolio" className="btn-primary font-light  font-montserrat text-xs sm:text-sm md:text-base px-2 sm:px-4 md:px-6 py-1.5 sm:py-3 md:py-4">
-              View Full Portfolio
-            </a>
+            {!isPortfolioPage && (
+              <a href="/portfolio" className="btn-primary font-light  font-montserrat text-xs sm:text-sm md:text-base px-2 sm:px-4 md:px-6 py-1.5 sm:py-3 md:py-4">
+                View Full Portfolio
+              </a>
+            )}
             <a href="/booking" className="btn-secondary border-y-2 border-x-0 bg-white font-light font-montserrat text-xs sm:text-sm md:text-base px-2 sm:px-4 md:px-6 py-1.5 sm:py-3 md:py-4">
               Book Your Shoot
             </a>
+            {isPortfolioPage && (
+              <a href="/contact" className="btn-primary font-light  font-montserrat text-xs sm:text-sm md:text-base px-2 sm:px-4 md:px-6 py-1.5 sm:py-3 md:py-4">
+                Get In Touch
+              </a>
+            )}
           </div>
         </div>
       </div>
