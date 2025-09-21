@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { League_Spartan, Abril_Fatface, Montserrat } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const leagueSpartan = League_Spartan({ 
@@ -39,6 +40,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-CRK53H1QC1"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-CRK53H1QC1');
+          `}
+        </Script>
+      </head>
       <body className={`${leagueSpartan.className} ${leagueSpartan.variable} ${abrilFatface.variable} ${montserrat.variable}`}>
         <div className="min-h-screen bg-white">
           {children}
