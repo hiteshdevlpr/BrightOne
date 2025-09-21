@@ -9,17 +9,25 @@ import service5 from '@/assets/images/portfolio-7.jpg';
 import service6 from '@/assets/images/portfolio-8.jpg';
 import service7 from '@/assets/images/portfolio-10.jpg';
 import service8 from '@/assets/images/portfolio-6.jpg';
+import service10 from '@/assets/images/portfolio-11.jpg';
+import service11 from '@/assets/images/portfolio-12.jpg';
+import service12 from '@/assets/images/portfolio-13.jpg';
+import service13 from '@/assets/images/portfolio-14.jpg';
 
 
 const recentWorkImages = [
   { src: service1.src, alt: "Real Estate Photography", title: "Luxury Home Interior" },
-  { src: service3.src, alt: "Property Photography", title: "Elegant Bedroom" },
+  { src: service12.src, alt: "Property Showcase", title: "Beautiful Home" },
   { src: service7.src, alt: "Property Showcase", title: "Beautiful Home" },
+  { src: service10.src, alt: "Property Showcase", title: "Beautiful Home" },
+  { src: service13.src, alt: "Property Showcase", title: "Beautiful Home" },
   { src: service5.src, alt: "Virtual Staging After", title: "Staged Living Room" },
   { src: service2.src, alt: "Professional Photography", title: "Modern Living Space" },
   { src: service6.src, alt: "Virtual Staging Before", title: "Empty Space" },
   { src: service4.src, alt: "Real Estate Staging", title: "Contemporary Kitchen" },
-  { src: service8.src, alt: "Property Showcase", title: "Beautiful Home" }
+  { src: service8.src, alt: "Property Showcase", title: "Beautiful Home" },
+  { src: service11.src, alt: "Property Showcase", title: "Beautiful Home" },
+  { src: service3.src, alt: "Property Photography", title: "Elegant Bedroom" }
 ];
 
 export default function RecentWork() {
@@ -113,7 +121,7 @@ export default function RecentWork() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
                     </svg>
                   </div>
-                  <p className="text-white text-xs sm:text-sm font-medium">Click to view</p>
+                  {/* <p className="text-white text-xs sm:text-sm font-medium">Click to view</p> */}
                 </div>
               </div>
             </div>
