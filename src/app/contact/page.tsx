@@ -6,6 +6,14 @@ import Footer from '../components/Footer';
 import Image from 'next/image';
 import servicebg from '@/assets/images/service-bg-2.jpg';
 import { handleContactSubmission } from './contact-form-handler';
+import { 
+  trackFormFieldFocus, 
+  trackFormFieldBlur, 
+  trackFormFieldChange, 
+  trackFormSubmission,
+  trackFormValidationError,
+  trackFormProgress
+} from '@/lib/analytics';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -27,6 +35,14 @@ export default function ContactPage() {
       ...prev,
       [name]: value
     }));
+    
+    // Track form field changes
+    trackFormFieldChange('contact', name, value);
+    
+    // Track form progress
+    const completedFields = Object.values({ ...formData, [name]: value }).filter(val => val && val.toString().trim() !== '').length;
+    const totalFields = Object.keys(formData).length;
+    trackFormProgress('contact', completedFields, totalFields);
     
     // Clear field-specific errors when user starts typing
     if (fieldErrors[name]) {
@@ -75,8 +91,10 @@ export default function ContactPage() {
       case 'name':
         if (!value.trim()) {
           newFieldErrors.name = 'Name is required';
+          trackFormValidationError('contact', 'name', 'required');
         } else if (value.trim().length < 2) {
           newFieldErrors.name = 'Name must be at least 2 characters';
+          trackFormValidationError('contact', 'name', 'min_length');
         } else {
           delete newFieldErrors.name;
         }
@@ -84,8 +102,10 @@ export default function ContactPage() {
       case 'email':
         if (!value.trim()) {
           newFieldErrors.email = 'Email is required';
+          trackFormValidationError('contact', 'email', 'required');
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
           newFieldErrors.email = 'Please enter a valid email address';
+          trackFormValidationError('contact', 'email', 'invalid_format');
         } else {
           delete newFieldErrors.email;
         }
@@ -93,6 +113,7 @@ export default function ContactPage() {
       case 'phone':
         if (value && !/^\(\d{3}\) \d{3}-\d{4}$/.test(value)) {
           newFieldErrors.phone = 'Please enter a valid phone number';
+          trackFormValidationError('contact', 'phone', 'invalid_format');
         } else {
           delete newFieldErrors.phone;
         }
@@ -100,6 +121,7 @@ export default function ContactPage() {
       case 'subject':
         if (!value) {
           newFieldErrors.subject = 'Please select a subject';
+          trackFormValidationError('contact', 'subject', 'required');
         } else {
           delete newFieldErrors.subject;
         }
@@ -107,8 +129,10 @@ export default function ContactPage() {
       case 'message':
         if (!value.trim()) {
           newFieldErrors.message = 'Message is required';
+          trackFormValidationError('contact', 'message', 'required');
         } else if (value.trim().length < 10) {
           newFieldErrors.message = 'Message must be at least 10 characters';
+          trackFormValidationError('contact', 'message', 'min_length');
         } else {
           delete newFieldErrors.message;
         }
@@ -122,6 +146,9 @@ export default function ContactPage() {
     e.preventDefault();
     console.log("APP_LOG:: Form Submitted formData", formData);
     
+    // Track form submission attempt
+    trackFormSubmission('contact', true);
+    
     // Store current form data for submission
     const currentFormData = { ...formData };
     
@@ -132,9 +159,12 @@ export default function ContactPage() {
       setErrors
     );
     
-    // Clear form only if submission was successful
+    // Track form submission result
     if (success) {
+      trackFormSubmission('contact', true);
       clearForm();
+    } else {
+      trackFormSubmission('contact', false);
     }
   };
 
@@ -233,7 +263,11 @@ export default function ContactPage() {
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      onBlur={(e) => validateField('name', e.target.value)}
+                      onFocus={() => trackFormFieldFocus('contact', 'name')}
+                      onBlur={(e) => {
+                        validateField('name', e.target.value);
+                        trackFormFieldBlur('contact', 'name');
+                      }}
                       required
                       className={`form-input ${fieldErrors.name ? 'border-red-500 focus:border-red-500' : ''}`}
                       placeholder="Your name"
@@ -249,7 +283,11 @@ export default function ContactPage() {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      onBlur={(e) => validateField('email', e.target.value)}
+                      onFocus={() => trackFormFieldFocus('contact', 'email')}
+                      onBlur={(e) => {
+                        validateField('email', e.target.value);
+                        trackFormFieldBlur('contact', 'email');
+                      }}
                       required
                       className={`form-input ${fieldErrors.email ? 'border-red-500 focus:border-red-500' : ''}`}
                       placeholder="your@email.com"
@@ -267,9 +305,11 @@ export default function ContactPage() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
+                    onFocus={() => trackFormFieldFocus('contact', 'phone')}
                     onBlur={(e) => {
                       handlePhoneBlur(e);
                       validateField('phone', e.target.value);
+                      trackFormFieldBlur('contact', 'phone');
                     }}
                     className={`form-input ${fieldErrors.phone ? 'border-red-500 focus:border-red-500' : ''}`}
                     placeholder="(555) 123-4567"
@@ -285,7 +325,11 @@ export default function ContactPage() {
                     name="subject"
                     value={formData.subject}
                     onChange={handleInputChange}
-                    onBlur={(e) => validateField('subject', e.target.value)}
+                    onFocus={() => trackFormFieldFocus('contact', 'subject')}
+                    onBlur={(e) => {
+                      validateField('subject', e.target.value);
+                      trackFormFieldBlur('contact', 'subject');
+                    }}
                     required
                     className={`form-select ${fieldErrors.subject ? 'border-red-500 focus:border-red-500' : ''}`}
                   >
@@ -307,7 +351,11 @@ export default function ContactPage() {
                     name="message"
                     value={formData.message}
                     onChange={handleInputChange}
-                    onBlur={(e) => validateField('message', e.target.value)}
+                    onFocus={() => trackFormFieldFocus('contact', 'message')}
+                    onBlur={(e) => {
+                      validateField('message', e.target.value);
+                      trackFormFieldBlur('contact', 'message');
+                    }}
                     required
                     rows={6}
                     className={`form-textarea ${fieldErrors.message ? 'border-red-500 focus:border-red-500' : ''}`}
