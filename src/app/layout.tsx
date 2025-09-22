@@ -27,9 +27,37 @@ export const metadata: Metadata = {
   keywords: "real estate photography, real estate videography, 3D tours, virtual staging, real estate marketing, property photography",
   authors: [{ name: "BrightOne Inc" }],
   openGraph: {
-    title: "BrightOne Inc - Professional Real Estate Services",
-    description: "Premium real estate photography, videography, 3D tours, and virtual staging services",
+    title: "BrightOne Inc - Professional Real Estate Photography & Virtual Services",
+    description: "Premium real estate photography, videography, 3D tours, and virtual staging services for real estate agents and property owners in Canada.",
     type: "website",
+    url: "https://brightone.ca",
+    siteName: "BrightOne Inc",
+    images: [
+      {
+        url: "/meta-header.png",
+        width: 1200,
+        height: 630,
+        alt: "BrightOne Inc - Professional Real Estate Photography & Virtual Services",
+      },
+    ],
+    locale: "en_CA",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BrightOne Inc - Professional Real Estate Photography & Virtual Services",
+    description: "Premium real estate photography, videography, 3D tours, and virtual staging services for real estate agents and property owners in Canada.",
+    images: ["/meta-header.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 
