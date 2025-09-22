@@ -7,6 +7,16 @@ import Link from 'next/link';
 import Image from 'next/image';
 import heroBg from '@/assets/images/booking-bg.jpg';
 import { handleBookingSubmission } from './booking-form-handler';
+import { 
+  trackFormFieldFocus, 
+  trackFormFieldBlur, 
+  trackFormFieldChange, 
+  trackFormSubmission,
+  trackFormValidationError,
+  trackServiceTierSelection,
+  trackAddressSuggestionClick,
+  trackFormProgress
+} from '@/lib/analytics';
 
 // Google Maps TypeScript declarations
 interface GoogleMapsPlacePrediction {
@@ -131,6 +141,9 @@ export default function BookingPage() {
     setFormData(prev => ({ ...prev, propertyAddress: address }));
     setShowSuggestions(false);
     setAddressSuggestions([]);
+    
+    // Track address suggestion click
+    trackAddressSuggestionClick(address);
   };
 
   // Format phone number
@@ -268,6 +281,14 @@ export default function BookingPage() {
       ...prev,
       [name]: value
     }));
+    
+    // Track form field changes
+    trackFormFieldChange('booking', name, value);
+    
+    // Track form progress
+    const completedFields = Object.values({ ...formData, [name]: value }).filter(val => val && val.toString().trim() !== '').length;
+    const totalFields = Object.keys(formData).length;
+    trackFormProgress('booking', completedFields, totalFields);
   };
 
   const handleServiceTierSelect = (tierId: string) => {
@@ -275,17 +296,34 @@ export default function BookingPage() {
       ...prev,
       serviceTier: tierId
     }));
+    
+    // Track service tier selection
+    const tier = serviceTiers.find(t => t.id === tierId);
+    if (tier) {
+      trackServiceTierSelection(tierId, tier.name);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    await handleBookingSubmission(
-      formData,
-      setIsSubmitting,
-      setIsSubmitted,
-      setErrors
-    );
+    // Track form submission attempt
+    trackFormSubmission('booking', true);
+
+    try {
+      await handleBookingSubmission(
+        formData,
+        setIsSubmitting,
+        setIsSubmitted,
+        setErrors
+      );
+      
+      // Track successful form submission
+      trackFormSubmission('booking', true);
+    } catch (error) {
+      // Track failed form submission
+      trackFormSubmission('booking', false);
+    }
   };
 
 
@@ -473,6 +511,8 @@ export default function BookingPage() {
                         name="name"
                         value={formData.name}
                         onChange={handleInputChange}
+                        onFocus={() => trackFormFieldFocus('booking', 'name')}
+                        onBlur={() => trackFormFieldBlur('booking', 'name')}
                         required
                         className="form-input"
                         placeholder="Your full name"
@@ -485,6 +525,8 @@ export default function BookingPage() {
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
+                        onFocus={() => trackFormFieldFocus('booking', 'email')}
+                        onBlur={() => trackFormFieldBlur('booking', 'email')}
                         required
                         className="form-input"
                         placeholder="your@email.com"
@@ -500,7 +542,11 @@ export default function BookingPage() {
                         name="phone"
                         value={formData.phone}
                         onChange={handleInputChange}
-                        onBlur={handlePhoneBlur}
+                        onFocus={() => trackFormFieldFocus('booking', 'phone')}
+                        onBlur={(e) => {
+                          handlePhoneBlur(e);
+                          trackFormFieldBlur('booking', 'phone');
+                        }}
                         className="form-input"
                         placeholder="(555) 123-4567"
                       />
@@ -511,6 +557,8 @@ export default function BookingPage() {
                         name="serviceType"
                         value={formData.serviceType}
                         onChange={handleInputChange}
+                        onFocus={() => trackFormFieldFocus('booking', 'serviceType')}
+                        onBlur={() => trackFormFieldBlur('booking', 'serviceType')}
                         required
                         className="form-select"
                       >
@@ -536,11 +584,13 @@ export default function BookingPage() {
                         handleAddressSearch(e.target.value);
                       }}
                       onFocus={() => {
+                        trackFormFieldFocus('booking', 'propertyAddress');
                         if (addressSuggestions.length > 0) {
                           setShowSuggestions(true);
                         }
                       }}
                       onBlur={() => {
+                        trackFormFieldBlur('booking', 'propertyAddress');
                         // Delay hiding suggestions to allow for click selection
                         setTimeout(() => setShowSuggestions(false), 200);
                       }}
@@ -579,6 +629,8 @@ export default function BookingPage() {
                         name="propertyType"
                         value={formData.propertyType}
                         onChange={handleInputChange}
+                        onFocus={() => trackFormFieldFocus('booking', 'propertyType')}
+                        onBlur={() => trackFormFieldBlur('booking', 'propertyType')}
                         className="form-select"
                       >
                         <option value="">Select property type</option>
@@ -595,6 +647,8 @@ export default function BookingPage() {
                         name="propertySize"
                         value={formData.propertySize}
                         onChange={handleInputChange}
+                        onFocus={() => trackFormFieldFocus('booking', 'propertySize')}
+                        onBlur={() => trackFormFieldBlur('booking', 'propertySize')}
                         className="form-select"
                       >
                         <option value="">Select property size</option>
@@ -614,6 +668,8 @@ export default function BookingPage() {
                         name="budget"
                         value={formData.budget}
                         onChange={handleInputChange}
+                        onFocus={() => trackFormFieldFocus('booking', 'budget')}
+                        onBlur={() => trackFormFieldBlur('booking', 'budget')}
                         className="form-select"
                       >
                         <option value="">Select budget range</option>
@@ -630,6 +686,8 @@ export default function BookingPage() {
                         name="timeline"
                         value={formData.timeline}
                         onChange={handleInputChange}
+                        onFocus={() => trackFormFieldFocus('booking', 'timeline')}
+                        onBlur={() => trackFormFieldBlur('booking', 'timeline')}
                         className="form-select"
                       >
                         <option value="">Select timeline</option>
@@ -649,6 +707,8 @@ export default function BookingPage() {
                       name="message"
                       value={formData.message}
                       onChange={handleInputChange}
+                      onFocus={() => trackFormFieldFocus('booking', 'message')}
+                      onBlur={() => trackFormFieldBlur('booking', 'message')}
                       rows={4}
                       className="form-textarea"
                       placeholder="Tell us more about your project, special requirements, or any questions you have..."
