@@ -3,6 +3,36 @@ import Footer from '../components/Footer';
 import RecentWork from '../components/RecentWork';
 import Image from 'next/image';
 import servicebg from '@/assets/images/service-bg-2.jpg';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "Real Estate Photography Portfolio | Stunning Property Photos | BrightOne",
+  description: "View our portfolio of stunning real estate photography, virtual staging, and property marketing work. See examples of luxury properties, virtual staging transformations, and professional property photos across the GTA.",
+  keywords: "real estate photography portfolio, property photos, virtual staging examples, luxury property photography, GTA real estate photos, professional property marketing, before after staging",
+  openGraph: {
+    title: "Real Estate Photography Portfolio | Stunning Property Photos | BrightOne",
+    description: "View our portfolio of stunning real estate photography, virtual staging, and property marketing work. See examples of luxury properties, virtual staging transformations, and professional property photos across the GTA.",
+    type: "website",
+    url: "https://brightone.ca/portfolio",
+    images: [
+      {
+        url: "/meta-header.png",
+        width: 1200,
+        height: 630,
+        alt: "Real Estate Photography Portfolio - BrightOne",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Real Estate Photography Portfolio | Stunning Property Photos | BrightOne",
+    description: "View our portfolio of stunning real estate photography, virtual staging, and property marketing work. See examples of luxury properties, virtual staging transformations, and professional property photos across the GTA.",
+    images: ["/meta-header.png"],
+  },
+  alternates: {
+    canonical: "https://brightone.ca/portfolio",
+  },
+};
 
 export default function PortfolioPage() {
   return (

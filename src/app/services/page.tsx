@@ -7,11 +7,54 @@ import rePhoto1 from '@/assets/images/hero-slide-1.jpg';
 import floorPlanImg from '@/assets/images/floor-plan.png';
 import servicebg from '@/assets/images/service-bg-2.jpg';
 import Link from 'next/link';
+import { Metadata } from 'next';
+import StructuredData from '../components/StructuredData';
+import Breadcrumbs from '../components/Breadcrumbs';
+
+export const metadata: Metadata = {
+  title: "Real Estate Photography Services | Professional Property Marketing | BrightOne",
+  description: "Professional real estate photography services including interior/exterior photography, drone shots, virtual staging, 3D tours, floor plans, and custom listing websites. Serving GTA and surrounding areas.",
+  keywords: "real estate photography services, property photography, drone photography, virtual staging, 3D tours, floor plans, listing websites, GTA real estate marketing, professional property photos",
+  openGraph: {
+    title: "Real Estate Photography Services | Professional Property Marketing | BrightOne",
+    description: "Professional real estate photography services including interior/exterior photography, drone shots, virtual staging, 3D tours, floor plans, and custom listing websites. Serving GTA and surrounding areas.",
+    type: "website",
+    url: "https://brightone.ca/services",
+    images: [
+      {
+        url: "/meta-header.png",
+        width: 1200,
+        height: 630,
+        alt: "Professional Real Estate Photography Services",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Real Estate Photography Services | Professional Property Marketing | BrightOne",
+    description: "Professional real estate photography services including interior/exterior photography, drone shots, virtual staging, 3D tours, floor plans, and custom listing websites. Serving GTA and surrounding areas.",
+    images: ["/meta-header.png"],
+  },
+  alternates: {
+    canonical: "https://brightone.ca/services",
+  },
+};
 
 export default function ServicesPage() {
+  const breadcrumbItems = [
+    { name: 'Home', href: '/' },
+    { name: 'Services', href: '/services' }
+  ];
+
   return (
     <div className="min-h-screen">
+      <StructuredData type="service" data={{}} />
       <Navigation />
+      
+      {/* Breadcrumbs */}
+      <div className="container-custom pt-20">
+        <Breadcrumbs items={breadcrumbItems} />
+      </div>
       
       {/* Hero Section */}
       <section className="relative overflow-hidden h-[60vh] sm:h-[70vh] pt-20 sm:pt-20">

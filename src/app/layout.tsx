@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { League_Spartan, Abril_Fatface, Montserrat } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import StructuredData from "./components/StructuredData";
+import PerformanceOptimizer from "./components/PerformanceOptimizer";
 
 const leagueSpartan = League_Spartan({ 
   subsets: ["latin"],
@@ -82,8 +84,13 @@ export default function RootLayout({
             gtag('config', 'G-CRK53H1QC1');
           `}
         </Script>
+        
+        {/* Structured Data */}
+        <StructuredData type="organization" data={{}} />
+        <StructuredData type="localBusiness" data={{}} />
       </head>
       <body className={`${leagueSpartan.className} ${leagueSpartan.variable} ${abrilFatface.variable} ${montserrat.variable}`}>
+        <PerformanceOptimizer />
         <div className="min-h-screen bg-white">
           {children}
         </div>
