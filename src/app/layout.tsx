@@ -28,6 +28,17 @@ export const metadata: Metadata = {
   description: "Premium real estate photography, videography, 3D tours, and virtual staging services for real estate agents and property owners in Canada.",
   keywords: "real estate photography, real estate videography, 3D tours, virtual staging, real estate marketing, property photography",
   authors: [{ name: "BrightOne Inc" }],
+  icons: {
+    icon: [
+      { url: "/favicon.png", sizes: "any" },
+      { url: "/favicon.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-64.png", sizes: "64x64", type: "image/png" },
+    ],
+    apple: [
+      { url: "/favicon-64.png", sizes: "64x64", type: "image/png" },
+    ],
+    shortcut: "/favicon.png",
+  },
   openGraph: {
     title: "BrightOne Inc - Professional Real Estate Photography & Virtual Services",
     description: "Premium real estate photography, videography, 3D tours, and virtual staging services for real estate agents and property owners in Canada.",
@@ -71,6 +82,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Favicon meta tags for better browser support */}
+        <link rel="icon" type="image/x-icon" href="/favicon.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+        <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png" />
+        <link rel="apple-touch-icon" sizes="64x64" href="/favicon-64.png" />
+        <link rel="shortcut icon" href="/favicon.png" />
+        
         {/* Google Analytics */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-CRK53H1QC1"
