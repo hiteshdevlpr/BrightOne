@@ -29,7 +29,37 @@ export interface BookingFormData {
   totalPrice?: string;
 }
 
-export async function handleContactSubmissionServer(formData: ContactFormData): Promise<{ success: boolean; error?: string; contact?: any }> {
+export interface ContactRecord {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookingRecord {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  service_type: string;
+  property_address: string;
+  property_type?: string;
+  property_size?: string;
+  budget?: string;
+  timeline?: string;
+  service_tier?: string;
+  message?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function handleContactSubmissionServer(formData: ContactFormData): Promise<{ success: boolean; error?: string; contact?: ContactRecord }> {
   try {
     console.log('APP_LOG:: Server-side contact form submission started');
     
@@ -89,9 +119,12 @@ export async function handleContactSubmissionServer(formData: ContactFormData): 
         id: contact.id,
         name: contact.name,
         email: contact.email,
+        phone: contact.phone,
         subject: contact.subject,
+        message: contact.message,
         status: contact.status,
-        createdAt: contact.created_at,
+        created_at: contact.created_at,
+        updated_at: contact.updated_at,
       }
     };
 
@@ -104,7 +137,7 @@ export async function handleContactSubmissionServer(formData: ContactFormData): 
   }
 }
 
-export async function handleBookingSubmissionServer(formData: BookingFormData): Promise<{ success: boolean; error?: string; booking?: any }> {
+export async function handleBookingSubmissionServer(formData: BookingFormData): Promise<{ success: boolean; error?: string; booking?: BookingRecord }> {
   try {
     console.log('APP_LOG:: Server-side booking form submission started');
     
@@ -175,9 +208,18 @@ export async function handleBookingSubmissionServer(formData: BookingFormData): 
         id: booking.id,
         name: booking.name,
         email: booking.email,
-        serviceType: booking.service_type,
+        phone: booking.phone,
+        service_type: booking.service_type,
+        property_address: booking.property_address,
+        property_type: booking.property_type,
+        property_size: booking.property_size,
+        budget: booking.budget,
+        timeline: booking.timeline,
+        service_tier: booking.service_tier,
+        message: booking.message,
         status: booking.status,
-        createdAt: booking.created_at,
+        created_at: booking.created_at,
+        updated_at: booking.updated_at,
       }
     };
 

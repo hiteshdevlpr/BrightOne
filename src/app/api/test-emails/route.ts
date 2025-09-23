@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EmailTestService } from '@/lib/email-test';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Check if we're in development mode
     if (process.env.NODE_ENV === 'production') {

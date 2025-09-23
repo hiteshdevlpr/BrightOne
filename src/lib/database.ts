@@ -6,10 +6,6 @@ import { Pool } from 'pg';
 //   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 // });
 
-// Determine SSL configuration based on environment
-const isProduction = process.env.NODE_ENV === 'production';
-const isDocker = process.env.DATABASE_URL?.includes('@db:') || process.env.DATABASE_URL?.includes('@localhost:');
-
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: false, // Disable SSL for Docker development

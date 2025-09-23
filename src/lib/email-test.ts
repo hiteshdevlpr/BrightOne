@@ -86,8 +86,11 @@ export async function GET() {
   try {
     await EmailTestService.testAllEmails();
     return Response.json({ success: true, message: 'Email tests completed' });
-  } catch (error: any) {
-    return Response.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    return Response.json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    }, { status: 500 });
   }
 }
 
