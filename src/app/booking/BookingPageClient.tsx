@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
+import Link from 'next/link';
 import Image from 'next/image';
 import heroBg from '@/assets/images/booking-bg.jpg';
 import { handleBookingSubmission } from './booking-form-handler';
@@ -11,7 +12,6 @@ import {
   trackFormFieldBlur, 
   trackFormFieldChange, 
   trackFormSubmission,
-  trackFormValidationError,
   trackServiceTierSelection,
   trackAddressSuggestionClick,
   trackFormProgress
@@ -38,224 +38,242 @@ interface GoogleMapsAutocompleteService {
   ): void;
 }
 
-interface GoogleMapsPlacesService {
-  getDetails(
-    request: {
-      placeId: string;
-      fields: string[];
-    },
-    callback: (place: any, status: string) => void
-  ): void;
+interface GoogleMapsPlaces {
+  AutocompleteService: new () => GoogleMapsAutocompleteService;
+  PlacesServiceStatus: {
+    OK: string;
+  };
+}
+
+interface GoogleMaps {
+  maps: {
+    places: GoogleMapsPlaces;
+  };
 }
 
 declare global {
   interface Window {
-    google: {
-      maps: {
-        places: {
-          AutocompleteService: new () => GoogleMapsAutocompleteService;
-          PlacesService: new (element: HTMLElement) => GoogleMapsPlacesService;
-        };
-      };
-    };
+    google: GoogleMaps;
   }
 }
 
-export default function BookingPageClient() {
+export default function BookingPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    propertyAddress: '',
     propertyType: '',
-    serviceTier: '',
+    propertySize: '',
+    propertyAddress: '',
     preferredDate: '',
     preferredTime: '',
+    budget: '',
+    timeline: '',
     serviceType: 'Real Estate Photography',
+    serviceTier: '',
     message: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
-  const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
-  const [addressSuggestions, setAddressSuggestions] = useState<GoogleMapsPlacePrediction[]>([]);
+  const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [autocompleteService, setAutocompleteService] = useState<GoogleMapsAutocompleteService | null>(null);
-  const [placesService, setPlacesService] = useState<GoogleMapsPlacesService | null>(null);
-  
-  const addressInputRef = useRef<HTMLInputElement>(null);
-  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const autocompleteRef = useRef<HTMLInputElement>(null);
+  const autocompleteService = useRef<GoogleMapsAutocompleteService | null>(null);
 
-  // Service tiers configuration
-  const serviceTiers = [
-    {
-      id: 'basic',
-      name: 'Basic Package',
-      price: '$299',
-      description: 'Perfect for standard listings',
-      features: [
-        'Up to 20 interior photos',
-        'Up to 10 exterior photos',
-        'Basic HDR editing',
-        '24-48 hour delivery',
-        'High-resolution images'
-      ],
-      popular: false
-    },
-    {
-      id: 'premium',
-      name: 'Premium Package',
-      price: '$499',
-      description: 'Most popular choice',
-      features: [
-        'Up to 30 interior photos',
-        'Up to 15 exterior photos',
-        'Professional HDR editing',
-        'Drone photography (5 shots)',
-        'Virtual staging (3 rooms)',
-        '24-48 hour delivery',
-        'High-resolution images'
-      ],
-      popular: true
-    },
-    {
-      id: 'luxury',
-      name: 'Luxury Package',
-      price: '$799',
-      description: 'For luxury properties',
-      features: [
-        'Unlimited interior photos',
-        'Unlimited exterior photos',
-        'Professional HDR editing',
-        'Drone photography (10 shots)',
-        'Virtual staging (5 rooms)',
-        '3D virtual tour',
-        'Floor plans',
-        '24-48 hour delivery',
-        'High-resolution images'
-      ],
-      popular: false
-    }
-  ];
-
-  // Initialize Google Maps services
+  // Initialize Google Maps Autocomplete
   useEffect(() => {
-    const initializeGoogleMaps = () => {
+    const initAutocomplete = () => {
       if (window.google && window.google.maps && window.google.maps.places) {
-        const autocomplete = new window.google.maps.places.AutocompleteService();
-        const places = new window.google.maps.places.PlacesService(document.createElement('div'));
-        setAutocompleteService(autocomplete);
-        setPlacesService(places);
+        autocompleteService.current = new window.google.maps.places.AutocompleteService();
       }
     };
 
     // Check if Google Maps is already loaded
     if (window.google) {
-      initializeGoogleMaps();
+      initAutocomplete();
     } else {
-      // Wait for Google Maps to load
-      const checkGoogleMaps = setInterval(() => {
-        if (window.google && window.google.maps && window.google.maps.places) {
-          initializeGoogleMaps();
-          clearInterval(checkGoogleMaps);
-        }
-      }, 100);
-
-      // Cleanup interval after 10 seconds
-      setTimeout(() => clearInterval(checkGoogleMaps), 10000);
+      // Load Google Maps script if not already loaded
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      if (apiKey) {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        script.onload = initAutocomplete;
+        document.head.appendChild(script);
+      } else {
+        console.warn('Google Maps API key not found. Please add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to your .env.local file');
+      }
     }
   }, []);
 
-  // Handle address input changes
-  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      propertyAddress: value
-    }));
-
-    // Track form field changes
-    trackFormFieldChange('booking', 'propertyAddress', value);
-    
-    // Track form progress
-    const completedFields = Object.values({ ...formData, propertyAddress: value }).filter(val => val && val.toString().trim() !== '').length;
-    const totalFields = Object.keys(formData).length;
-    trackFormProgress('booking', completedFields, totalFields);
-
-    // Clear field-specific errors when user starts typing
-    if (fieldErrors.propertyAddress) {
-      setFieldErrors(prev => ({
-        ...prev,
-        propertyAddress: ''
-      }));
-    }
-
-    // Get address suggestions
-    if (value.length > 2 && autocompleteService) {
-      autocompleteService.getPlacePredictions(
-        {
-          input: value,
-          types: ['address'],
-          componentRestrictions: { country: 'ca' }
-        },
-        (predictions, status) => {
-          if (status === 'OK' && predictions) {
-            setAddressSuggestions(predictions);
-            setShowSuggestions(true);
-          } else {
-            setAddressSuggestions([]);
-            setShowSuggestions(false);
-          }
-        }
-      );
-    } else {
+  // Handle address search
+  const handleAddressSearch = (query: string) => {
+    if (!autocompleteService.current || query.length < 3) {
       setAddressSuggestions([]);
       setShowSuggestions(false);
+      return;
     }
+
+    const request = {
+      input: query,
+      types: ['address'],
+      componentRestrictions: { country: 'ca' } // Restrict to Canada
+    };
+
+    autocompleteService.current.getPlacePredictions(request, (predictions, status) => {
+      if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+        const suggestions = predictions.map((prediction) => prediction.description);
+        setAddressSuggestions(suggestions);
+        setShowSuggestions(true);
+      } else {
+        setAddressSuggestions([]);
+        setShowSuggestions(false);
+      }
+    });
   };
 
-  // Handle address suggestion selection
-  const handleAddressSuggestionClick = (suggestion: GoogleMapsPlacePrediction) => {
-    setFormData(prev => ({
-      ...prev,
-      propertyAddress: suggestion.description
-    }));
+  // Handle address selection
+  const handleAddressSelect = (address: string) => {
+    setFormData(prev => ({ ...prev, propertyAddress: address }));
     setShowSuggestions(false);
     setAddressSuggestions([]);
     
     // Track address suggestion click
-    trackAddressSuggestionClick(suggestion.description);
-    
-    // Get place details for additional information
-    if (placesService) {
-      placesService.getDetails(
-        {
-          placeId: suggestion.place_id,
-          fields: ['formatted_address', 'geometry', 'address_components']
-        },
-        (place: unknown, status: string) => {
-          if (status === 'OK' && place) {
-            // You can store additional place details here if needed
-            console.log('Place details:', place);
-          }
-        }
-      );
-    }
+    trackAddressSuggestionClick(address);
   };
 
-  // Handle clicks outside suggestions
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node) &&
-          addressInputRef.current && !addressInputRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
-    };
+  // Format phone number
+  const formatPhoneNumber = (phoneNumber: string) => {
+    // Remove all non-digit characters
+    const cleaned = phoneNumber.replace(/\D/g, '');
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    // Handle different input formats
+    if (cleaned.length === 10) {
+      // Format as (XXX) XXX-XXXX
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    } else if (cleaned.length === 11 && cleaned.startsWith('1')) {
+      // Format as +1 (XXX) XXX-XXXX
+      return `+1 (${cleaned.slice(1, 4)}) ${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
+    } else if (cleaned.length === 11 && cleaned.startsWith('1')) {
+      // Format as 1 (XXX) XXX-XXXX
+      return `1 (${cleaned.slice(1, 4)}) ${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
+    }
+
+    // Return original if doesn't match expected patterns
+    return phoneNumber;
+  };
+
+  // Handle phone number blur
+  const handlePhoneBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setFormData(prev => ({ ...prev, phone: formatted }));
+  };
+
+  const serviceOptions = [
+    'Real Estate Photography',
+    'Virtual Staging',
+    'Airbnb Photography',
+    'Aerial Photography',
+    '3D Tours',
+    'Property Video',
+    'Floor Plans',
+    'Listing Website'
+  ];
+
+  const propertyTypeOptions = [
+    'House',
+    'Condo',
+    'Townhouse',
+    'Commercial',
+    'Land',
+    'Other'
+  ];
+
+  const propertySizeOptions = [
+    'Under 1000 sq ft',
+    '1000-2000 sq ft',
+    '2000-3000 sq ft',
+    '3000-4000 sq ft',
+    '4000+ sq ft'
+  ];
+
+  const budgetOptions = [
+    'Under $500',
+    '$500-1000',
+    '$1000-2000',
+    '$2000-3000',
+    '$3000+'
+  ];
+
+  const timelineOptions = [
+    'ASAP',
+    '1-2 weeks',
+    '2-4 weeks',
+    '1-2 months',
+    'Flexible'
+  ];
+
+  const serviceTiers = [
+    {
+      id: 'basic',
+      name: 'Basic',
+      price: '$299',
+      description: 'Perfect for quick listings and budget-conscious clients',
+      features: [
+        'Up to 20 high-quality photos',
+        'Premium photo editing & retouching',
+        '3-4 Days delivery of photos',
+        '2D Floor Plan',
+        'Mobile-optimized images',
+        'Aerial Photos(2-3)',
+        'Email delivery',
+        'Listing Website'
+      ],
+      popular: false
+    },
+    {
+      id: 'premium',
+      name: 'Premium',
+      price: '$499',
+      description: 'Our most popular choice real estate professionals',
+      features: [
+        'Up to 35 high-quality photos',
+        'Virtual Staging (4 Photos)',
+        '2-3 Days delivery of photos',
+        'Cloud storage access',
+        '90 Days of Access to the Photos',
+        'Aerial & Photos & Video',
+        'Social media ready images',
+        'Listing Website',
+        'Property Social Media Reel',
+        'Twilight Photo'
+      ],
+      popular: true
+    },
+    {
+      id: 'luxury',
+      name: 'Luxury',
+      price: '$799',
+      description: 'Complete marketing solution for luxury properties',
+      features: [
+        'Up to 50 high-quality photos',
+        'Virtual Staging (7 Photos)',
+        '24-48 hour delivery',
+        'Aerial photography & drone video',
+        '3D virtual tour + 2D Floor Plan',
+        '90 Days of Access to the Photos',
+        'Cinematic property video (1-2 min)',
+        'Listing Website',
+        'Property Social Media Reel',
+        'Agent Promotion Video'
+      ],
+      popular: false
+    }
+  ];
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -271,189 +289,61 @@ export default function BookingPageClient() {
     const completedFields = Object.values({ ...formData, [name]: value }).filter(val => val && val.toString().trim() !== '').length;
     const totalFields = Object.keys(formData).length;
     trackFormProgress('booking', completedFields, totalFields);
-    
-    // Clear field-specific errors when user starts typing
-    if (fieldErrors[name]) {
-      setFieldErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
   };
 
-  const formatPhoneNumber = (value: string) => {
-    // Remove all non-numeric characters
-    const phoneNumber = value.replace(/\D/g, '');
-    
-    // Format based on length
-    if (phoneNumber.length === 0) return '';
-    if (phoneNumber.length <= 3) return `(${phoneNumber}`;
-    if (phoneNumber.length <= 6) return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
-    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
-  };
-
-  const handlePhoneBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const formatted = formatPhoneNumber(e.target.value);
-    setFormData(prev => ({
-      ...prev,
-      phone: formatted
-    }));
-  };
-
-  const handleServiceTierSelection = (tierId: string) => {
+  const handleServiceTierSelect = (tierId: string) => {
     setFormData(prev => ({
       ...prev,
       serviceTier: tierId
     }));
     
     // Track service tier selection
-    trackServiceTierSelection('booking', tierId);
-    
-    // Clear field-specific errors
-    if (fieldErrors.serviceTier) {
-      setFieldErrors(prev => ({
-        ...prev,
-        serviceTier: ''
-      }));
+    const tier = serviceTiers.find(t => t.id === tierId);
+    if (tier) {
+      trackServiceTierSelection(tierId, tier.name);
     }
-  };
-
-  const clearForm = () => {
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      propertyAddress: '',
-      propertyType: '',
-      serviceTier: '',
-      preferredDate: '',
-      preferredTime: '',
-      serviceType: 'Real Estate Photography',
-      message: ''
-    });
-    setErrors([]);
-    setFieldErrors({});
-  };
-
-  const validateField = (name: string, value: string) => {
-    const newFieldErrors = { ...fieldErrors };
-    
-    switch (name) {
-      case 'name':
-        if (!value.trim()) {
-          newFieldErrors.name = 'Name is required';
-          trackFormValidationError('booking', 'name', 'required');
-        } else if (value.trim().length < 2) {
-          newFieldErrors.name = 'Name must be at least 2 characters';
-          trackFormValidationError('booking', 'name', 'min_length');
-        } else {
-          delete newFieldErrors.name;
-        }
-        break;
-      case 'email':
-        if (!value.trim()) {
-          newFieldErrors.email = 'Email is required';
-          trackFormValidationError('booking', 'email', 'required');
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          newFieldErrors.email = 'Please enter a valid email address';
-          trackFormValidationError('booking', 'email', 'invalid_format');
-        } else {
-          delete newFieldErrors.email;
-        }
-        break;
-      case 'phone':
-        if (value && !/^\(\d{3}\) \d{3}-\d{4}$/.test(value)) {
-          newFieldErrors.phone = 'Please enter a valid phone number';
-          trackFormValidationError('booking', 'phone', 'invalid_format');
-        } else {
-          delete newFieldErrors.phone;
-        }
-        break;
-      case 'propertyAddress':
-        if (!value.trim()) {
-          newFieldErrors.propertyAddress = 'Property address is required';
-          trackFormValidationError('booking', 'propertyAddress', 'required');
-        } else {
-          delete newFieldErrors.propertyAddress;
-        }
-        break;
-      case 'propertyType':
-        if (!value) {
-          newFieldErrors.propertyType = 'Please select a property type';
-          trackFormValidationError('booking', 'propertyType', 'required');
-        } else {
-          delete newFieldErrors.propertyType;
-        }
-        break;
-      case 'serviceTier':
-        if (!value) {
-          newFieldErrors.serviceTier = 'Please select a service package';
-          trackFormValidationError('booking', 'serviceTier', 'required');
-        } else {
-          delete newFieldErrors.serviceTier;
-        }
-        break;
-      case 'preferredDate':
-        if (!value) {
-          newFieldErrors.preferredDate = 'Preferred date is required';
-          trackFormValidationError('booking', 'preferredDate', 'required');
-        } else {
-          delete newFieldErrors.preferredDate;
-        }
-        break;
-      case 'preferredTime':
-        if (!value) {
-          newFieldErrors.preferredTime = 'Preferred time is required';
-          trackFormValidationError('booking', 'preferredTime', 'required');
-        } else {
-          delete newFieldErrors.preferredTime;
-        }
-        break;
-    }
-    
-    setFieldErrors(newFieldErrors);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("APP_LOG:: Form Submitted formData", formData);
-    
+
     // Track form submission attempt
     trackFormSubmission('booking', true);
-    
-    // Store current form data for submission
-    const currentFormData = { ...formData };
-    
-    await handleBookingSubmission(
-      currentFormData,
-      setIsSubmitting,
-      setIsSubmitted,
-      setErrors
-    );
-    
-    // Track form submission result
-    trackFormSubmission('booking', true);
-    clearForm();
+
+    try {
+      await handleBookingSubmission(
+        formData,
+        setIsSubmitting,
+        setIsSubmitted,
+        setErrors
+      );
+      
+      // Track successful form submission
+      trackFormSubmission('booking', true);
+    } catch {
+      // Track failed form submission
+      trackFormSubmission('booking', false);
+    }
   };
 
   return (
     <div className="min-h-screen">
       <Navigation />
-      
+
       {/* Hero Section */}
       <section className="relative overflow-hidden h-[50vh] sm:h-[70vh] pt-20 sm:pt-20">
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
             src={heroBg.src}
-            alt="Book Real Estate Photography Session"
+            alt="Book Your Photography Session"
             fill
             className="object-cover"
             priority
           />
           <div className="absolute inset-0 bg-black bg-opacity-60"></div>
         </div>
-        
+
         {/* Content */}
         <div className="relative z-10 flex items-center justify-center h-full">
           <div className="text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
@@ -462,8 +352,16 @@ export default function BookingPageClient() {
               <span className="bright-text-shadow-dark"> Session</span>
             </h1>
             <p className="text-sm sm:text-lg md:text-xl lg:text-2xl text-white/90 mb-6 sm:mb-8 leading-relaxed font-montserrat">
-              Professional real estate photography services to showcase your properties in the best possible light
+              Get a personalized quote and book your professional real estate photography session
             </p>
+            <div className="flex flex-row sm:flex-row gap-3 sm:gap-4 justify-center">
+              <a href="#booking-form" className="btn-primary font-light font-montserrat border-x-0 border-y-2 border-white text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
+                Start Booking
+              </a>
+              <a href="/contact" className="btn-secondary font-light font-montserrat text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
+                Ask Questions
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -479,97 +377,121 @@ export default function BookingPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h2 className="text-xl sm:text-3xl font-bold text-white mb-3 sm:mb-4 font-heading">Booking Confirmed!</h2>
+                <h2 className="text-xl sm:text-3xl font-bold text-white mb-3 sm:mb-4 font-heading">Booking Submitted!</h2>
                 <p className="text-sm sm:text-lg text-white/80 mb-6 sm:mb-8 font-montserrat">
-                  Thank you for booking with us! We&apos;ve received your request and will contact you within 24 hours to confirm your session details.
+                  Thank you for your booking request! We&apos;ve received your information and will get back to you within 24 hours with a personalized quote and next steps.
                 </p>
-                <button 
-                  onClick={() => setIsSubmitted(false)}
-                  className="bg-white text-gray-900 py-1.5 sm:py-3 px-4 sm:px-8 rounded-lg font-semibold font-montserrat hover:bg-gray-100 transition-colors duration-300 border-x-0 border-y-2 border-white text-xs sm:text-base"
-                >
-                  Book Another Session
-                </button>
+                <div className="flex flex-row sm:flex-row gap-3 sm:gap-4 justify-center">
+                  <button
+                    onClick={() => setIsSubmitted(false)}
+                    className="bg-white text-gray-900 py-1.5 sm:py-3 px-4 sm:px-8 rounded-lg font-semibold font-montserrat hover:bg-gray-100 transition-colors duration-300 border-x-0 border-y-2 border-white text-xs sm:text-base"
+                  >
+                    Submit Another Booking
+                  </button>
+                  <Link
+                    href="/"
+                    className="bg-transparent text-white py-1.5 sm:py-3 px-4 sm:px-8 rounded-lg font-semibold font-montserrat hover:bg-white/10 transition-colors duration-300 border border-white text-xs sm:text-base"
+                  >
+                    Back to Home
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
         </section>
       ) : (
-        <section className="section-padding bg-gray-900">
-          <div className="container-custom">
-            <div className="max-w-6xl mx-auto">
+        <>
+          <section className="py-12 sm:py-16 md:py-24 lg:py-32 bg-gray-900">
+            <div className="container-custom px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-12 sm:mb-16">
                 <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6 font-heading">
                   <span className="bright-text-shadow-dark">Choose Your</span> <span className="bright-text-shadow text-black">Package</span>
                 </h2>
                 <p className="text-sm sm:text-lg md:text-xl text-white/80 font-montserrat max-w-3xl mx-auto">
-                  Select the perfect package for your property photography needs. All packages include professional editing and fast delivery.
+                  Select the perfect package for your property. All packages include professional editing and fast delivery.
                 </p>
               </div>
-              
-              {/* Service Tiers */}
-              <div className="grid md:grid-cols-3 gap-6 sm:gap-8 mb-12 sm:mb-16">
+
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
                 {serviceTiers.map((tier) => (
-                  <div
-                    key={tier.id}
-                    className={`relative bg-gray-800 rounded-2xl p-6 sm:p-8 border-2 transition-all duration-300 cursor-pointer ${
-                      formData.serviceTier === tier.id
-                        ? 'border-white shadow-2xl scale-105'
-                        : 'border-gray-700 hover:border-gray-500'
-                    } ${tier.popular ? 'ring-2 ring-white ring-opacity-50' : ''}`}
-                    onClick={() => handleServiceTierSelection(tier.id)}
-                  >
+                  <div key={tier.id} className="relative">
                     {tier.popular && (
-                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                        <span className="bg-white text-gray-900 px-4 py-1 rounded-full text-sm font-semibold font-montserrat">
+                      <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
+                        <span className="bg-black text-white px-3 sm:px-6 py-1 sm:py-2 rounded-md border-x-0 border-y-2 border-white text-xs sm:text-sm font-light font-montserrat shadow-lg">
                           Most Popular
                         </span>
                       </div>
                     )}
-                    
-                    <div className="text-center">
-                      <h3 className="text-lg sm:text-2xl font-bold text-white mb-2 sm:mb-4 font-heading">
-                        {tier.name}
-                      </h3>
-                      <div className="text-2xl sm:text-4xl font-bold text-white mb-4 sm:mb-6 font-heading">
-                        {tier.price}
+
+                    <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl transition-all duration-500 border-y-2 border-x-0 border-white h-full ${formData.serviceTier === tier.id
+                        ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-white shadow-2xl'
+                        : 'bg-gray-800/50 backdrop-blur-sm border border-gray-700 hover:border-gray-500 hover:shadow-xl'
+                      }`}>
+                      {/* Background gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-gray-900/20"></div>
+
+                      <div className="relative p-4 sm:p-6 lg:p-8 xl:p-10 h-full flex flex-col">
+                        {/* Header */}
+                        <div className="text-center mb-6 sm:mb-8">
+                          <h3 className="text-lg sm:text-2xl lg:text-3xl font-bold mb-2 text-black bright-text-shadow font-heading">
+                            {tier.name}
+                          </h3>
+                          <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 font-heading">
+                            <span className='text-sm sm:text-lg lg:text-xl block font-montserrat font-light mt-4 sm:mt-6 lg:mt-8 mb-1 sm:mb-2'>Starting at</span> {tier.price}
+                          </div>
+                          <p className="text-gray-300 text-xs sm:text-base lg:text-lg font-montserrat leading-relaxed">
+                            {tier.description}
+                          </p>
+                        </div>
+
+                        {/* Features */}
+                        <ul className="space-y-3 sm:space-y-4 flex-grow mb-6 sm:mb-8">
+                          {tier.features.map((feature, index) => (
+                            <li key={index} className="flex items-start group/item">
+                              <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-300 flex items-center justify-center mr-3 sm:mr-4 mt-0.5">
+                                <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                              <span className="text-white/90 font-montserrat group-hover/item:text-white transition-colors duration-200 text-xs sm:text-base">
+                                {feature}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+
+                        {/* Selection Button */}
+                        <button
+                          onClick={() => handleServiceTierSelect(tier.id)}
+                          className={`w-full py-2 sm:py-4 px-3 sm:px-6 rounded-xl font-semibold font-montserrat transition-all duration-300 text-xs sm:text-base ${formData.serviceTier === tier.id
+                              ? 'bg-white text-gray-900 hover:bg-gray-100'
+                              : 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600'
+                            }`}
+                        >
+                          {formData.serviceTier === tier.id ? 'Selected' : 'Select Package'}
+                        </button>
                       </div>
-                      <p className="text-white/80 mb-6 sm:mb-8 text-sm sm:text-base font-montserrat">
-                        {tier.description}
-                      </p>
-                      
-                      <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-                        {tier.features.map((feature, index) => (
-                          <li key={index} className="flex items-center text-white/90 text-xs sm:text-sm font-montserrat">
-                            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
-                      
-                      <button
-                        type="button"
-                        className={`w-full py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-semibold font-montserrat transition-colors duration-300 text-xs sm:text-base ${
-                          formData.serviceTier === tier.id
-                            ? 'bg-white text-gray-900'
-                            : 'bg-gray-700 text-white hover:bg-gray-600'
-                        }`}
-                      >
-                        {formData.serviceTier === tier.id ? 'Selected' : 'Select Package'}
-                      </button>
                     </div>
                   </div>
                 ))}
               </div>
-              
-              {/* Booking Form */}
-              <div className="bg-gray-800 rounded-2xl p-6 sm:p-8 lg:p-12 border border-gray-700">
-                <h3 className="text-xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 font-heading">Book Your Session</h3>
-                
+            </div>
+          </section>
+
+          {/* Booking Form Section */}
+          <section id="booking-form" className="py-12 sm:py-16 md:py-24 lg:py-32 bg-gray-800">
+            <div className="container-custom px-4 sm:px-6 lg:px-8">
+              <div className="max-w-4xl mx-auto">
+                <div className="text-center mb-8 sm:mb-12">
+                  <h2 className="text-xl sm:text-3xl md:text-4xl uppercase text-white mb-3 sm:mb-4 font-bold bright-text-shadow-dark">Get Your Free Quote</h2>
+                  <p className="text-sm sm:text-lg md:text-xl text-white font-montserrat">
+                    Fill out the form below and we&apos;ll get back to you within 24 hours with a personalized quote
+                  </p>
+                </div>
+
                 {/* Error Display */}
                 {errors.length > 0 && (
-                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 sm:mb-8">
                     <ul className="list-disc list-inside">
                       {errors.map((error, index) => (
                         <li key={index}>{error}</li>
@@ -580,194 +502,206 @@ export default function BookingPageClient() {
 
                 <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
                   {/* Personal Information */}
-                  <div className="grid sm:grid-cols-2 gap-6 sm:gap-8">
+                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-white mb-2 font-montserrat">Name *</label>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Full Name *</label>
                       <input
                         type="text"
                         name="name"
                         value={formData.name}
                         onChange={handleInputChange}
                         onFocus={() => trackFormFieldFocus('booking', 'name')}
-                        onBlur={(e) => {
-                          validateField('name', e.target.value);
-                          trackFormFieldBlur('booking', 'name');
-                        }}
+                        onBlur={() => trackFormFieldBlur('booking', 'name')}
                         required
-                        className={`form-input ${fieldErrors.name ? 'border-red-500 focus:border-red-500' : ''}`}
-                        placeholder="Your name"
+                        className="form-input"
+                        placeholder="Your full name"
                       />
-                      {fieldErrors.name && (
-                        <p className="text-red-400 text-sm mt-1 font-montserrat">{fieldErrors.name}</p>
-                      )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-white mb-2 font-montserrat">Email *</label>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Email Address *</label>
                       <input
                         type="email"
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
                         onFocus={() => trackFormFieldFocus('booking', 'email')}
-                        onBlur={(e) => {
-                          validateField('email', e.target.value);
-                          trackFormFieldBlur('booking', 'email');
-                        }}
+                        onBlur={() => trackFormFieldBlur('booking', 'email')}
                         required
-                        className={`form-input ${fieldErrors.email ? 'border-red-500 focus:border-red-500' : ''}`}
+                        className="form-input"
                         placeholder="your@email.com"
                       />
-                      {fieldErrors.email && (
-                        <p className="text-red-400 text-sm mt-1 font-montserrat">{fieldErrors.email}</p>
-                      )}
                     </div>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-2 font-montserrat">Phone</label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      onFocus={() => trackFormFieldFocus('booking', 'phone')}
-                      onBlur={(e) => {
-                        handlePhoneBlur(e);
-                        validateField('phone', e.target.value);
-                        trackFormFieldBlur('booking', 'phone');
-                      }}
-                      className={`form-input ${fieldErrors.phone ? 'border-red-500 focus:border-red-500' : ''}`}
-                      placeholder="(555) 123-4567"
-                    />
-                    {fieldErrors.phone && (
-                      <p className="text-red-400 text-sm mt-1 font-montserrat">{fieldErrors.phone}</p>
-                    )}
+
+                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Phone Number</label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        onFocus={() => trackFormFieldFocus('booking', 'phone')}
+                        onBlur={(e) => {
+                          handlePhoneBlur(e);
+                          trackFormFieldBlur('booking', 'phone');
+                        }}
+                        className="form-input"
+                        placeholder="(555) 123-4567"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Service Type *</label>
+                      <select
+                        name="serviceType"
+                        value={formData.serviceType}
+                        onChange={handleInputChange}
+                        onFocus={() => trackFormFieldFocus('booking', 'serviceType')}
+                        onBlur={() => trackFormFieldBlur('booking', 'serviceType')}
+                        required
+                        className="form-select"
+                      >
+                        {serviceOptions.map((service) => (
+                          <option key={service} value={service}>
+                            {service}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  
-                  {/* Property Information */}
+
+                  {/* Property Details */}
                   <div className="relative">
-                    <label className="block text-sm font-medium text-white mb-2 font-montserrat">Property Address *</label>
+                    <label className="block text-xs font-medium text-white mb-2 font-montserrat">Property Address *</label>
                     <input
-                      ref={addressInputRef}
+                      ref={autocompleteRef}
                       type="text"
                       name="propertyAddress"
                       value={formData.propertyAddress}
-                      onChange={handleAddressChange}
-                      onFocus={() => trackFormFieldFocus('booking', 'propertyAddress')}
-                      onBlur={(e) => {
-                        validateField('propertyAddress', e.target.value);
+                      onChange={(e) => {
+                        handleInputChange(e);
+                        handleAddressSearch(e.target.value);
+                      }}
+                      onFocus={() => {
+                        trackFormFieldFocus('booking', 'propertyAddress');
+                        if (addressSuggestions.length > 0) {
+                          setShowSuggestions(true);
+                        }
+                      }}
+                      onBlur={() => {
                         trackFormFieldBlur('booking', 'propertyAddress');
+                        // Delay hiding suggestions to allow for click selection
+                        setTimeout(() => setShowSuggestions(false), 200);
                       }}
                       required
-                      className={`form-input ${fieldErrors.propertyAddress ? 'border-red-500 focus:border-red-500' : ''}`}
-                      placeholder="Enter property address"
+                      className="form-input"
+                      placeholder="Start typing your address..."
+                      autoComplete="off"
                     />
-                    {fieldErrors.propertyAddress && (
-                      <p className="text-red-400 text-sm mt-1 font-montserrat">{fieldErrors.propertyAddress}</p>
-                    )}
-                    
-                    {/* Address Suggestions */}
+
+                    {/* Address Suggestions Dropdown */}
                     {showSuggestions && addressSuggestions.length > 0 && (
-                      <div
-                        ref={suggestionsRef}
-                        className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 max-h-60 overflow-y-auto"
-                      >
+                      <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                         {addressSuggestions.map((suggestion, index) => (
-                          <button
+                          <div
                             key={index}
-                            type="button"
-                            className="w-full px-4 py-3 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none border-b border-gray-100 last:border-b-0"
-                            onClick={() => handleAddressSuggestionClick(suggestion)}
+                            className="px-4 py-3 text-white hover:bg-gray-700 cursor-pointer border-b border-gray-700 last:border-b-0 transition-colors duration-200"
+                            onClick={() => handleAddressSelect(suggestion)}
                           >
-                            <div className="font-medium text-gray-900 text-sm">
-                              {suggestion.structured_formatting.main_text}
+                            <div className="flex items-center">
+                              <svg className="w-4 h-4 text-gray-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              <span className="text-sm">{suggestion}</span>
                             </div>
-                            <div className="text-gray-500 text-xs">
-                              {suggestion.structured_formatting.secondary_text}
-                            </div>
-                          </button>
+                          </div>
                         ))}
                       </div>
                     )}
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-2 font-montserrat">Property Type *</label>
-                    <select
-                      name="propertyType"
-                      value={formData.propertyType}
-                      onChange={handleInputChange}
-                      onFocus={() => trackFormFieldFocus('booking', 'propertyType')}
-                      onBlur={(e) => {
-                        validateField('propertyType', e.target.value);
-                        trackFormFieldBlur('booking', 'propertyType');
-                      }}
-                      required
-                      className={`form-select ${fieldErrors.propertyType ? 'border-red-500 focus:border-red-500' : ''}`}
-                    >
-                      <option value="">Select property type</option>
-                      <option value="house">House</option>
-                      <option value="condo">Condo/Apartment</option>
-                      <option value="townhouse">Townhouse</option>
-                      <option value="commercial">Commercial</option>
-                      <option value="land">Land</option>
-                      <option value="other">Other</option>
-                    </select>
-                    {fieldErrors.propertyType && (
-                      <p className="text-red-400 text-sm mt-1 font-montserrat">{fieldErrors.propertyType}</p>
-                    )}
-                  </div>
-                  
-                  {/* Date and Time */}
-                  <div className="grid sm:grid-cols-2 gap-6 sm:gap-8">
+
+                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-white mb-2 font-montserrat">Preferred Date *</label>
-                      <input
-                        type="date"
-                        name="preferredDate"
-                        value={formData.preferredDate}
-                        onChange={handleInputChange}
-                        onFocus={() => trackFormFieldFocus('booking', 'preferredDate')}
-                        onBlur={(e) => {
-                          validateField('preferredDate', e.target.value);
-                          trackFormFieldBlur('booking', 'preferredDate');
-                        }}
-                        required
-                        min={new Date().toISOString().split('T')[0]}
-                        className={`form-input ${fieldErrors.preferredDate ? 'border-red-500 focus:border-red-500' : ''}`}
-                      />
-                      {fieldErrors.preferredDate && (
-                        <p className="text-red-400 text-sm mt-1 font-montserrat">{fieldErrors.preferredDate}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-white mb-2 font-montserrat">Preferred Time *</label>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Property Type</label>
                       <select
-                        name="preferredTime"
-                        value={formData.preferredTime}
+                        name="propertyType"
+                        value={formData.propertyType}
                         onChange={handleInputChange}
-                        onFocus={() => trackFormFieldFocus('booking', 'preferredTime')}
-                        onBlur={(e) => {
-                          validateField('preferredTime', e.target.value);
-                          trackFormFieldBlur('booking', 'preferredTime');
-                        }}
-                        required
-                        className={`form-select ${fieldErrors.preferredTime ? 'border-red-500 focus:border-red-500' : ''}`}
+                        onFocus={() => trackFormFieldFocus('booking', 'propertyType')}
+                        onBlur={() => trackFormFieldBlur('booking', 'propertyType')}
+                        className="form-select"
                       >
-                        <option value="">Select preferred time</option>
-                        <option value="morning">Morning (9:00 AM - 12:00 PM)</option>
-                        <option value="afternoon">Afternoon (12:00 PM - 5:00 PM)</option>
-                        <option value="evening">Evening (5:00 PM - 8:00 PM)</option>
-                        <option value="flexible">Flexible</option>
+                        <option value="">Select property type</option>
+                        {propertyTypeOptions.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
                       </select>
-                      {fieldErrors.preferredTime && (
-                        <p className="text-red-400 text-sm mt-1 font-montserrat">{fieldErrors.preferredTime}</p>
-                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Property Size</label>
+                      <select
+                        name="propertySize"
+                        value={formData.propertySize}
+                        onChange={handleInputChange}
+                        onFocus={() => trackFormFieldFocus('booking', 'propertySize')}
+                        onBlur={() => trackFormFieldBlur('booking', 'propertySize')}
+                        className="form-select"
+                      >
+                        <option value="">Select property size</option>
+                        {propertySizeOptions.map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
-                  
+
+                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Budget Range</label>
+                      <select
+                        name="budget"
+                        value={formData.budget}
+                        onChange={handleInputChange}
+                        onFocus={() => trackFormFieldFocus('booking', 'budget')}
+                        onBlur={() => trackFormFieldBlur('booking', 'budget')}
+                        className="form-select"
+                      >
+                        <option value="">Select budget range</option>
+                        {budgetOptions.map((budget) => (
+                          <option key={budget} value={budget}>
+                            {budget}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-white mb-2 font-montserrat">Timeline</label>
+                      <select
+                        name="timeline"
+                        value={formData.timeline}
+                        onChange={handleInputChange}
+                        onFocus={() => trackFormFieldFocus('booking', 'timeline')}
+                        onBlur={() => trackFormFieldBlur('booking', 'timeline')}
+                        className="form-select"
+                      >
+                        <option value="">Select timeline</option>
+                        {timelineOptions.map((timeline) => (
+                          <option key={timeline} value={timeline}>
+                            {timeline}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Additional Message */}
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2 font-montserrat">Additional Message</label>
+                    <label className="block text-xs font-medium text-white mb-2 font-montserrat">Additional Message</label>
                     <textarea
                       name="message"
                       value={formData.message}
@@ -776,22 +710,25 @@ export default function BookingPageClient() {
                       onBlur={() => trackFormFieldBlur('booking', 'message')}
                       rows={4}
                       className="form-textarea"
-                      placeholder="Tell us about your property or any special requirements..."
+                      placeholder="Tell us more about your project, special requirements, or any questions you have..."
                     />
                   </div>
-                  
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full bg-white text-gray-900 py-3 sm:py-4 px-6 sm:px-8 rounded-lg font-semibold font-montserrat hover:bg-gray-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed border-x-0 border-y-2 border-white text-sm sm:text-base"
-                  >
-                    {isSubmitting ? 'Submitting...' : 'Book Session'}
-                  </button>
+
+                  {/* Submit Button */}
+                  <div className="text-center">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="bg-white text-gray-900 py-2 sm:py-4 px-6 sm:px-12 rounded-lg font-semibold font-montserrat hover:bg-gray-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed border-x-0 border-y-2 border-white text-sm sm:text-lg"
+                    >
+                      {isSubmitting ? 'Submitting...' : 'Get My Free Quote'}
+                    </button>
+                  </div>
                 </form>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </>
       )}
 
       <Footer />

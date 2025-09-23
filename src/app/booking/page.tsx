@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
-import BookingPageClient from './BookingPageClient';
+import BookingPageComponent from './BookingPageClient';
 
+// Booking page wrapper component
 export const metadata: Metadata = {
   title: "Book Real Estate Photography Session | Professional Property Photos | BrightOne",
   description: "Book your professional real estate photography session with BrightOne. Choose from our service packages including interior/exterior photography, drone shots, virtual staging, and 3D tours. Serving GTA and surrounding areas.",
@@ -30,6 +31,6 @@ export const metadata: Metadata = {
   },
 };
 
-export default function BookingPage() {
-  return <BookingPageClient />;
+export default function BookingPageWrapper() {
+  return <BookingPageComponent />;
 }
