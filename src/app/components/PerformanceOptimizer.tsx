@@ -55,8 +55,8 @@ export default function PerformanceOptimizer() {
               };
               
               // Send to analytics if needed
-              if (typeof gtag !== 'undefined') {
-                gtag('event', 'web_vitals', {
+              if (typeof window !== 'undefined' && window.gtag) {
+                window.gtag('event', 'web_vitals', {
                   event_category: 'Performance',
                   event_label: 'Core Web Vitals',
                   value: Math.round(metrics.FCP),
