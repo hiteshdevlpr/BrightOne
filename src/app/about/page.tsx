@@ -3,6 +3,36 @@ import Footer from '../components/Footer';
 import Image from 'next/image';
 import StoryImage from '@/assets/images/about.jpg';
 import servicebg from '@/assets/images/service-bg-2.jpg';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "About BrightOne - Professional Real Estate Photography Team | GTA",
+  description: "Learn about BrightOne's professional real estate photography team. Over a decade of experience in technology and design, specializing in property photography, virtual staging, and marketing solutions across the Greater Toronto Area.",
+  keywords: "about brightone, real estate photography team, professional photographers, GTA photography, property marketing experts, virtual staging specialists",
+  openGraph: {
+    title: "About BrightOne - Professional Real Estate Photography Team | GTA",
+    description: "Learn about BrightOne's professional real estate photography team. Over a decade of experience in technology and design, specializing in property photography, virtual staging, and marketing solutions across the Greater Toronto Area.",
+    type: "website",
+    url: "https://brightone.ca/about",
+    images: [
+      {
+        url: "/meta-header.png",
+        width: 1200,
+        height: 630,
+        alt: "About BrightOne Real Estate Photography Team",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About BrightOne - Professional Real Estate Photography Team | GTA",
+    description: "Learn about BrightOne's professional real estate photography team. Over a decade of experience in technology and design, specializing in property photography, virtual staging, and marketing solutions across the Greater Toronto Area.",
+    images: ["/meta-header.png"],
+  },
+  alternates: {
+    canonical: "https://brightone.ca/about",
+  },
+};
 
 export default function AboutPage() {
   return (
