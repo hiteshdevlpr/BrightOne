@@ -87,7 +87,7 @@ export default function PortfolioPage() {
               <span className="bright-text-shadow text-black">Portfolio</span> <span className="bright-text-shadow-dark">Coming Soon</span>
             </h2>
             <p className="text-sm sm:text-base md:text-lg text-white/80 mb-6 sm:mb-8 leading-relaxed font-montserrat max-w-3xl mx-auto">
-              We're curating our best work to showcase the quality and creativity of our real estate photography and virtual staging services.
+              We&apos;re curating our best work to showcase the quality and creativity of our real estate photography and virtual staging services.
             </p>
             
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
