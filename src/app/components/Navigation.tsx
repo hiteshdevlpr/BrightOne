@@ -20,9 +20,9 @@ export default function Navigation() {
 
   useEffect(() => {
     const handleScroll = () => {
-      // Calculate 25vh in pixels
+      // Calculate 10vh in pixels for more responsive behavior
       const viewportHeight = window.innerHeight;
-      const scrollThreshold = viewportHeight * 0.25; // 25vh
+      const scrollThreshold = viewportHeight * 0.1; // 10vh
       setIsScrolled(window.scrollY > scrollThreshold);
     };
 
@@ -131,7 +131,7 @@ export default function Navigation() {
       }`}>
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
         <div className={`relative flex justify-center md:justify-between items-center transition-all duration-300 ${
-          isScrolled ? 'py-1' : 'py-2'
+          isScrolled ? 'py-0.5' : 'py-3'
         }`}>
           <div className="flex items-center md:block">
             <Link href="/" className="flex justify-center">
@@ -142,7 +142,7 @@ export default function Navigation() {
                 height={40} 
                 className={`transition-all duration-300 ${
                   isScrolled 
-                    ? 'w-16 sm:w-18 lg:w-20 xl:w-28' 
+                    ? 'w-12 sm:w-14 lg:w-16 xl:w-20' 
                     : 'w-20 sm:w-24 lg:w-28 xl:w-36'
                 }`} 
               />
