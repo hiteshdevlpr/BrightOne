@@ -17,17 +17,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Starting price breakdown migration via API...');
+    console.log('Starting complete database migration via API...');
 
-    // Read the migration SQL file
-    const migrationPath = path.join(process.cwd(), 'migrate-price-breakdown.sql');
+    // Read the comprehensive migration SQL file
+    const migrationPath = path.join(process.cwd(), 'migrate-complete.sql');
     const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
 
-    // Execute the migration
+    // Execute the complete migration
     await query(migrationSQL);
 
-    // Also fix the selected_addons column type
-    console.log('Fixing selected_addons column type...');
+    // Also fix the selected_addons column type to JSONB for better performance
+    console.log('Fixing selected_addons column type to JSONB...');
     await query(`
       ALTER TABLE bookings 
       ALTER COLUMN selected_addons TYPE JSONB 
@@ -37,14 +37,14 @@ export async function POST(request: NextRequest) {
       END;
     `);
 
-    console.log('✅ Price breakdown migration completed successfully via API!');
+    console.log('✅ Complete database migration completed successfully via API!');
 
-    // Verify the migration
+    // Verify the migration - check all new columns
     const result = await query(`
       SELECT column_name, data_type, is_nullable, column_default 
       FROM information_schema.columns 
       WHERE table_name = 'bookings' 
-      AND column_name IN ('package_price', 'addons_price', 'subtotal', 'tax_rate', 'tax_amount', 'final_total', 'price_breakdown')
+      AND column_name IN ('selected_addons', 'preferred_date', 'preferred_time', 'total_price', 'package_price', 'addons_price', 'subtotal', 'tax_rate', 'tax_amount', 'final_total', 'price_breakdown')
       ORDER BY column_name;
     `);
 
@@ -57,11 +57,15 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Price breakdown migration completed successfully!',
+      message: 'Complete database migration completed successfully!',
       migration: {
-        name: 'price-breakdown-migration',
-        description: 'Adds detailed pricing columns to bookings table',
+        name: 'complete-database-migration',
+        description: 'Adds all required columns to bookings table including basic fields and detailed pricing',
         columnsAdded: [
+          'selected_addons (TEXT[] -> JSONB)',
+          'preferred_date (VARCHAR)',
+          'preferred_time (VARCHAR)', 
+          'total_price (VARCHAR)',
           'package_price (DECIMAL)',
           'addons_price (DECIMAL)', 
           'subtotal (DECIMAL)',
@@ -104,7 +108,7 @@ export async function GET(request: NextRequest) {
       SELECT column_name, data_type, is_nullable, column_default 
       FROM information_schema.columns 
       WHERE table_name = 'bookings' 
-      AND column_name IN ('package_price', 'addons_price', 'subtotal', 'tax_rate', 'tax_amount', 'final_total', 'price_breakdown')
+      AND column_name IN ('selected_addons', 'preferred_date', 'preferred_time', 'total_price', 'package_price', 'addons_price', 'subtotal', 'tax_rate', 'tax_amount', 'final_total', 'price_breakdown')
       ORDER BY column_name;
     `);
 
@@ -115,12 +119,12 @@ export async function GET(request: NextRequest) {
       default: row.column_default
     }));
 
-    const isMigrated = migrationColumns.length === 7; // All 7 columns should exist
+    const isMigrated = migrationColumns.length === 11; // All 11 columns should exist
 
     return NextResponse.json({
       success: true,
       migration: {
-        name: 'price-breakdown-migration',
+        name: 'complete-database-migration',
         status: isMigrated ? 'completed' : 'pending',
         columns: migrationColumns,
         isComplete: isMigrated

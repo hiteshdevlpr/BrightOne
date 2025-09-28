@@ -37,7 +37,7 @@ echo "$STATUS_RESPONSE" | jq '.migration' 2>/dev/null || echo "$STATUS_RESPONSE"
 
 # Run the migration
 echo ""
-echo "🔄 Running price breakdown migration..."
+echo "🔄 Running complete database migration..."
 MIGRATION_RESPONSE=$(curl -s -X POST -H "Authorization: Bearer $MIGRATION_TOKEN" "$BASE_URL/api/migrate")
 
 if echo "$MIGRATION_RESPONSE" | grep -q '"success": true'; then
@@ -47,7 +47,7 @@ if echo "$MIGRATION_RESPONSE" | grep -q '"success": true'; then
     echo "$MIGRATION_RESPONSE" | jq '.migration' 2>/dev/null || echo "$MIGRATION_RESPONSE"
     
     echo ""
-    echo "🎉 Database is now ready with price breakdown functionality!"
+    echo "🎉 Database is now ready with all required columns and functionality!"
 else
     echo "❌ Migration failed!"
     echo "$MIGRATION_RESPONSE" | jq '.error' 2>/dev/null || echo "$MIGRATION_RESPONSE"
