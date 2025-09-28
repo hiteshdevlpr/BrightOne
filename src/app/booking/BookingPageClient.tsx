@@ -96,6 +96,7 @@ export default function BookingPage() {
     propertySize: '',
     selectedPackage: '',
     selectedAddOns: [] as string[],
+    virtualStagingPhotos: 3,
     preferredDate: '',
     preferredTime: '',
     message: ''
@@ -104,9 +105,39 @@ export default function BookingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isManualAddress, setIsManualAddress] = useState(false);
+
+  // Initial form state for reset
+  const initialFormState = {
+    name: '',
+    email: '',
+    phone: '',
+    propertyAddress: '',
+    unitNumber: '',
+    propertySize: '',
+    selectedPackage: '',
+    selectedAddOns: [] as string[],
+    virtualStagingPhotos: 3,
+    preferredDate: '',
+    preferredTime: '',
+    message: ''
+  };
+
+  // Reset form function
+  const resetForm = () => {
+    setFormData(initialFormState);
+    setCurrentStep(1);
+    setErrors([]);
+    setFieldErrors({});
+    setAddressSuggestions([]);
+    setShowSuggestions(false);
+    setIsManualAddress(false);
+    setIsSubmitted(false);
+    setIsSubmitting(false);
+  };
   const autocompleteRef = useRef<HTMLInputElement>(null);
   const autocompleteService = useRef<GoogleMapsAutocompleteService | null>(null);
 
@@ -141,6 +172,7 @@ export default function BookingPage() {
     };
     return videoCounts[packageType] || 0;
   };
+
 
   const getSizeMultiplier = (size: string) => {
     const slab = getPropertySizeSlab(size);
@@ -251,7 +283,8 @@ export default function BookingPage() {
     { id: 'social_reel', name: 'Social Media Reel', description: 'Short form vertical cut for social platforms', price: 99, category: 'videography' },
     { id: 'virtual_tour', name: '3D Virtual Tour (iGUIDE)', description: 'Interactive 3D property tour', price: 199, category: 'virtual_tour' },
     { id: 'floor_plan', name: '2D Floor Plan', description: 'Accurate layout for MLS compliance', price: 99, category: 'floor_plans' },
-    { id: 'listing_website', name: 'Listing Website', description: 'Custom property showcase website', price: 99, category: 'listing_website' }
+    { id: 'listing_website', name: 'Listing Website', description: 'Custom property showcase website', price: 99, category: 'listing_website' },
+    { id: 'virtual_staging', name: 'Virtual Staging', description: 'Digitally furnished and decorated photos (3 photos base)', price: 99, category: 'virtual_staging' }
   ];
 
   // Initialize Google Maps Autocomplete
@@ -335,12 +368,61 @@ export default function BookingPage() {
     return phoneNumber;
   };
 
+  // Validation functions
+  const validateEmail = (email: string): string | null => {
+    if (!email.trim()) {
+      return 'Email is required';
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return 'Invalid email format';
+    }
+    return null;
+  };
+
+  const validatePhone = (phone: string): string | null => {
+    if (!phone.trim()) {
+      return null; // Phone is optional
+    }
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+    if (!phoneRegex.test(cleanPhone)) {
+      return 'Invalid phone number format';
+    }
+    return null;
+  };
+
+  const validateField = (name: string, value: string) => {
+    let error: string | null = null;
+    
+    switch (name) {
+      case 'email':
+        error = validateEmail(value);
+        break;
+      case 'phone':
+        error = validatePhone(value);
+        break;
+      default:
+        break;
+    }
+    
+    setFieldErrors(prev => ({
+      ...prev,
+      [name]: error || ''
+    }));
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+
+    // Validate fields that need validation
+    if (name === 'email' || name === 'phone') {
+      validateField(name, value);
+    }
 
     trackFormFieldChange('booking', name, value);
   };
@@ -359,12 +441,67 @@ export default function BookingPage() {
   };
 
   const handleAddOnToggle = (addOnId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedAddOns: prev.selectedAddOns.includes(addOnId)
-        ? prev.selectedAddOns.filter(id => id !== addOnId)
-        : [...prev.selectedAddOns, addOnId]
-    }));
+    setFormData(prev => {
+      const isCurrentlySelected = prev.selectedAddOns.includes(addOnId);
+      
+      if (addOnId === 'virtual_staging') {
+        // For virtual staging, include the photo count in the add-on ID
+        const virtualStagingId = `virtual_staging_${prev.virtualStagingPhotos}`;
+        const isVirtualStagingSelected = prev.selectedAddOns.some(id => id.startsWith('virtual_staging_'));
+        
+        if (isCurrentlySelected || isVirtualStagingSelected) {
+          // Remove any existing virtual staging entry
+          return {
+            ...prev,
+            selectedAddOns: prev.selectedAddOns.filter(id => !id.startsWith('virtual_staging_'))
+          };
+        } else {
+          // Add virtual staging with current photo count
+          return {
+            ...prev,
+            selectedAddOns: [...prev.selectedAddOns, virtualStagingId]
+          };
+        }
+      } else {
+        // For other add-ons, use the simple toggle logic
+        return {
+          ...prev,
+          selectedAddOns: isCurrentlySelected
+            ? prev.selectedAddOns.filter(id => id !== addOnId)
+            : [...prev.selectedAddOns, addOnId]
+        };
+      }
+    });
+  };
+
+  const handleVirtualStagingPhotosChange = (increment: boolean) => {
+    setFormData(prev => {
+      const newPhotoCount = increment 
+        ? prev.virtualStagingPhotos + 1 
+        : Math.max(3, prev.virtualStagingPhotos - 1);
+      
+      // Check if virtual staging is currently selected
+      const isVirtualStagingSelected = prev.selectedAddOns.some(id => id.startsWith('virtual_staging_'));
+      
+      if (isVirtualStagingSelected) {
+        // Update the virtual staging entry with new photo count
+        const updatedAddOns = prev.selectedAddOns.map(id => 
+          id.startsWith('virtual_staging_') ? `virtual_staging_${newPhotoCount}` : id
+        );
+        
+        return {
+          ...prev,
+          virtualStagingPhotos: newPhotoCount,
+          selectedAddOns: updatedAddOns
+        };
+      } else {
+        // Just update the photo count
+        return {
+          ...prev,
+          virtualStagingPhotos: newPhotoCount
+        };
+      }
+    });
   };
 
   const handleNext = () => {
@@ -386,7 +523,18 @@ export default function BookingPage() {
 
     const multiplier = getSizeMultiplier(formData.propertySize);
     const addOnPrice = formData.selectedAddOns.reduce((total, addOnId) => {
-      const addOn = addOns.find(a => a.id === addOnId);
+      const isVirtualStaging = addOnId.startsWith('virtual_staging_');
+      const baseAddOnId = isVirtualStaging ? 'virtual_staging' : addOnId;
+      const addOn = addOns.find(a => a.id === baseAddOnId);
+      
+      if (isVirtualStaging) {
+        // Virtual staging: $99 base for 3 photos, $20 per additional photo
+        const basePrice = 99;
+        const photoCount = parseInt(addOnId.split('_')[2]) || formData.virtualStagingPhotos;
+        const additionalPhotos = Math.max(0, photoCount - 3);
+        const additionalPrice = additionalPhotos * 20;
+        return total + Math.round((basePrice + additionalPrice) * multiplier);
+      }
       return total + Math.round((addOn?.price || 0) * multiplier);
     }, 0);
 
@@ -403,7 +551,9 @@ export default function BookingPage() {
         serviceType: 'Real Estate Photography Package',
         serviceTier: formData.selectedPackage,
         totalPrice: calculateTotal().toString(),
-        message: `Selected Package: ${getPackages(formData.propertySize).find(p => p.id === formData.selectedPackage)?.name}\nSelected Add-ons: ${formData.selectedAddOns.map(id => addOns.find(a => a.id === id)?.name).join(', ')}\n\n${formData.message}`
+        // Keep original add-on IDs for database storage
+        selectedAddOns: formData.selectedAddOns,
+        message: formData.message // Keep only the user's message, addons are now separate
       };
 
       await handleBookingSubmission(
@@ -475,7 +625,7 @@ export default function BookingPage() {
                 </p>
                 <div className="flex flex-row sm:flex-row gap-3 sm:gap-4 justify-center">
                   <button
-                    onClick={() => setIsSubmitted(false)}
+                    onClick={resetForm}
                     className="bg-white text-gray-900 py-1.5 sm:py-3 px-4 sm:px-8 rounded-lg font-semibold font-montserrat hover:bg-gray-100 transition-colors duration-300 border-x-0 border-y-2 border-white text-xs sm:text-base"
                   >
                     Submit Another Booking
@@ -503,27 +653,37 @@ export default function BookingPage() {
                   <div className="flex items-center justify-center space-x-4 sm:space-x-8">
                     {[1, 2, 3].map((step) => (
                       <div key={step} className="flex items-center">
-                        <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm sm:text-lg font-bold ${currentStep >= step
+                        <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm sm:text-lg font-bold transition-all duration-300 ${
+                          currentStep === step
+                            ? 'bg-white text-gray-900 shadow-lg scale-110'
+                            : currentStep > step
                             ? 'bg-white text-gray-900'
                             : 'bg-gray-600 text-gray-300'
                           }`}>
                           {step}
                         </div>
                         {step < 3 && (
-                          <div className={`w-8 sm:w-16 h-1 mx-2 sm:mx-4 ${currentStep > step ? 'bg-white' : 'bg-gray-600'
+                          <div className={`w-8 sm:w-16 h-1 mx-2 sm:mx-4 transition-all duration-300 ${
+                            currentStep > step ? 'bg-white' : 'bg-gray-600'
                             }`} />
                         )}
                       </div>
                     ))}
                   </div>
                   <div className="flex justify-center mt-4 space-x-8 sm:space-x-16">
-                    <span className={`text-xs sm:text-sm font-montserrat ${currentStep >= 1 ? 'text-white' : 'text-gray-400'}`}>
+                    <span className={`text-xs sm:text-sm font-montserrat transition-all duration-300 ${
+                      currentStep === 1 ? 'text-white font-bold' : currentStep > 1 ? 'text-white' : 'text-gray-400'
+                    }`}>
                       Property Details
                     </span>
-                    <span className={`text-xs sm:text-sm font-montserrat ${currentStep >= 2 ? 'text-white' : 'text-gray-400'}`}>
+                    <span className={`text-xs sm:text-sm font-montserrat transition-all duration-300 ${
+                      currentStep === 2 ? 'text-white font-bold' : currentStep > 2 ? 'text-white' : 'text-gray-400'
+                    }`}>
                       Select Package
                     </span>
-                    <span className={`text-xs sm:text-sm font-montserrat ${currentStep >= 3 ? 'text-white' : 'text-gray-400'}`}>
+                    <span className={`text-xs sm:text-sm font-montserrat transition-all duration-300 ${
+                      currentStep === 3 ? 'text-white font-bold' : 'text-gray-400'
+                    }`}>
                       Contact Info
                     </span>
                   </div>
@@ -729,8 +889,8 @@ export default function BookingPage() {
                               </div>
                             )}
 
-                            <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl transition-all duration-500 border-y-2 border-x-0 border-white h-full ${formData.selectedPackage === pkg.id
-                                ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-white shadow-2xl'
+                            <div className={`relative overflow-hidden rounded-2xl border-2 sm:rounded-3xl transition-all duration-500 border-y-2 border-x-0 border-white h-full ${formData.selectedPackage === pkg.id
+                                ? 'bg-gradient-to-br from-gray-600 to-gray-800 border-2 border-white shadow-2xl'
                                 : 'bg-gray-800/50 backdrop-blur-sm border border-gray-700 hover:border-gray-500 hover:shadow-xl'
                               }`}>
                               <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-gray-900/20"></div>
@@ -833,26 +993,91 @@ export default function BookingPage() {
                             <p className="text-gray-300 font-montserrat text-sm text-center mb-6">
                               Add extra services to enhance your package
                             </p>
+                            
+
                             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                               {availableAddOns.map((addOn) => {
                                 const multiplier = getSizeMultiplier(formData.propertySize);
-                                const adjustedPrice = Math.round(addOn.price * multiplier);
+                                const isVirtualStaging = addOn.id === 'virtual_staging';
+                                const isSelected = isVirtualStaging 
+                                  ? formData.selectedAddOns.some(id => id.startsWith('virtual_staging_'))
+                                  : formData.selectedAddOns.includes(addOn.id);
+                                
+                                // Calculate virtual staging price
+                                let adjustedPrice = Math.round(addOn.price * multiplier);
+                                if (isVirtualStaging) {
+                                  const basePrice = 99;
+                                  const additionalPhotos = Math.max(0, formData.virtualStagingPhotos - 3);
+                                  const additionalPrice = additionalPhotos * 20;
+                                  adjustedPrice = Math.round((basePrice + additionalPrice) * multiplier);
+                                }
+                                
                                 return (
-                                  <div key={addOn.id} className="flex items-center p-4 bg-gray-800 rounded-lg border border-gray-700 hover:border-gray-500 transition-colors">
-                                    <input
-                                      type="checkbox"
-                                      id={addOn.id}
-                                      checked={formData.selectedAddOns.includes(addOn.id)}
-                                      onChange={() => handleAddOnToggle(addOn.id)}
-                                      className="w-4 h-4 text-white bg-gray-700 border-gray-600 rounded focus:ring-white focus:ring-2"
-                                    />
-                                    <div className="ml-3 flex-grow">
-                                      <label htmlFor={addOn.id} className="text-white font-montserrat text-sm font-medium cursor-pointer">
-                                        {addOn.name}
-                                      </label>
-                                      <p className="text-gray-400 text-xs font-montserrat">{addOn.description}</p>
-                                      <p className="text-white font-montserrat text-sm font-bold">${adjustedPrice}</p>
+                                  <div key={addOn.id} className={`p-4  rounded-lg border border-gray-700 hover:border-gray-500 transition-colors ${formData.selectedAddOns.includes(addOn.id) ? 'bg-gray-600' : 'bg-gray-800'}`}>
+                                    <div className="flex items-center mb-3">
+                                      <input
+                                        type="checkbox"
+                                        id={addOn.id}
+                                        checked={isSelected}
+                                        onChange={() => handleAddOnToggle(addOn.id)}
+                                        className="w-4 h-4 text-white bg-gray-700 border-gray-600 rounded focus:ring-white focus:ring-2"
+                                      />
+                                      <div className="ml-3 flex-grow">
+                                        <label htmlFor={addOn.id} className="text-white font-montserrat text-sm font-medium cursor-pointer">
+                                          {addOn.name}
+                                        </label>
+                                        <p className="text-gray-400 text-xs font-montserrat">{addOn.description}</p>
+                                        <p className="text-white font-montserrat text-sm font-bold">${adjustedPrice}</p>
+                                      </div>
                                     </div>
+                                    
+                                    {/* Virtual Staging Controls - Only show when selected */}
+                                    {isVirtualStaging && isSelected && (
+                                      <div className="mt-4 pt-4 border-t border-gray-700">
+                                        <div className="flex items-center justify-center space-x-4">
+                                          <button
+                                            type="button"
+                                            onClick={() => handleVirtualStagingPhotosChange(false)}
+                                            disabled={formData.virtualStagingPhotos <= 3}
+                                            className="w-8 h-8 bg-gray-700 text-white rounded-lg flex items-center justify-center hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                          >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                                            </svg>
+                                          </button>
+                                          
+                                          <div className="text-center">
+                                            <div className="text-lg font-bold text-white font-heading">
+                                              {formData.virtualStagingPhotos}
+                                            </div>
+                                            <div className="text-xs text-gray-400 font-montserrat">
+                                              Photos
+                                            </div>
+                                          </div>
+                                          
+                                          <button
+                                            type="button"
+                                            onClick={() => handleVirtualStagingPhotosChange(true)}
+                                            className="w-8 h-8 bg-gray-700 text-white rounded-lg flex items-center justify-center hover:bg-gray-600 transition-colors"
+                                          >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                            </svg>
+                                          </button>
+                                        </div>
+                                        
+                                        {formData.virtualStagingPhotos > 3 && (
+                                          <div className="mt-3 text-center">
+                                            <p className="text-gray-300 font-montserrat text-xs">
+                                              {formData.virtualStagingPhotos - 3} additional photos × ${Math.round(20 * multiplier)} = 
+                                              <span className="font-bold ml-1">
+                                                +${Math.round((formData.virtualStagingPhotos - 3) * 20 * multiplier)}
+                                              </span>
+                                            </p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               })}
@@ -931,11 +1156,17 @@ export default function BookingPage() {
                               value={formData.email}
                               onChange={handleInputChange}
                               onFocus={() => trackFormFieldFocus('booking', 'email')}
-                              onBlur={() => trackFormFieldBlur('booking', 'email')}
+                              onBlur={() => {
+                                validateField('email', formData.email);
+                                trackFormFieldBlur('booking', 'email');
+                              }}
                               required
-                              className="form-input"
+                              className={`form-input ${fieldErrors.email ? 'border-red-500 focus:border-red-500' : ''}`}
                               placeholder="your@email.com"
                             />
+                            {fieldErrors.email && (
+                              <p className="text-red-400 text-sm mt-1 font-montserrat">{fieldErrors.email}</p>
+                            )}
                           </div>
                         </div>
 
@@ -950,11 +1181,118 @@ export default function BookingPage() {
                             onBlur={(e) => {
                               const formatted = formatPhoneNumber(e.target.value);
                               setFormData(prev => ({ ...prev, phone: formatted }));
+                              validateField('phone', formatted);
                               trackFormFieldBlur('booking', 'phone');
                             }}
-                            className="form-input"
+                            className={`form-input ${fieldErrors.phone ? 'border-red-500 focus:border-red-500' : ''}`}
                             placeholder="(555) 123-4567"
                           />
+                          {fieldErrors.phone && (
+                            <p className="text-red-400 text-sm mt-1 font-montserrat">{fieldErrors.phone}</p>
+                          )}
+                        </div>
+
+                        {/* Preferred Date and Time Selection */}
+                        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                          <h3 className="text-lg font-semibold text-white mb-4 font-heading">Schedule Your Session</h3>
+                          
+                          <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+                            {/* Date Selection */}
+                            <div>
+                              <label className="block text-sm font-medium text-white mb-2 font-montserrat">
+                                <span className="flex items-center">
+                                  <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  Preferred Date
+                                </span>
+                              </label>
+                              <input
+                                type="date"
+                                name="preferredDate"
+                                value={formData.preferredDate}
+                                onChange={handleInputChange}
+                                onFocus={() => trackFormFieldFocus('booking', 'preferredDate')}
+                                onBlur={() => trackFormFieldBlur('booking', 'preferredDate')}
+                                min={new Date().toISOString().split('T')[0]}
+                                max={new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                                className="form-input text-center font-montserrat"
+                              />
+                              <p className="text-gray-400 text-xs mt-1 font-montserrat">
+                                Next 3 weeks available
+                              </p>
+                            </div>
+
+                            {/* Time Selection */}
+                            <div>
+                              <label className="block text-sm font-medium text-white mb-2 font-montserrat">
+                                <span className="flex items-center">
+                                  <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  Preferred Time
+                                </span>
+                              </label>
+                              <select
+                                name="preferredTime"
+                                value={formData.preferredTime}
+                                onChange={handleInputChange}
+                                onFocus={() => trackFormFieldFocus('booking', 'preferredTime')}
+                                onBlur={() => trackFormFieldBlur('booking', 'preferredTime')}
+                                disabled={!formData.preferredDate}
+                                className={`form-input font-montserrat ${!formData.preferredDate ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              >
+                                <option value="">
+                                  {formData.preferredDate ? 'Select time slot' : 'Select date first'}
+                                </option>
+                                <option value="9:00 AM">9:00 AM</option>
+                                <option value="9:30 AM">9:30 AM</option>
+                                <option value="10:00 AM">10:00 AM</option>
+                                <option value="10:30 AM">10:30 AM</option>
+                                <option value="11:00 AM">11:00 AM</option>
+                                <option value="11:30 AM">11:30 AM</option>
+                                <option value="12:00 PM">12:00 PM</option>
+                                <option value="12:30 PM">12:30 PM</option>
+                                <option value="1:00 PM">1:00 PM</option>
+                                <option value="1:30 PM">1:30 PM</option>
+                                <option value="2:00 PM">2:00 PM</option>
+                                <option value="2:30 PM">2:30 PM</option>
+                                <option value="3:00 PM">3:00 PM</option>
+                                <option value="3:30 PM">3:30 PM</option>
+                                <option value="4:00 PM">4:00 PM</option>
+                                <option value="4:30 PM">4:30 PM</option>
+                                <option value="5:00 PM">5:00 PM</option>
+                                <option value="5:30 PM">5:30 PM</option>
+                                <option value="6:00 PM">6:00 PM</option>
+                              </select>
+                              <p className="text-gray-400 text-xs mt-1 font-montserrat">
+                                9:00 AM - 6:00 PM (30-min slots)
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Selected Date/Time Display */}
+                          {(formData.preferredDate || formData.preferredTime) && (
+                            <div className="mt-4 pt-4 border-t border-gray-600">
+                              <div className="flex items-center justify-center">
+                                <div className="bg-white/10 rounded-lg px-4 py-2">
+                                  <div className="text-center">
+                                    <p className="text-white font-montserrat text-sm">
+                                      <span className="font-semibold">Selected:</span>
+                                    </p>
+                                    <p className="text-white font-heading text-lg">
+                                      {formData.preferredDate ? new Date(formData.preferredDate).toLocaleDateString('en-US', { 
+                                        weekday: 'short', 
+                                        month: 'short', 
+                                        day: 'numeric' 
+                                      }) : 'No date selected'}
+                                      {formData.preferredTime && ` at ${formData.preferredTime}`}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <div>
@@ -984,13 +1322,49 @@ export default function BookingPage() {
                                   ${getPackages(formData.propertySize).find(p => p.id === formData.selectedPackage)?.basePrice}
                                 </span>
                               </div>
+                              
+                              {/* Preferred Date and Time */}
+                              {(formData.preferredDate || formData.preferredTime) && (
+                                <div className="pt-2 border-t border-gray-600">
+                                  <div className="text-gray-300 text-sm font-montserrat">
+                                    <div className="flex justify-between">
+                                      <span>Preferred Date:</span>
+                                      <span>{formData.preferredDate ? new Date(formData.preferredDate).toLocaleDateString('en-US', { 
+                                        weekday: 'long', 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric' 
+                                      }) : 'Not specified'}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Preferred Time:</span>
+                                      <span>{formData.preferredTime || 'Not specified'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                               {formData.selectedAddOns.map(addOnId => {
-                                const addOn = addOns.find(a => a.id === addOnId);
+                                const isVirtualStaging = addOnId.startsWith('virtual_staging_');
+                                const baseAddOnId = isVirtualStaging ? 'virtual_staging' : addOnId;
+                                const addOn = addOns.find(a => a.id === baseAddOnId);
                                 const multiplier = getSizeMultiplier(formData.propertySize);
-                                const adjustedPrice = Math.round((addOn?.price || 0) * multiplier);
+                                let adjustedPrice = Math.round((addOn?.price || 0) * multiplier);
+                                
+                                // Special handling for virtual staging
+                                if (isVirtualStaging) {
+                                  const basePrice = 99;
+                                  const photoCount = parseInt(addOnId.split('_')[2]) || formData.virtualStagingPhotos;
+                                  const additionalPhotos = Math.max(0, photoCount - 3);
+                                  const additionalPrice = additionalPhotos * 20;
+                                  adjustedPrice = Math.round((basePrice + additionalPrice) * multiplier);
+                                }
+                                
                                 return addOn ? (
                                   <div key={addOnId} className="flex justify-between text-gray-300">
-                                    <span className="font-montserrat text-sm">+ {addOn.name}</span>
+                                    <span className="font-montserrat text-sm">
+                                      + {addOn.name}
+                                      {isVirtualStaging && ` (${addOnId.split('_')[2] || formData.virtualStagingPhotos} photos)`}
+                                    </span>
                                     <span className="font-montserrat text-sm">+${adjustedPrice}</span>
                                   </div>
                                 ) : null;
@@ -1016,7 +1390,7 @@ export default function BookingPage() {
                           </button>
                           <button
                             type="submit"
-                            disabled={isSubmitting || !formData.name || !formData.email}
+                            disabled={isSubmitting || !formData.name || !formData.email || !!fieldErrors.email || !!fieldErrors.phone}
                             className="bg-white text-gray-900 py-3 px-8 rounded-lg font-semibold font-montserrat hover:bg-gray-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed border-x-0 border-y-2 border-white"
                           >
                             {isSubmitting ? 'Submitting...' : 'Complete Booking'}

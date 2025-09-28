@@ -16,6 +16,7 @@ export interface BookingFormData {
   serviceTier?: string;
   selectedPackage?: string;
   selectedAddOns?: string[];
+  virtualStagingPhotos?: number;
   message?: string;
   preferredDate?: string;
   preferredTime?: string;
@@ -57,6 +58,7 @@ export async function handleBookingSubmission(
         message: formData.message || '',
         packageType: formData.packageType || formData.serviceTier || 'Standard',
         totalPrice: formData.totalPrice || 'To be determined',
+        selectedAddOns: formData.selectedAddOns || [],
       };
 
       // Send emails in parallel (don't wait for them to complete)

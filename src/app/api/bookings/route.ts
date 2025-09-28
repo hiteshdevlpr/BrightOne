@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
       budget: body.budget,
       timeline: body.timeline,
       serviceTier: body.serviceTier,
+      selectedAddOns: body.selectedAddOns,
       message: body.message,
       preferredDate: body.preferredDate,
       preferredTime: body.preferredTime,
