@@ -33,6 +33,25 @@ export interface BookingEmailData {
   message: string;
   packageType: string;
   totalPrice: string;
+  selectedAddOns?: string[];
+  priceBreakdown?: {
+    packagePrice: number;
+    addonsPrice: number;
+    subtotal: number;
+    taxRate: number;
+    taxAmount: number;
+    finalTotal: number;
+    breakdown: {
+      package: {
+        name: string;
+        price: number;
+      };
+      addons: Array<{
+        name: string;
+        price: number;
+      }>;
+    };
+  };
 }
 
 export interface ContactEmailData {
@@ -46,6 +65,125 @@ export interface ContactEmailData {
 export class EmailService {
   private static readonly FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@brightone.ca';
   private static readonly ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'hitesh@brightone.ca';
+
+  /**
+   * Get addon names from IDs
+   */
+  private static getAddonNames(addonIds: string[]): string[] {
+    if (!addonIds || addonIds.length === 0) {
+      return [];
+    }
+
+    const addonNameMap: Record<string, string> = {
+      'drone_photos': 'Drone Photos (Exterior Aerials)',
+      'twilight_photos': 'Twilight Photos',
+      'extra_photos': 'Extra Photos (per 10 images)',
+      'cinematic_video': 'Cinematic Video Tour',
+      'agent_walkthrough': 'Agent Walkthrough Video',
+      'social_reel': 'Social Media Reel',
+      'virtual_tour': '3D Virtual Tour (iGUIDE)',
+      'floor_plan': '2D Floor Plan',
+      'listing_website': 'Listing Website',
+      'virtual_staging': 'Virtual Staging'
+    };
+
+    return addonIds.map(id => {
+      // Handle virtual staging with photo count
+      if (id.startsWith('virtual_staging_')) {
+        const photoCount = id.split('_')[2];
+        return `Virtual Staging (${photoCount} photos)`;
+      }
+      // Handle regular add-ons
+      return addonNameMap[id] || id;
+    });
+  }
+
+  /**
+   * Format addon names for HTML emails
+   */
+  private static formatAddonNamesHTML(addonIds: string[]): string {
+    const addonNames = this.getAddonNames(addonIds);
+    
+    if (addonNames.length === 0) {
+      return 'None';
+    }
+
+    return `<ul style="margin: 5px 0; padding-left: 20px;">${addonNames.map(name => `<li>${name}</li>`).join('')}</ul>`;
+  }
+
+  /**
+   * Format addon names for text emails
+   */
+  private static formatAddonNamesText(addonIds: string[]): string {
+    const addonNames = this.getAddonNames(addonIds);
+    
+    if (addonNames.length === 0) {
+      return 'None';
+    }
+
+    return addonNames.map((name, index) => `${index + 1}. ${name}`).join('\n');
+  }
+
+  /**
+   * Generate price breakdown table for HTML emails
+   */
+  private static generatePriceBreakdownHTML(priceBreakdown: BookingEmailData['priceBreakdown']): string {
+    if (!priceBreakdown) {
+      return '<p><strong>Total Price:</strong> To be determined</p>';
+    }
+
+    return `
+      <div style="background: white; padding: 20px; margin: 20px 0; border-radius: 5px; border: 1px solid #ddd;">
+        <h3 style="margin-top: 0; color: #333;">Price Breakdown</h3>
+        <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+          <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 8px 0; font-weight: bold;">${priceBreakdown.breakdown.package.name}</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: bold;">$${priceBreakdown.packagePrice.toFixed(2)}</td>
+          </tr>
+          ${priceBreakdown.breakdown.addons.map(addon => `
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 8px 0; padding-left: 20px; color: #666;">+ ${addon.name}</td>
+              <td style="padding: 8px 0; text-align: right; color: #666;">$${addon.price.toFixed(2)}</td>
+            </tr>
+          `).join('')}
+          <tr style="border-top: 2px solid #333; border-bottom: 1px solid #eee;">
+            <td style="padding: 12px 0; font-weight: bold;">Subtotal</td>
+            <td style="padding: 12px 0; text-align: right; font-weight: bold;">$${priceBreakdown.subtotal.toFixed(2)}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 8px 0;">Tax (${priceBreakdown.taxRate}%)</td>
+            <td style="padding: 8px 0; text-align: right;">$${priceBreakdown.taxAmount.toFixed(2)}</td>
+          </tr>
+          <tr style="border-top: 2px solid #d4af37; background: #f9f9f9;">
+            <td style="padding: 12px 0; font-weight: bold; font-size: 16px;">Total</td>
+            <td style="padding: 12px 0; text-align: right; font-weight: bold; font-size: 16px; color: #d4af37;">$${priceBreakdown.finalTotal.toFixed(2)}</td>
+          </tr>
+        </table>
+      </div>
+    `;
+  }
+
+  /**
+   * Generate price breakdown for text emails
+   */
+  private static generatePriceBreakdownText(priceBreakdown: BookingEmailData['priceBreakdown']): string {
+    if (!priceBreakdown) {
+      return 'Total Price: To be determined';
+    }
+
+    let text = 'Price Breakdown:\n';
+    text += `${priceBreakdown.breakdown.package.name}: $${priceBreakdown.packagePrice.toFixed(2)}\n`;
+    
+    priceBreakdown.breakdown.addons.forEach(addon => {
+      text += `  + ${addon.name}: $${addon.price.toFixed(2)}\n`;
+    });
+    
+    text += `\nSubtotal: $${priceBreakdown.subtotal.toFixed(2)}\n`;
+    text += `Tax (${priceBreakdown.taxRate}%): $${priceBreakdown.taxAmount.toFixed(2)}\n`;
+    text += `Total: $${priceBreakdown.finalTotal.toFixed(2)}\n`;
+
+    return text;
+  }
 
   /**
    * Send email using Amazon SES
@@ -192,9 +330,10 @@ export class EmailService {
               <p><strong>Property Address:</strong> ${data.propertyAddress}</p>
               <p><strong>Preferred Date:</strong> ${data.preferredDate}</p>
               <p><strong>Preferred Time:</strong> ${data.preferredTime}</p>
-              <p><strong>Total Price:</strong> <span class="highlight">${data.totalPrice}</span></p>
               ${data.message ? `<p><strong>Additional Notes:</strong> ${data.message}</p>` : ''}
             </div>
+            
+            ${this.generatePriceBreakdownHTML(data.priceBreakdown)}
             
             <p>We will contact you within 24 hours to confirm your booking and discuss the next steps.</p>
             
@@ -230,8 +369,9 @@ Booking Details:
 - Property Address: ${data.propertyAddress}
 - Preferred Date: ${data.preferredDate}
 - Preferred Time: ${data.preferredTime}
-- Total Price: ${data.totalPrice}
 ${data.message ? `- Additional Notes: ${data.message}` : ''}
+
+${this.generatePriceBreakdownText(data.priceBreakdown)}
 
 We will contact you within 24 hours to confirm your booking and discuss the next steps.
 
@@ -288,9 +428,10 @@ Email: ${this.ADMIN_EMAIL} | Website: brightone.ca
               <p><strong>Property Address:</strong> ${data.propertyAddress}</p>
               <p><strong>Preferred Date:</strong> <span class="urgent">${data.preferredDate}</span></p>
               <p><strong>Preferred Time:</strong> <span class="urgent">${data.preferredTime}</span></p>
-              <p><strong>Total Price:</strong> ${data.totalPrice}</p>
               ${data.message ? `<p><strong>Additional Notes:</strong> ${data.message}</p>` : ''}
             </div>
+            
+            ${this.generatePriceBreakdownHTML(data.priceBreakdown)}
             
             <p><strong>Next Steps:</strong></p>
             <ul>
@@ -324,8 +465,9 @@ Booking Details:
 - Property Address: ${data.propertyAddress}
 - Preferred Date: ${data.preferredDate}
 - Preferred Time: ${data.preferredTime}
-- Total Price: ${data.totalPrice}
 ${data.message ? `- Additional Notes: ${data.message}` : ''}
+
+${this.generatePriceBreakdownText(data.priceBreakdown)}
 
 Next Steps:
 1. Contact the customer within 24 hours
