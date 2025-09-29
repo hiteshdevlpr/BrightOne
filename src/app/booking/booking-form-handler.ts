@@ -2,6 +2,7 @@
 import { submitBooking } from '@/lib/booking-api';
 import { validateBookingForm } from '@/lib/validation';
 import { EmailService, BookingEmailData } from '@/lib/email-service';
+import { trackBookingCompletion, trackFormSubmission } from '@/lib/analytics';
 
 export interface BookingFormData {
   name: string;
@@ -28,13 +29,16 @@ export async function handleBookingSubmission(
   formData: BookingFormData,
   setIsSubmitting: (value: boolean) => void,
   setIsSubmitted: (value: boolean) => void,
-  setErrors: (errors: string[]) => void
+  setErrors: (errors: string[]) => void,
+  startTime?: number
 ) {
   // Validate form data
   const validationErrors = validateBookingForm(formData);
   
   if (validationErrors.length > 0) {
     setErrors(validationErrors.map(error => error.message));
+    // Track validation errors
+    trackFormSubmission('booking', false);
     return;
   }
 
@@ -76,12 +80,26 @@ export async function handleBookingSubmission(
       });
 
       setIsSubmitted(true);
+      
+      // Track successful booking completion
+      const completionTime = startTime ? Date.now() - startTime : 0;
+      const totalPrice = parseFloat(formData.totalPrice || '0');
+      const addOnsCount = formData.selectedAddOns?.length || 0;
+      
+      trackBookingCompletion(
+        totalPrice,
+        formData.serviceTier || formData.selectedPackage || 'unknown',
+        addOnsCount,
+        completionTime
+      );
     } else {
       setErrors([response.error || 'Failed to submit booking']);
+      trackFormSubmission('booking', false);
     }
   } catch (error) {
     console.error('Booking submission error:', error);
     setErrors([error instanceof Error ? error.message : 'Failed to submit booking. Please try again.']);
+    trackFormSubmission('booking', false);
   } finally {
     setIsSubmitting(false);
   }
