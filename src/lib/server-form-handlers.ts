@@ -318,7 +318,7 @@ export async function handleBookingSubmissionServer(formData: BookingFormData): 
       taxRate: priceBreakdown.taxRate,
       taxAmount: priceBreakdown.taxAmount,
       finalTotal: priceBreakdown.finalTotal,
-      priceBreakdown: priceBreakdown.breakdown,
+      priceBreakdown: JSON.stringify(priceBreakdown.breakdown),
     });
 
     console.log('APP_LOG:: Booking submitted to database:', booking.id);
