@@ -7,6 +7,8 @@ declare global {
 }
 
 export const trackEvent = (action: string, category: string, label?: string, value?: number) => {
+  console.log(`GA4 Event Fired: ${action} - Category: ${category} - Label: ${label}`);
+  
   if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('event', action, {
       event_category: category,
@@ -72,13 +74,13 @@ export const trackPropertySizeSelection = (propertySize: string, sizeCategory: s
   trackEvent('property_size_select', 'booking_interaction', `${sizeCategory}_${propertySize}`);
 };
 
-export const trackBookingCompletion = (totalPrice: number, selectedPackage: string, addOnsCount: number, formCompletionTime: number) => {
+export const trackBookingCompletion = (totalPrice: number, selectedPackage: string, addOnsCount: number) => {
   trackEvent('booking_complete', 'conversion', `${selectedPackage}_${addOnsCount}_addons`, totalPrice);
   // Track conversion value for e-commerce
   trackEvent('purchase', 'ecommerce', selectedPackage, totalPrice);
 };
 
-export const trackBookingAbandonment = (step: number, formData: any) => {
+export const trackBookingAbandonment = (step: number) => {
   trackEvent('booking_abandon', 'booking_flow', `step_${step}`, step);
 };
 
@@ -93,10 +95,6 @@ export const trackAddressSelection = (address: string, source: 'autocomplete' | 
 export const trackAddressAutosuggestSelection = (address: string) => {
   // Track the actual address selected from autosuggest for detailed analysis
   trackEvent('address_autosuggest_select', 'booking_interaction', address.substring(0, 100), address.length);
-};
-
-export const trackFormValidationError = (fieldName: string, errorType: string, step: number) => {
-  trackEvent('form_validation_error', 'booking_flow', `${fieldName}_${errorType}_step_${step}`, step);
 };
 
 export const trackBookingStart = () => {

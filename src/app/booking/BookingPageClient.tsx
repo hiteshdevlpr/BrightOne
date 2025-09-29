@@ -14,7 +14,6 @@ import {
   trackFormSubmission,
   trackServiceTierSelection,
   trackAddressSuggestionClick,
-  trackFormProgress,
   trackBookingStepChange,
   trackPackageSelection,
   trackAddOnToggle,
@@ -23,7 +22,6 @@ import {
   trackAddressAutocomplete,
   trackAddressSelection,
   trackAddressAutosuggestSelection,
-  trackFormValidationError,
   trackBookingStart,
   trackBookingReset,
   trackBookingAbandonment
@@ -70,13 +68,13 @@ declare global {
 }
 
 // Service and Package Types
-interface Service {
-  id: string;
-  name: string;
-  description: string;
-  basePrice: number;
-  category: 'photography' | 'videography' | 'virtual_tour' | 'floor_plans' | 'listing_website' | 'airbnb';
-}
+// interface Service {
+//   id: string;
+//   name: string;
+//   description: string;
+//   basePrice: number;
+//   category: 'photography' | 'videography' | 'virtual_tour' | 'floor_plans' | 'listing_website' | 'airbnb';
+// }
 
 interface Package {
   id: string;
@@ -165,7 +163,7 @@ export default function BookingPage() {
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (!isSubmitted && !isSubmitting) {
-        trackBookingAbandonment(currentStep, formData);
+        trackBookingAbandonment(currentStep);
       }
     };
 
@@ -1037,8 +1035,8 @@ export default function BookingPage() {
 
                       {/* Add-ons Section - Only show services not included in selected package */}
                       {formData.selectedPackage && (() => {
-                        const selectedPackage = getPackages(formData.propertySize).find(p => p.id === formData.selectedPackage);
-                        const packageServices = selectedPackage?.services || [];
+                        // const selectedPackage = getPackages(formData.propertySize).find(p => p.id === formData.selectedPackage);
+                        // const packageServices = selectedPackage?.services || [];
 
                         // Map package services to add-on IDs to determine what's already included
                         const packageServiceMap: Record<string, string[]> = {

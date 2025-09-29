@@ -101,7 +101,7 @@ export const db = {
     taxRate?: number;
     taxAmount?: number;
     finalTotal?: number;
-    priceBreakdown?: any;
+    priceBreakdown?: string | object;
   }) {
     const {
       name,

@@ -82,15 +82,13 @@ export async function handleBookingSubmission(
       setIsSubmitted(true);
       
       // Track successful booking completion
-      const completionTime = startTime ? Date.now() - startTime : 0;
       const totalPrice = parseFloat(formData.totalPrice || '0');
       const addOnsCount = formData.selectedAddOns?.length || 0;
       
       trackBookingCompletion(
         totalPrice,
         formData.serviceTier || formData.selectedPackage || 'unknown',
-        addOnsCount,
-        completionTime
+        addOnsCount
       );
     } else {
       setErrors([response.error || 'Failed to submit booking']);
