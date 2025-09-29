@@ -14,7 +14,19 @@ import {
   trackFormSubmission,
   trackServiceTierSelection,
   trackAddressSuggestionClick,
-  trackFormProgress
+  trackFormProgress,
+  trackBookingStepChange,
+  trackPackageSelection,
+  trackAddOnToggle,
+  trackVirtualStagingPhotosChange,
+  trackPropertySizeSelection,
+  trackAddressAutocomplete,
+  trackAddressSelection,
+  trackAddressAutosuggestSelection,
+  trackFormValidationError,
+  trackBookingStart,
+  trackBookingReset,
+  trackBookingAbandonment
 } from '@/lib/analytics';
 
 // Google Maps TypeScript declarations
@@ -109,6 +121,7 @@ export default function BookingPage() {
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isManualAddress, setIsManualAddress] = useState(false);
+  const [formStartTime, setFormStartTime] = useState<number>(Date.now());
 
   // Initial form state for reset
   const initialFormState = {
@@ -128,6 +141,7 @@ export default function BookingPage() {
 
   // Reset form function
   const resetForm = () => {
+    trackBookingReset(currentStep);
     setFormData(initialFormState);
     setCurrentStep(1);
     setErrors([]);
@@ -137,9 +151,27 @@ export default function BookingPage() {
     setIsManualAddress(false);
     setIsSubmitted(false);
     setIsSubmitting(false);
+    setFormStartTime(Date.now());
   };
   const autocompleteRef = useRef<HTMLInputElement>(null);
   const autocompleteService = useRef<GoogleMapsAutocompleteService | null>(null);
+
+  // Track booking start
+  useEffect(() => {
+    trackBookingStart();
+  }, []);
+
+  // Track form abandonment on page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (!isSubmitted && !isSubmitting) {
+        trackBookingAbandonment(currentStep, formData);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [currentStep, isSubmitted, isSubmitting, formData]);
 
   // Property size slabs and photo counts
   const getPropertySizeSlab = (size: string) => {
@@ -331,6 +363,9 @@ export default function BookingPage() {
         const suggestions = predictions.map((prediction) => prediction.description);
         setAddressSuggestions(suggestions);
         setShowSuggestions(true);
+        
+        // Track address autocomplete
+        trackAddressAutocomplete(query, suggestions.length);
       } else {
         setAddressSuggestions([]);
         setShowSuggestions(false);
@@ -344,7 +379,11 @@ export default function BookingPage() {
     setShowSuggestions(false);
     setAddressSuggestions([]);
     setIsManualAddress(false);
+    
+    // Track address selection analytics
     trackAddressSuggestionClick(address);
+    trackAddressSelection(address, 'autocomplete');
+    trackAddressAutosuggestSelection(address);
   };
 
   // Handle manual address toggle
@@ -354,6 +393,10 @@ export default function BookingPage() {
       setFormData(prev => ({ ...prev, propertyAddress: '' }));
       setAddressSuggestions([]);
       setShowSuggestions(false);
+    }
+    // Track manual address selection
+    if (isManualAddress) {
+      trackAddressSelection(formData.propertyAddress, 'manual');
     }
   };
 
@@ -424,6 +467,12 @@ export default function BookingPage() {
       validateField(name, value);
     }
 
+    // Track property size selection
+    if (name === 'propertySize' && value) {
+      const sizeCategory = getPropertySizeSlab(value);
+      trackPropertySizeSelection(value, sizeCategory);
+    }
+
     trackFormFieldChange('booking', name, value);
   };
 
@@ -437,6 +486,7 @@ export default function BookingPage() {
     const selectedPackage = currentPackages.find(p => p.id === packageId);
     if (selectedPackage) {
       trackServiceTierSelection(packageId, selectedPackage.name);
+      trackPackageSelection(packageId, selectedPackage.name, selectedPackage.basePrice);
     }
   };
 
@@ -451,25 +501,49 @@ export default function BookingPage() {
         
         if (isCurrentlySelected || isVirtualStagingSelected) {
           // Remove any existing virtual staging entry
-          return {
+          const newState = {
             ...prev,
             selectedAddOns: prev.selectedAddOns.filter(id => !id.startsWith('virtual_staging_'))
           };
+          
+          // Track add-on toggle
+          const addOn = addOns.find(a => a.id === 'virtual_staging');
+          if (addOn) {
+            trackAddOnToggle('virtual_staging', addOn.name, false, addOn.price);
+          }
+          
+          return newState;
         } else {
           // Add virtual staging with current photo count
-          return {
+          const newState = {
             ...prev,
             selectedAddOns: [...prev.selectedAddOns, virtualStagingId]
           };
+          
+          // Track add-on toggle
+          const addOn = addOns.find(a => a.id === 'virtual_staging');
+          if (addOn) {
+            trackAddOnToggle('virtual_staging', addOn.name, true, addOn.price);
+          }
+          
+          return newState;
         }
       } else {
         // For other add-ons, use the simple toggle logic
-        return {
+        const newState = {
           ...prev,
           selectedAddOns: isCurrentlySelected
             ? prev.selectedAddOns.filter(id => id !== addOnId)
             : [...prev.selectedAddOns, addOnId]
         };
+        
+        // Track add-on toggle
+        const addOn = addOns.find(a => a.id === addOnId);
+        if (addOn) {
+          trackAddOnToggle(addOnId, addOn.name, !isCurrentlySelected, addOn.price);
+        }
+        
+        return newState;
       }
     });
   };
@@ -479,6 +553,9 @@ export default function BookingPage() {
       const newPhotoCount = increment 
         ? prev.virtualStagingPhotos + 1 
         : Math.max(3, prev.virtualStagingPhotos - 1);
+      
+      // Track virtual staging photos change
+      trackVirtualStagingPhotosChange(newPhotoCount, increment ? 'increase' : 'decrease');
       
       // Check if virtual staging is currently selected
       const isVirtualStagingSelected = prev.selectedAddOns.some(id => id.startsWith('virtual_staging_'));
@@ -507,12 +584,14 @@ export default function BookingPage() {
   const handleNext = () => {
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
+      trackBookingStepChange(currentStep + 1, 'next');
     }
   };
 
   const handlePrevious = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+      trackBookingStepChange(currentStep - 1, 'previous');
     }
   };
 
@@ -560,7 +639,8 @@ export default function BookingPage() {
         bookingData,
         setIsSubmitting,
         setIsSubmitted,
-        setErrors
+        setErrors,
+        formStartTime
       );
 
       trackFormSubmission('booking', true);
