@@ -126,10 +126,11 @@ function calculatePriceBreakdown(formData: BookingFormData): PriceBreakdown {
   };
 
   // Calculate package price with discount
-  const originalPackagePrice = packagePrices[formData.serviceTier || 'essentials'] || 0;
-  const discountPercent = PACKAGE_DISCOUNTS[formData.serviceTier || 'essentials'] || 0;
+  const serviceTier = (formData.serviceTier || 'essentials') as keyof typeof packagePrices;
+  const originalPackagePrice = packagePrices[serviceTier] || 0;
+  const discountPercent = PACKAGE_DISCOUNTS[serviceTier] || 0;
   const packagePrice = Math.round(originalPackagePrice * (1 - discountPercent / 100));
-  const packageName = packageNames[formData.serviceTier || 'essentials'] || 'Standard Package';
+  const packageName = packageNames[serviceTier] || 'Standard Package';
 
   // Calculate add-ons price
   let addonsPrice = 0;
