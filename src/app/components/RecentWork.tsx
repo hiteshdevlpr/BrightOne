@@ -13,21 +13,42 @@ import service10 from '@/assets/images/portfolio-11.jpg';
 import service11 from '@/assets/images/portfolio-12.jpg';
 import service12 from '@/assets/images/portfolio-13.jpg';
 import service13 from '@/assets/images/portfolio-14.jpg';
-
+import service14 from '@/assets/images/portfolio-15.jpg';
+import service15 from '@/assets/images/portfolio-16.jpg';
+import service16 from '@/assets/images/portfolio-17.jpg';
+import service17 from '@/assets/images/portfolio-18.jpg';
+import service18 from '@/assets/images/portfolio-19.jpg';
+import service19 from '@/assets/images/portfolio-20.jpg';
+import service20 from '@/assets/images/portfolio-21.jpg';
+import service21 from '@/assets/images/portfolio-22.jpg';
+import service22 from '@/assets/images/portfolio-23.jpg';
+import service23 from '@/assets/images/portfolio-24.jpg';
+import service24 from '@/assets/images/portfolio-25.jpg';
 
 const recentWorkImages = [
   { src: service1.src, alt: "Real Estate Photography", title: "Luxury Home Interior" },
+  { src: service20.src, alt: "Property Showcase", title: "Beautiful Home" },
+  { src: service21.src, alt: "Property Showcase", title: "Beautiful Home" },
   { src: service12.src, alt: "Property Showcase", title: "Beautiful Home" },
   { src: service7.src, alt: "Property Showcase", title: "Beautiful Home" },
+  { src: service15.src, alt: "Property Showcase", title: "Beautiful Home" },
   { src: service10.src, alt: "Property Showcase", title: "Beautiful Home" },
   { src: service13.src, alt: "Property Showcase", title: "Beautiful Home" },
+  { src: service18.src, alt: "Property Showcase", title: "Beautiful Home" },
   { src: service5.src, alt: "Virtual Staging After", title: "Staged Living Room" },
+  { src: service23.src, alt: "Property Showcase", title: "Beautiful Home" },
+
   { src: service2.src, alt: "Professional Photography", title: "Modern Living Space" },
+  { src: service24.src, alt: "Property Showcase", title: "Beautiful Home" },
   { src: service6.src, alt: "Virtual Staging Before", title: "Empty Space" },
   { src: service4.src, alt: "Real Estate Staging", title: "Contemporary Kitchen" },
   { src: service8.src, alt: "Property Showcase", title: "Beautiful Home" },
   { src: service11.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service3.src, alt: "Property Photography", title: "Elegant Bedroom" }
+  { src: service14.src, alt: "Property Showcase", title: "Beautiful Home" },
+  { src: service16.src, alt: "Property Showcase", title: "Beautiful Home" },
+  { src: service17.src, alt: "Property Showcase", title: "Beautiful Home" },
+  { src: service19.src, alt: "Property Showcase", title: "Beautiful Home" },
+  { src: service22.src, alt: "Property Showcase", title: "Beautiful Home" },
 ];
 
 interface RecentWorkProps {

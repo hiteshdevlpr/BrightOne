@@ -67,14 +67,24 @@ export interface ContactRecord {
 function calculatePriceBreakdown(formData: BookingFormData): PriceBreakdown {
   const TAX_RATE = 13.00; // 13% tax rate for Ontario
   
-  // Package pricing based on service tier
+  // Package pricing based on service tier (original prices before discount)
   const packagePrices: Record<string, number> = {
     'essentials': 199,
-    'enhanced': 349,
-    'showcase': 449,
-    'premium': 599,
-    'ultimate': 749,
+    'enhanced': 319,
+    'showcase': 429,
+    'premium': 549,
+    'ultimate': 699,
     'airbnb': 149,
+  };
+
+  // Discount configuration
+  const PACKAGE_DISCOUNTS = {
+    'essentials': 15,
+    'enhanced': 15,
+    'showcase': 15,
+    'premium': 10,
+    'ultimate': 10,
+    'airbnb': 15
   };
 
   // Add-on pricing
@@ -115,8 +125,10 @@ function calculatePriceBreakdown(formData: BookingFormData): PriceBreakdown {
     'airbnb': 'Airbnb / Short-Term Rental Package',
   };
 
-  // Calculate package price
-  const packagePrice = packagePrices[formData.serviceTier || 'essentials'] || 0;
+  // Calculate package price with discount
+  const originalPackagePrice = packagePrices[formData.serviceTier || 'essentials'] || 0;
+  const discountPercent = PACKAGE_DISCOUNTS[formData.serviceTier || 'essentials'] || 0;
+  const packagePrice = Math.round(originalPackagePrice * (1 - discountPercent / 100));
   const packageName = packageNames[formData.serviceTier || 'essentials'] || 'Standard Package';
 
   // Calculate add-ons price
