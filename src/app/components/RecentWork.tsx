@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import service1 from '@/assets/images/portfolio-1.jpg';
 import service2 from '@/assets/images/portfolio-2.jpg';
-import service3 from '@/assets/images/portfolio-4.jpg';
 import service4 from '@/assets/images/portfolio-5.jpg';
 import service5 from '@/assets/images/portfolio-7.jpg';
 import service6 from '@/assets/images/portfolio-8.jpg';

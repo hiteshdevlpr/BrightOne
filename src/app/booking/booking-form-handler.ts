@@ -30,7 +30,7 @@ export async function handleBookingSubmission(
   setIsSubmitting: (value: boolean) => void,
   setIsSubmitted: (value: boolean) => void,
   setErrors: (errors: string[]) => void,
-  startTime?: number
+  _startTime?: number
 ) {
   // Validate form data
   const validationErrors = validateBookingForm(formData);
