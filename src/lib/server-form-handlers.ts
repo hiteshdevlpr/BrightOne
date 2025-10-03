@@ -128,7 +128,7 @@ function calculatePriceBreakdown(formData: BookingFormData): PriceBreakdown {
   // Calculate package price with discount
   const serviceTier = (formData.serviceTier || 'essentials') as keyof typeof packagePrices;
   const originalPackagePrice = packagePrices[serviceTier] || 0;
-  const discountPercent = PACKAGE_DISCOUNTS[serviceTier] || 0;
+  const discountPercent = (PACKAGE_DISCOUNTS as any)[serviceTier] || 0;
   const packagePrice = Math.round(originalPackagePrice * (1 - discountPercent / 100));
   const packageName = packageNames[serviceTier] || 'Standard Package';
 
