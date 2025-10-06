@@ -23,31 +23,33 @@ import service21 from '@/assets/images/portfolio-22.jpg';
 import service22 from '@/assets/images/portfolio-23.jpg';
 import service23 from '@/assets/images/portfolio-24.jpg';
 import service24 from '@/assets/images/portfolio-25.jpg';
+import greengroveCover from '@/assets/images/13-greengrove-cover.png';
 
-const recentWorkImages = [
-  { src: service1.src, alt: "Real Estate Photography", title: "Luxury Home Interior" },
-  { src: service20.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service21.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service12.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service7.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service15.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service10.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service13.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service18.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service5.src, alt: "Virtual Staging After", title: "Staged Living Room" },
-  { src: service23.src, alt: "Property Showcase", title: "Beautiful Home" },
+const recentWorkItems = [
+  { src: service1.src, alt: "Real Estate Photography", title: "Luxury Home Interior", type: "image" },
+  { src: service20.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service21.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service12.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service7.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service15.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service10.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service13.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service18.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service5.src, alt: "Virtual Staging After", title: "Staged Living Room", type: "image" },
+  { src: service23.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: greengroveCover.src, alt: "GreenGrove Whitby Property Video", title: "GreenGrove Whitby - Property Tour", type: "video", videoSrc: "/videos/13-greengrove-whitby-HD.mp4" },
 
-  { src: service2.src, alt: "Professional Photography", title: "Modern Living Space" },
-  { src: service24.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service6.src, alt: "Virtual Staging Before", title: "Empty Space" },
-  { src: service4.src, alt: "Real Estate Staging", title: "Contemporary Kitchen" },
-  { src: service8.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service11.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service14.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service16.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service17.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service19.src, alt: "Property Showcase", title: "Beautiful Home" },
-  { src: service22.src, alt: "Property Showcase", title: "Beautiful Home" },
+  { src: service2.src, alt: "Professional Photography", title: "Modern Living Space", type: "image" },
+  { src: service24.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service6.src, alt: "Virtual Staging Before", title: "Empty Space", type: "image" },
+  { src: service4.src, alt: "Real Estate Staging", title: "Contemporary Kitchen", type: "image" },
+  { src: service8.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service11.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service14.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service16.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service17.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service19.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service22.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
 ];
 
 interface RecentWorkProps {
@@ -57,6 +59,7 @@ interface RecentWorkProps {
 export default function RecentWork({ isPortfolioPage = false }: RecentWorkProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   // Keyboard navigation
   useEffect(() => {
@@ -69,14 +72,16 @@ export default function RecentWork({ isPortfolioPage = false }: RecentWorkProps)
           break;
         case 'ArrowLeft':
           event.preventDefault();
+          setIsVideoPlaying(false);
           setCurrentImageIndex((prev) => 
-            prev === 0 ? recentWorkImages.length - 1 : prev - 1
+            prev === 0 ? recentWorkItems.length - 1 : prev - 1
           );
           break;
         case 'ArrowRight':
           event.preventDefault();
+          setIsVideoPlaying(false);
           setCurrentImageIndex((prev) => 
-            prev === recentWorkImages.length - 1 ? 0 : prev + 1
+            prev === recentWorkItems.length - 1 ? 0 : prev + 1
           );
           break;
       }
@@ -93,17 +98,20 @@ export default function RecentWork({ isPortfolioPage = false }: RecentWorkProps)
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setIsVideoPlaying(false);
   };
 
   const goToPrevious = () => {
+    setIsVideoPlaying(false);
     setCurrentImageIndex((prev) => 
-      prev === 0 ? recentWorkImages.length - 1 : prev - 1
+      prev === 0 ? recentWorkItems.length - 1 : prev - 1
     );
   };
 
   const goToNext = () => {
+    setIsVideoPlaying(false);
     setCurrentImageIndex((prev) => 
-      prev === recentWorkImages.length - 1 ? 0 : prev + 1
+      prev === recentWorkItems.length - 1 ? 0 : prev + 1
     );
   };
 
@@ -123,15 +131,15 @@ export default function RecentWork({ isPortfolioPage = false }: RecentWorkProps)
 
         {/* 4x4 Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-1">
-          {recentWorkImages.map((image, index) => (
+          {recentWorkItems.map((item, index) => (
             <div
               key={index}
               className="group relative aspect-[4/3] overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer"
               onClick={() => openModal(index)}
             >
               <Image
-                src={image.src}
-                alt={image.alt}
+                src={item.src}
+                alt={item.alt}
                 fill
                 className="object-cover transition-transform duration-500 group-hover:scale-105"
                 sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
@@ -141,9 +149,15 @@ export default function RecentWork({ isPortfolioPage = false }: RecentWorkProps)
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">
                 <div className="text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-2">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                    </svg>
+                    {item.type === 'video' ? (
+                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    ) : (
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                      </svg>
+                    )}
                   </div>
                   {/* <p className="text-white text-xs sm:text-sm font-medium">Click to view</p> */}
                 </div>
@@ -213,25 +227,63 @@ export default function RecentWork({ isPortfolioPage = false }: RecentWorkProps)
               </svg>
             </button>
 
-            {/* Image Container */}
+            {/* Content Container */}
             <div className="relative max-w-7xl max-h-full w-full h-full flex items-center justify-center">
-              <Image
-                src={recentWorkImages[currentImageIndex].src}
-                alt={recentWorkImages[currentImageIndex].alt}
-                width={1200}
-                height={800}
-                className="max-w-full max-h-full object-contain"
-                priority
-              />
+              {recentWorkItems[currentImageIndex].type === 'video' ? (
+                <div className="relative w-full h-full flex items-center justify-center">
+                  {!isVideoPlaying ? (
+                    <div 
+                      className="relative cursor-pointer group"
+                      onClick={() => setIsVideoPlaying(true)}
+                    >
+                      <Image
+                        src={recentWorkItems[currentImageIndex].src}
+                        alt={recentWorkItems[currentImageIndex].alt}
+                        width={1200}
+                        height={800}
+                        className="max-w-full max-h-full object-contain"
+                        priority
+                      />
+                      {/* Play Button Overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors duration-300">
+                        <div className="w-20 h-20 bg-white/90 rounded-full flex items-center justify-center group-hover:bg-white transition-colors duration-300">
+                          <svg className="w-8 h-8 text-black ml-1" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <video
+                      src={recentWorkItems[currentImageIndex].videoSrc}
+                      controls
+                      autoPlay
+                      className="max-w-full max-h-full"
+                      onEnded={() => setIsVideoPlaying(false)}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  )}
+                </div>
+              ) : (
+                <Image
+                  src={recentWorkItems[currentImageIndex].src}
+                  alt={recentWorkItems[currentImageIndex].alt}
+                  width={1200}
+                  height={800}
+                  className="max-w-full max-h-full object-contain"
+                  priority
+                />
+              )}
             </div>
 
-            {/* Image Info */}
+            {/* Content Info */}
             {/* <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 text-center">
               <h3 className="text-white text-lg font-bold mb-1">
-                {recentWorkImages[currentImageIndex].title}
+                {recentWorkItems[currentImageIndex].title}
               </h3>
               <p className="text-white/80 text-sm">
-                {currentImageIndex + 1} of {recentWorkImages.length}
+                {currentImageIndex + 1} of {recentWorkItems.length}
               </p>
             </div> */}
           </div>
