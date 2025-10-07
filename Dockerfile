@@ -26,6 +26,9 @@ ENV NEXT_TELEMETRY_DISABLED 1
 ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
+# Debug: Print the API key (first 10 chars only for security)
+RUN echo "🔍 Build-time API Key: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:0:10}..."
+
 RUN npm run build
 
 # Production image, copy all the files and run next

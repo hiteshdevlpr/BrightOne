@@ -64,6 +64,8 @@ jobs:
             cd /home/brightone/website
             
             echo "🏗️ Building services..."
+            echo "🔍 Checking .env file contents..."
+            cat .env | grep NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || echo "❌ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY not found in .env"
             sudo docker-compose -f docker-compose.prod.yml build --no-cache
             
             echo "🚀 Starting services..."
