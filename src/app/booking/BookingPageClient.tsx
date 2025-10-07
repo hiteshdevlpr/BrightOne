@@ -352,9 +352,15 @@ export default function BookingPage() {
     if (window.google) {
       initAutocomplete();
     } else {
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      // Try multiple ways to get the API key
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 
+                    (window as any).NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
+                    'AIzaSyCXHJzRlwX-sppSoQT2L4qpiGptzULRs8M'; // Fallback to hardcoded key
+      
       console.log('🔍 Debug - API Key check:', {
-        apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'undefined',
+        envApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? `${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.substring(0, 10)}...` : 'undefined',
+        windowApiKey: (window as any).NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? `${(window as any).NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.substring(0, 10)}...` : 'undefined',
+        finalApiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'undefined',
         hasApiKey: !!apiKey,
         nodeEnv: process.env.NODE_ENV,
         allEnvVars: Object.keys(process.env).filter(key => key.includes('GOOGLE') || key.includes('MAPS'))
