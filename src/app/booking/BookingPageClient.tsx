@@ -353,15 +353,27 @@ export default function BookingPage() {
       initAutocomplete();
     } else {
       const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      console.log('🔍 Debug - API Key check:', {
+        apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'undefined',
+        hasApiKey: !!apiKey,
+        nodeEnv: process.env.NODE_ENV,
+        allEnvVars: Object.keys(process.env).filter(key => key.includes('GOOGLE') || key.includes('MAPS'))
+      });
+      
       if (apiKey) {
         const script = document.createElement('script');
         script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
         script.async = true;
         script.defer = true;
         script.onload = initAutocomplete;
+        script.onerror = (error) => {
+          console.error('❌ Google Maps script failed to load:', error);
+        };
         document.head.appendChild(script);
+        console.log('✅ Google Maps script added to page');
       } else {
-        console.warn('Google Maps API key not found. Please add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to your .env.local file');
+        console.warn('❌ Google Maps API key not found. Please add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to your .env.local file');
+        console.log('🔍 Available environment variables:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')));
       }
     }
   }, []);
