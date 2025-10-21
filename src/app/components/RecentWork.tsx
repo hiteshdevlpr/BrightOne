@@ -25,7 +25,16 @@ import service23 from '@/assets/images/portfolio-24.jpg';
 import service24 from '@/assets/images/portfolio-25.jpg';
 import greengroveCover from '@/assets/images/13-greengrove-cover.png';
 
-const recentWorkItems = [
+interface RecentWorkItem {
+  src: string;
+  alt: string;
+  title: string;
+  type: 'image' | 'video' | 'youtube';
+  videoSrc?: string;
+  videoId?: string;
+}
+
+const recentWorkItems: RecentWorkItem[] = [
   { src: service1.src, alt: "Real Estate Photography", title: "Luxury Home Interior", type: "image" },
   { src: service20.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
   { src: service21.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
@@ -37,7 +46,7 @@ const recentWorkItems = [
   { src: service18.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
   { src: service5.src, alt: "Virtual Staging After", title: "Staged Living Room", type: "image" },
   { src: service23.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
-  { src: greengroveCover.src, alt: "GreenGrove Whitby Property Video", title: "GreenGrove Whitby - Property Tour", type: "video", videoSrc: "/videos/13-greengrove-whitby-HD.mp4" },
+  { src: greengroveCover.src, alt: "GreenGrove Whitby Property Video", title: "GreenGrove Whitby - Property Tour", type: "youtube", videoId: "UD5VQnckWKU" },
 
   { src: service2.src, alt: "Professional Photography", title: "Modern Living Space", type: "image" },
   { src: service24.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
@@ -149,7 +158,7 @@ export default function RecentWork({ isPortfolioPage = false }: RecentWorkProps)
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">
                 <div className="text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-2">
-                    {item.type === 'video' ? (
+                    {item.type === 'video' || item.type === 'youtube' ? (
                       <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z"/>
                       </svg>
@@ -263,6 +272,43 @@ export default function RecentWork({ isPortfolioPage = false }: RecentWorkProps)
                     >
                       Your browser does not support the video tag.
                     </video>
+                  )}
+                </div>
+              ) : recentWorkItems[currentImageIndex].type === 'youtube' ? (
+                <div className="relative w-full h-full flex items-center justify-center">
+                  {!isVideoPlaying ? (
+                    <div 
+                      className="relative cursor-pointer group"
+                      onClick={() => setIsVideoPlaying(true)}
+                    >
+                      <Image
+                        src={recentWorkItems[currentImageIndex].src}
+                        alt={recentWorkItems[currentImageIndex].alt}
+                        width={1200}
+                        height={800}
+                        className="max-w-full max-h-full object-contain"
+                        priority
+                      />
+                      {/* Play Button Overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors duration-300">
+                        <div className="w-20 h-20 bg-white/90 rounded-full flex items-center justify-center group-hover:bg-white transition-colors duration-300">
+                          <svg className="w-8 h-8 text-black ml-1" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src={`https://www.youtube.com/embed/${recentWorkItems[currentImageIndex].videoId}?autoplay=1&rel=0`}
+                      title={recentWorkItems[currentImageIndex].title}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="max-w-full max-h-full"
+                    />
                   )}
                 </div>
               ) : (

@@ -30,7 +30,7 @@ export async function handleBookingSubmission(
   setIsSubmitting: (value: boolean) => void,
   setIsSubmitted: (value: boolean) => void,
   setErrors: (errors: string[]) => void,
-  _startTime?: number
+  startTime?: number
 ) {
   // Validate form data
   const validationErrors = validateBookingForm(formData);
@@ -46,6 +46,11 @@ export async function handleBookingSubmission(
   setErrors([]);
 
   try {
+    // Log performance if startTime is provided
+    if (startTime) {
+      console.log(`Booking submission started at ${new Date(startTime).toISOString()}`);
+    }
+    
     // Submit booking to database
     const response = await submitBooking(formData);
     

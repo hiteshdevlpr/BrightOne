@@ -219,11 +219,11 @@ export default function BookingPage() {
 
   // Discount configuration
   const PACKAGE_DISCOUNTS = {
-    essentials: 15,
-    enhanced: 15,
-    showcase: 15,
-    premium: 10,
-    ultimate: 10,
+    essentials: 10,
+    enhanced: 10,
+    showcase: 10,
+    premium: 15,
+    ultimate: 15,
     airbnb: 15
   };
 
@@ -354,12 +354,12 @@ export default function BookingPage() {
     } else {
       // Try multiple ways to get the API key
       const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 
-                    (window as any).NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
+                    (window as unknown as { NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?: string }).NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
                     'AIzaSyCXHJzRlwX-sppSoQT2L4qpiGptzULRs8M'; // Fallback to hardcoded key
       
       console.log('🔍 Debug - API Key check:', {
         envApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? `${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.substring(0, 10)}...` : 'undefined',
-        windowApiKey: (window as any).NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? `${(window as any).NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.substring(0, 10)}...` : 'undefined',
+        windowApiKey: (window as unknown as { NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?: string }).NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? `${(window as unknown as { NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?: string }).NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!.substring(0, 10)}...` : 'undefined',
         finalApiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'undefined',
         hasApiKey: !!apiKey,
         nodeEnv: process.env.NODE_ENV,

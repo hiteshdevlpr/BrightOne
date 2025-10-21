@@ -1,7 +1,20 @@
 import { MetadataRoute } from 'next'
+import { getAllListings } from '@/lib/listing-data'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://brightone.ca'
+  const listingsBaseUrl = 'https://listings.brightone.ca'
+  
+  // Get all listings
+  const listings = await getAllListings()
+  
+  // Generate sitemap entries for listings
+  const listingEntries: MetadataRoute.Sitemap = listings.map((listing) => ({
+    url: `${listingsBaseUrl}/${listing.id}`,
+    lastModified: new Date(listing.lastUpdated),
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }))
   
   return [
     {
@@ -40,5 +53,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
+    ...listingEntries,
   ]
 }
