@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ListingPageClient from './ListingPageClient';
+import EnhancedListingPageClient from './EnhancedListingPageClient';
 import StructuredData from './StructuredData';
 import { getListingData } from '@/lib/listing-data';
 
@@ -67,10 +68,18 @@ export default async function ListingPage({ params }: ListingPageProps) {
     notFound();
   }
 
+
+  // Use enhanced layout for Oshawa listing
+  const useEnhancedLayout = address === '345-park-road-s-oshawa';
+
   return (
     <>
       <StructuredData listing={listing} />
-      <ListingPageClient listing={listing} />
+      {useEnhancedLayout ? (
+        <EnhancedListingPageClient listing={listing} />
+      ) : (
+        <ListingPageClient listing={listing} />
+      )}
     </>
   );
 }
