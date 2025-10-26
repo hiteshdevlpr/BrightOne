@@ -70,3 +70,4 @@ For questions about this website or BrightOne.ca services, please contact:
 - Email: info@brightone.ca
 - Phone: (555) 123-4567
 - Location: Greater Toronto Area, ON
+# Trigger deployment for Google Maps fix
