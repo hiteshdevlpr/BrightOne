@@ -68,6 +68,8 @@ export default async function ListingPage({ params }: ListingPageProps) {
     notFound();
   }
 
+  // Get Google Maps API key from environment
+  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   // Use enhanced layout for Oshawa listing
   const useEnhancedLayout = address === '345-park-road-s-oshawa';
@@ -76,9 +78,9 @@ export default async function ListingPage({ params }: ListingPageProps) {
     <>
       <StructuredData listing={listing} />
       {useEnhancedLayout ? (
-        <EnhancedListingPageClient listing={listing} />
+        <EnhancedListingPageClient listing={listing} googleMapsApiKey={googleMapsApiKey} />
       ) : (
-        <ListingPageClient listing={listing} />
+        <ListingPageClient listing={listing} googleMapsApiKey={googleMapsApiKey} />
       )}
     </>
   );

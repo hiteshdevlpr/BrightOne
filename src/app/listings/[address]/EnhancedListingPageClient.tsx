@@ -6,9 +6,10 @@ import { ListingData } from '@/lib/listing-data';
 
 interface EnhancedListingPageClientProps {
   listing: ListingData;
+  googleMapsApiKey?: string;
 }
 
-export default function EnhancedListingPageClient({ listing }: EnhancedListingPageClientProps) {
+export default function EnhancedListingPageClient({ listing, googleMapsApiKey }: EnhancedListingPageClientProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('hero');
@@ -346,16 +347,25 @@ export default function EnhancedListingPageClient({ listing }: EnhancedListingPa
 
             {/* Google Maps - Full Width */}
             <div className="w-full h-[600px] rounded-lg overflow-hidden shadow-lg">
-              <iframe
-                src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(listing.address)}`}
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="Property Location"
-              />
+              {googleMapsApiKey ? (
+                <iframe
+                  src={`https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(listing.address)}`}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Property Location"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <div className="text-center">
+                    <p className="text-gray-500 text-lg">Google Maps API key not configured</p>
+                    <p className="text-gray-400 text-sm mt-2">Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your environment variables</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>

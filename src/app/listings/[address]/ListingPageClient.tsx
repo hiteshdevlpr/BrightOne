@@ -7,9 +7,10 @@ import { ListingData } from '@/lib/listing-data';
 
 interface ListingPageClientProps {
   listing: ListingData;
+  googleMapsApiKey?: string;
 }
 
-export default function ListingPageClient({ listing }: ListingPageClientProps) {
+export default function ListingPageClient({ listing, googleMapsApiKey }: ListingPageClientProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
