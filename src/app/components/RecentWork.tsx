@@ -3,27 +3,29 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import service1 from '@/assets/images/portfolio-1.jpg';
 import service2 from '@/assets/images/portfolio-2.jpg';
-import service4 from '@/assets/images/portfolio-5.jpg';
-import service5 from '@/assets/images/portfolio-7.jpg';
-import service6 from '@/assets/images/portfolio-8.jpg';
+import service3 from '@/assets/images/345_Park_Road_S_Oshawa-50.jpg';
+import service4 from '@/assets/images/345_Park_Road_S_Oshawa-62.jpg';
+import service5 from '@/assets/images/345_Park_Road_S_Oshawa-63.jpg';
+import service6 from '@/assets/images/345_Park_Road_S_Oshawa-66.jpg';
+import service9 from '@/assets/images/345_Park_Road_S_Oshawa-69.jpg';
 import service7 from '@/assets/images/portfolio-10.jpg';
 import service8 from '@/assets/images/portfolio-6.jpg';
 import service10 from '@/assets/images/portfolio-11.jpg';
 import service11 from '@/assets/images/portfolio-12.jpg';
 import service12 from '@/assets/images/portfolio-13.jpg';
 import service13 from '@/assets/images/portfolio-14.jpg';
-import service14 from '@/assets/images/portfolio-15.jpg';
-import service15 from '@/assets/images/portfolio-16.jpg';
-import service16 from '@/assets/images/portfolio-17.jpg';
+import service14 from '@/assets/images/13151_LAKERIDGE-9.jpg';
+import service15 from '@/assets/images/13151_LAKERIDGE-21.jpg';
+import service16 from '@/assets/images/13151_LAKERIDGE-24.jpg';
 import service17 from '@/assets/images/portfolio-18.jpg';
 import service18 from '@/assets/images/portfolio-19.jpg';
-import service19 from '@/assets/images/portfolio-20.jpg';
+import service19 from '@/assets/images/13151_LAKERIDGE-34.jpg';
 import service20 from '@/assets/images/portfolio-21.jpg';
 import service21 from '@/assets/images/portfolio-22.jpg';
 import service22 from '@/assets/images/portfolio-23.jpg';
 import service23 from '@/assets/images/portfolio-24.jpg';
 import service24 from '@/assets/images/portfolio-25.jpg';
-import greengroveCover from '@/assets/images/13-greengrove-cover.png';
+import greengroveCover from '@/assets/images/13151-cover.jpg';
 
 interface RecentWorkItem {
   src: string;
@@ -38,27 +40,27 @@ const recentWorkItems: RecentWorkItem[] = [
   { src: service1.src, alt: "Real Estate Photography", title: "Luxury Home Interior", type: "image" },
   { src: service20.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
   { src: service21.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: greengroveCover.src, alt: "GreenGrove Whitby Property Video", title: "GreenGrove Whitby - Property Tour", type: "youtube", videoId: "YpQoC9xgUF4" },
+  { src: service14.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service16.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service17.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service19.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
   { src: service12.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
   { src: service7.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
+  { src: service9.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
   { src: service15.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
   { src: service10.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
   { src: service13.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
   { src: service18.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
   { src: service5.src, alt: "Virtual Staging After", title: "Staged Living Room", type: "image" },
   { src: service23.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
-  { src: greengroveCover.src, alt: "GreenGrove Whitby Property Video", title: "GreenGrove Whitby - Property Tour", type: "youtube", videoId: "UD5VQnckWKU" },
-
   { src: service2.src, alt: "Professional Photography", title: "Modern Living Space", type: "image" },
+  { src: service3.src, alt: "Professional Photography", title: "Modern Living Space", type: "image" },
   { src: service24.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
   { src: service6.src, alt: "Virtual Staging Before", title: "Empty Space", type: "image" },
   { src: service4.src, alt: "Real Estate Staging", title: "Contemporary Kitchen", type: "image" },
   { src: service8.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
   { src: service11.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
-  { src: service14.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
-  { src: service16.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
-  { src: service17.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
-  { src: service19.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
-  { src: service22.src, alt: "Property Showcase", title: "Beautiful Home", type: "image" },
 ];
 
 interface RecentWorkProps {
