@@ -1,3 +1,39 @@
+// Import images for 13151 Lakeridge Road
+import lakeridge1 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-1.jpg';
+import lakeridge2 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-2.jpg';
+import lakeridge3 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-3.jpg';
+import lakeridge4 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-4.jpg';
+import lakeridge5 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-5.jpg';
+import lakeridge6 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-6.jpg';
+import lakeridge7 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-7.jpg';
+import lakeridge8 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-8.jpg';
+import lakeridge9 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-9.jpg';
+import lakeridge10 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-10.jpg';
+import lakeridge11 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-11.jpg';
+import lakeridge12 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-12.jpg';
+import lakeridge13 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-13.jpg';
+import lakeridge14 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-14.jpg';
+import lakeridge15 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-15.jpg';
+import lakeridge16 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-16.jpg';
+import lakeridge17 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-17.jpg';
+import lakeridge18 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-18.jpg';
+import lakeridge19 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-19.jpg';
+import lakeridge20 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-20.jpg';
+import lakeridge21 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-21.jpg';
+import lakeridge22 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-22.jpg';
+import lakeridge23 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-23.jpg';
+import lakeridge24 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-24.jpg';
+import lakeridge25 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-25.jpg';
+import lakeridge26 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-26.jpg';
+import lakeridge27 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-27.jpg';
+import lakeridge28 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-28.jpg';
+import lakeridge29 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-29.jpg';
+import lakeridge30 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-30.jpg';
+import lakeridge31 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-31.jpg';
+import lakeridge32 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-32.jpg';
+import lakeridge33 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-33.jpg';
+import lakeridge34 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-34.jpg';
+
 // Types for listing data
 export interface ListingImage {
   src: string;
@@ -191,6 +227,79 @@ const sampleListings: Record<string, ListingData> = {
     agentPhone: '(905) 555-0789',
     agentEmail: 'jennifer.smith@brightone.ca',
     mlsNumber: 'W3456789',
+    status: 'active',
+    dateListed: '2024-01-25',
+    lastUpdated: '2024-01-30',
+  },
+  '13151-lakeridge-road': {
+    id: '13151-lakeridge-road',
+    address: '13151 Lakeridge Road, Uxbridge, ON',
+    title: 'Wilderness Retreat in Uxbridge',
+    description: 'This beautiful family home features modern amenities and spacious living areas. Perfect for families looking for comfort and convenience in a great neighborhood. The property boasts a large backyard, updated kitchen, and multiple living spaces.',
+    price: 750000,
+    priceFormatted: '$750,000',
+    bedrooms: 3,
+    bathrooms: 2,
+    squareFootage: 0,
+    lotSize: 0.2,
+    yearBuilt: 2018,
+    propertyType: 'Single Family Home',
+    city: 'Uxbridge',
+    province: 'Ontario',
+    postalCode: 'L1S 3J4',
+    images: [
+      { src: lakeridge9.src, alt: '13151 Lakeridge Road Ajax - Property View 9', caption: 'Two-car garage with additional storage' },
+      { src: lakeridge1.src, alt: '13151 Lakeridge Road Ajax - Property View 1', caption: 'Stunning view of the property showcasing its best features' },
+      { src: lakeridge2.src, alt: '13151 Lakeridge Road Ajax - Property View 2', caption: 'Beautiful property exterior and surroundings' },
+      { src: lakeridge3.src, alt: '13151 Lakeridge Road Ajax - Property View 3', caption: 'Exterior view with modern design elements' },
+      { src: lakeridge4.src, alt: '13151 Lakeridge Road Ajax - Property View 4', caption: 'Spacious interior with natural light' },
+      { src: lakeridge5.src, alt: '13151 Lakeridge Road Ajax - Property View 5', caption: 'Modern living spaces with contemporary finishes' },
+      { src: lakeridge6.src, alt: '13151 Lakeridge Road Ajax - Property View 6', caption: 'Elegant interior design and layout' },
+      { src: lakeridge7.src, alt: '13151 Lakeridge Road Ajax - Property View 7', caption: 'Comfortable living areas perfect for families' },
+      { src: lakeridge8.src, alt: '13151 Lakeridge Road Ajax - Property View 8', caption: 'Private outdoor space with landscaping' },
+      { src: lakeridge10.src, alt: '13151 Lakeridge Road Ajax - Property View 10', caption: 'Finished basement with recreation area' },
+      { src: lakeridge11.src, alt: '13151 Lakeridge Road Ajax - Property View 11', caption: 'Convenient main floor laundry room' },
+      { src: lakeridge12.src, alt: '13151 Lakeridge Road Ajax - Property View 12', caption: 'Spacious bedrooms perfect for home office or guest room' },
+      { src: lakeridge13.src, alt: '13151 Lakeridge Road Ajax - Property View 13', caption: 'Bright hallway with hardwood flooring' },
+      { src: lakeridge14.src, alt: '13151 Lakeridge Road Ajax - Property View 14', caption: 'Side view showing architectural details' },
+      { src: lakeridge15.src, alt: '13151 Lakeridge Road Ajax - Property View 15', caption: 'Elegant staircase with hardwood railing' },
+      { src: lakeridge16.src, alt: '13151 Lakeridge Road Ajax - Property View 16', caption: 'Large deck perfect for outdoor dining' },
+      { src: lakeridge17.src, alt: '13151 Lakeridge Road Ajax - Property View 17', caption: 'Professional landscaping with mature trees' },
+      { src: lakeridge18.src, alt: '13151 Lakeridge Road Ajax - Property View 18', caption: 'Wide driveway with space for multiple vehicles' },
+      { src: lakeridge19.src, alt: '13151 Lakeridge Road Ajax - Property View 19', caption: 'Additional storage in basement' },
+      { src: lakeridge20.src, alt: '13151 Lakeridge Road Ajax - Property View 20', caption: 'Utility room with mechanical systems' },
+      { src: lakeridge21.src, alt: '13151 Lakeridge Road Ajax - Property View 21', caption: 'Back exterior showing deck and yard' },
+      { src: lakeridge22.src, alt: '13151 Lakeridge Road Ajax - Property View 22', caption: 'View of the surrounding neighborhood' },
+      { src: lakeridge23.src, alt: '13151 Lakeridge Road Ajax - Property View 23', caption: 'Modern kitchen with island and stainless appliances' },
+      { src: lakeridge24.src, alt: '13151 Lakeridge Road Ajax - Property View 24', caption: 'Master bedroom with walk-in closet' },
+      { src: lakeridge25.src, alt: '13151 Lakeridge Road Ajax - Property View 25', caption: 'Dining space perfect for entertaining' },
+      { src: lakeridge26.src, alt: '13151 Lakeridge Road Ajax - Property View 26', caption: 'Second bedroom with large windows' },
+      { src: lakeridge27.src, alt: '13151 Lakeridge Road Ajax - Property View 27', caption: 'Modern bathroom with contemporary fixtures' },
+      { src: lakeridge28.src, alt: '13151 Lakeridge Road Ajax - Property View 28', caption: 'Backyard with deck and landscaping' },
+      { src: lakeridge29.src, alt: '13151 Lakeridge Road Ajax - Property View 29', caption: 'Additional property features and details' },
+      { src: lakeridge30.src, alt: '13151 Lakeridge Road Ajax - Property View 30', caption: 'Interior design highlights' },
+      { src: lakeridge31.src, alt: '13151 Lakeridge Road Ajax - Property View 31', caption: 'Property amenities and features' },
+      { src: lakeridge32.src, alt: '13151 Lakeridge Road Ajax - Property View 32', caption: 'Exterior and interior views' },
+      { src: lakeridge33.src, alt: '13151 Lakeridge Road Ajax - Property View 33', caption: 'Property showcasing quality finishes' },
+      { src: lakeridge34.src, alt: '13151 Lakeridge Road Ajax - Property View 34', caption: 'Comprehensive view of the property' },
+    ],
+    features: [
+      { icon: '🏠', label: 'Property Type', value: 'Single Family Home' },
+      { icon: '🛏️', label: 'Bedrooms', value: '3' },
+      { icon: '🚿', label: 'Bathrooms', value: '2' },
+      { icon: '📐', label: 'Square Footage', value: '1,800 sq ft' },
+      { icon: '🌳', label: 'Lot Size', value: '0.2 acres' },
+      { icon: '📅', label: 'Year Built', value: '2018' },
+      { icon: '🚗', label: 'Parking', value: '2-car garage' },
+      { icon: '🌡️', label: 'Heating', value: 'Central Air' },
+    ],
+    virtualTourUrl: 'https://example.com/virtual-tour-ajax',
+    walkthroughVideoUrl: 'https://www.youtube.com/embed/YpQoC9xgUF4',
+    socialMediaReelUrl: 'https://www.youtube.com/embed/Qi7-UkKqTi0',
+    agentName: 'Jennifer Smith',
+    agentPhone: '(905) 555-0789',
+    agentEmail: 'jennifer.smith@brightone.ca',
+    mlsNumber: 'W4567890',
     status: 'active',
     dateListed: '2024-01-25',
     lastUpdated: '2024-01-30',

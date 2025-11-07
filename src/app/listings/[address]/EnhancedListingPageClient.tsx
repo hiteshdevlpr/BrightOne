@@ -24,10 +24,15 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
     }
   };
 
+  // Check if listing has floor plans
+  const hasFloorPlans = (listing.floorPlans && listing.floorPlans.length > 0) || !!listing.floorPlanUrl;
+
   // Update active section on scroll
   useEffect(() => {
     const handleScroll = () => {
-      const sections = ['hero', 'gallery', 'videos', 'floor-plans', 'location'];
+      const sections = hasFloorPlans 
+        ? ['hero', 'gallery', 'videos', 'floor-plans', 'location']
+        : ['hero', 'gallery', 'videos', 'location'];
       const scrollPosition = window.scrollY + 100;
 
       for (const section of sections) {
@@ -44,7 +49,7 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [hasFloorPlans]);
 
   const openModal = (index: number) => {
     setCurrentImageIndex(index);
@@ -66,12 +71,12 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
       prev === listing.images.length - 1 ? 0 : prev + 1
     );
   };
-
+  
   const navItems = [
     { id: 'hero', label: 'Overview' },
     { id: 'gallery', label: 'Gallery' },
     { id: 'videos', label: 'Videos' },
-    { id: 'floor-plans', label: 'Floor Plans' },
+    ...(hasFloorPlans ? [{ id: 'floor-plans', label: 'Floor Plans' }] : []),
     { id: 'location', label: 'Location' },
   ];
 
@@ -172,13 +177,15 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
                 <p className="text-2xl md:text-3xl mb-8 text-white/90">
                   {listing.address}
                 </p>
-                <div className="flex flex-wrap gap-6 text-white">
-                  <div className="flex items-center gap-8 text-xl">
-                    <span>{listing.bedrooms} bed</span>
-                    <span>{listing.bathrooms} bath</span>
-                    <span>{listing.squareFootage.toLocaleString()} sq ft</span>
+                {listing.id !== '13151-lakeridge-road' && (
+                  <div className="flex flex-wrap gap-6 text-white">
+                    <div className="flex items-center gap-8 text-xl">
+                      <span>{listing.bedrooms} bed</span>
+                      <span>{listing.bathrooms} bath</span>
+                      <span>{listing.squareFootage.toLocaleString()} sq ft</span>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="mt-8">
                   <button
                     onClick={() => scrollToSection('gallery')}
@@ -273,65 +280,57 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
           </div>
         </section>
 
-        {/* Floor Plans Section */}
-        <section id="floor-plans" className="py-20 bg-gray-50">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                Floor Plans
-              </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Explore the layout and flow of this beautiful home
-              </p>
-            </div>
+        {/* Floor Plans Section - Only show if floor plans exist */}
+        {(listing.floorPlans && listing.floorPlans.length > 0) || listing.floorPlanUrl ? (
+          <section id="floor-plans" className="py-20 bg-gray-50">
+            <div className="container mx-auto px-4">
+              <div className="text-center mb-16">
+                <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                  Floor Plans
+                </h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                  Explore the layout and flow of this beautiful home
+                </p>
+              </div>
 
-            <div className="max-w-6xl mx-auto">
-              {listing.floorPlans && listing.floorPlans.length > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {listing.floorPlans.map((floorPlan, index) => (
-                    <div key={index} className="bg-white rounded-lg shadow-lg p-6">
-                      <Image
-                        src={floorPlan.src}
-                        alt={floorPlan.alt}
-                        width={600}
-                        height={450}
-                        className="w-full h-auto rounded-lg mb-4"
-                      />
-                      <div className="text-center">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                          {floorPlan.alt}
-                        </h3>
-                        <p className="text-gray-600 text-sm">
-                          {floorPlan.caption}
-                        </p>
+              <div className="max-w-6xl mx-auto">
+                {listing.floorPlans && listing.floorPlans.length > 0 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {listing.floorPlans.map((floorPlan, index) => (
+                      <div key={index} className="bg-white rounded-lg shadow-lg p-6">
+                        <Image
+                          src={floorPlan.src}
+                          alt={floorPlan.alt}
+                          width={600}
+                          height={450}
+                          className="w-full h-auto rounded-lg mb-4"
+                        />
+                        <div className="text-center">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            {floorPlan.alt}
+                          </h3>
+                          <p className="text-gray-600 text-sm">
+                            {floorPlan.caption}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : listing.floorPlanUrl ? (
-                <div className="bg-white rounded-lg shadow-lg p-8">
-                  <Image
-                    src={listing.floorPlanUrl}
-                    alt="Floor Plan"
-                    width={800}
-                    height={600}
-                    className="w-full h-auto rounded-lg"
-                  />
-                </div>
-              ) : (
-                <div className="bg-white rounded-lg shadow-lg p-16 text-center">
-                  <div className="text-gray-400 mb-4">
-                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
+                    ))}
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-700 mb-2">Floor Plan Coming Soon</h3>
-                  <p className="text-gray-500">Detailed floor plans will be available shortly</p>
-                </div>
-              )}
+                ) : listing.floorPlanUrl ? (
+                  <div className="bg-white rounded-lg shadow-lg p-8">
+                    <Image
+                      src={listing.floorPlanUrl}
+                      alt="Floor Plan"
+                      width={800}
+                      height={600}
+                      className="w-full h-auto rounded-lg"
+                    />
+                  </div>
+                ) : null}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        ) : null}
 
         {/* Location Section */}
         <section id="location" className="py-20 bg-white">
@@ -360,9 +359,32 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
                 />
               ) : (
                 <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-gray-500 text-lg">Google Maps API key not configured</p>
-                    <p className="text-gray-400 text-sm mt-2">Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your environment variables</p>
+                  <div className="text-center p-8">
+                    <div className="mb-4">
+                      <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-700 text-lg font-semibold mb-2">Google Maps API key not configured</p>
+                    <p className="text-gray-500 text-sm mb-4">Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your environment variables</p>
+                    <div className="text-left bg-gray-100 rounded-lg p-4 max-w-md mx-auto">
+                      <p className="text-xs text-gray-600 font-mono mb-2">To fix this:</p>
+                      <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
+                        <li>Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to your .env file</li>
+                        <li>Rebuild the Docker container</li>
+                        <li>Restart the application</li>
+                      </ol>
+                    </div>
+                    <div className="mt-4">
+                      <a 
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(listing.address)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      >
+                        View on Google Maps
+                      </a>
+                    </div>
                   </div>
                 </div>
               )}
