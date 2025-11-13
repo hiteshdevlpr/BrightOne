@@ -233,8 +233,8 @@ const sampleListings: Record<string, ListingData> = {
   },
   '13151-lakeridge-road': {
     id: '13151-lakeridge-road',
-    address: '13151 Lakeridge Road, Uxbridge, ON',
-    title: 'Wilderness Retreat in Uxbridge',
+    address: '13151 Lakeridge Road',
+    title: 'Wilderness 60 acre retreat on Lakeridge road',
     description: 'This beautiful family home features modern amenities and spacious living areas. Perfect for families looking for comfort and convenience in a great neighborhood. The property boasts a large backyard, updated kitchen, and multiple living spaces.',
     price: 750000,
     priceFormatted: '$750,000',

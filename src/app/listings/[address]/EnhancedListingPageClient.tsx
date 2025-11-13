@@ -30,9 +30,14 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
   // Update active section on scroll
   useEffect(() => {
     const handleScroll = () => {
+      const is13151 = listing.id === '13151-lakeridge-road';
       const sections = hasFloorPlans 
-        ? ['hero', 'gallery', 'videos', 'floor-plans', 'location']
-        : ['hero', 'gallery', 'videos', 'location'];
+        ? is13151
+          ? ['hero', 'videos', 'gallery', 'floor-plans', 'location']
+          : ['hero', 'gallery', 'videos', 'floor-plans', 'location']
+        : is13151
+          ? ['hero', 'videos', 'gallery', 'location']
+          : ['hero', 'gallery', 'videos', 'location'];
       const scrollPosition = window.scrollY + 100;
 
       for (const section of sections) {
@@ -49,7 +54,7 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [hasFloorPlans]);
+  }, [hasFloorPlans, listing.id]);
 
   const openModal = (index: number) => {
     setCurrentImageIndex(index);
@@ -72,13 +77,23 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
     );
   };
   
-  const navItems = [
-    { id: 'hero', label: 'Overview' },
-    { id: 'gallery', label: 'Gallery' },
-    { id: 'videos', label: 'Videos' },
-    ...(hasFloorPlans ? [{ id: 'floor-plans', label: 'Floor Plans' }] : []),
-    { id: 'location', label: 'Location' },
-  ];
+  // For 13151, videos come before gallery
+  const is13151 = listing.id === '13151-lakeridge-road';
+  const navItems = is13151
+    ? [
+        { id: 'hero', label: 'Overview' },
+        { id: 'videos', label: 'Videos' },
+        { id: 'gallery', label: 'Gallery' },
+        ...(hasFloorPlans ? [{ id: 'floor-plans', label: 'Floor Plans' }] : []),
+        { id: 'location', label: 'Location' },
+      ]
+    : [
+        { id: 'hero', label: 'Overview' },
+        { id: 'gallery', label: 'Gallery' },
+        { id: 'videos', label: 'Videos' },
+        ...(hasFloorPlans ? [{ id: 'floor-plans', label: 'Floor Plans' }] : []),
+        { id: 'location', label: 'Location' },
+      ];
 
   return (
     <div className="min-h-screen bg-white">
@@ -170,37 +185,112 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
           
           <div className="relative z-10 h-full flex items-center">
             <div className="container mx-auto px-4">
-              <div className="max-w-4xl text-white">
-                <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-                  {listing.title}
-                </h1>
-                <p className="text-2xl md:text-3xl mb-8 text-white/90">
-                  {listing.address}
-                </p>
-                {listing.id !== '13151-lakeridge-road' && (
-                  <div className="flex flex-wrap gap-6 text-white">
-                    <div className="flex items-center gap-8 text-xl">
-                      <span>{listing.bedrooms} bed</span>
-                      <span>{listing.bathrooms} bath</span>
-                      <span>{listing.squareFootage.toLocaleString()} sq ft</span>
+              <div className={`grid ${listing.id === '13151-lakeridge-road' ? 'grid-cols-1 lg:grid-cols-2' : ''} gap-8 items-center max-w-7xl mx-auto`}>
+                <div className="text-white">
+                  <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+                    {listing.title}
+                  </h1>
+                  <p className="text-2xl md:text-3xl mb-8 text-white/90">
+                    {listing.address}
+                  </p>
+                  {listing.id !== '13151-lakeridge-road' && (
+                    <div className="flex flex-wrap gap-6 text-white">
+                      <div className="flex items-center gap-8 text-xl">
+                        <span>{listing.bedrooms} bed</span>
+                        <span>{listing.bathrooms} bath</span>
+                        <span>{listing.squareFootage.toLocaleString()} sq ft</span>
+                      </div>
                     </div>
+                  )}
+                  <div className="mt-8">
+                    <button
+                      onClick={() => scrollToSection(listing.id === '13151-lakeridge-road' ? 'videos' : 'gallery')}
+                      className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-lg"
+                    >
+                      {listing.id === '13151-lakeridge-road' ? 'View Video' : 'View Gallery'}
+                    </button>
+                  </div>
+                </div>
+                
+                {listing.id === '13151-lakeridge-road' && (
+                  <div className="text-white bg-white/10 backdrop-blur-sm rounded-lg p-8 border border-white/20">
+                    <h2 className="text-3xl md:text-4xl font-bold mb-6">Highlights of the Property</h2>
+                    <ul className="space-y-4 text-lg md:text-xl">
+                      <li className="flex items-start">
+                        <span className="mr-3 text-blue-400">•</span>
+                        <span>Many forested trails for many activities.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-3 text-blue-400">•</span>
+                        <span>Excellent Privacy throughout.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-3 text-blue-400">•</span>
+                        <span>Very low taxes.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-3 text-blue-400">•</span>
+                        <span>Low operating costs for the utilities.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-3 text-blue-400">•</span>
+                        <span>Many upgrades throughout.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-3 text-blue-400">•</span>
+                        <span>2 min to Lakeridge ski hill.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-3 text-blue-400">•</span>
+                        <span>10 min to 407.</span>
+                      </li>
+                    </ul>
                   </div>
                 )}
-                <div className="mt-8">
-                  <button
-                    onClick={() => scrollToSection('gallery')}
-                    className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-lg"
-                  >
-                    View Gallery
-                  </button>
-                </div>
               </div>
             </div>
           </div>
         </section>
 
+        {/* Videos Section - Show first for 13151 */}
+        {listing.id === '13151-lakeridge-road' && (
+          <section id="videos" className="py-20 bg-white">
+            <div className="container mx-auto px-4">
+              <div className="text-center mb-16">
+                <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                  Property Videos
+                </h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                  Take a virtual tour and see the property in motion
+                </p>
+              </div>
+
+              {/* Walkthrough Video - Full Width */}
+              <div className="max-w-4xl mx-auto">
+                <div className="space-y-6">
+                  <h3 className="text-2xl font-bold text-gray-900 text-center">Property Walkthrough</h3>
+                  <div className="aspect-video rounded-lg overflow-hidden shadow-lg">
+                    {listing.walkthroughVideoUrl ? (
+                      <iframe
+                        src={listing.walkthroughVideoUrl}
+                        title="Property Walkthrough"
+                        className="w-full h-full"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <p className="text-gray-500">Video coming soon</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Gallery Section */}
-        <section id="gallery" className="py-20 bg-gray-50">
+        <section id="gallery" className={`py-20 ${listing.id === '13151-lakeridge-road' ? 'bg-gray-50' : 'bg-gray-50'}`}>
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -245,40 +335,42 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
           </div>
         </section>
 
-        {/* Videos Section */}
-        <section id="videos" className="py-20 bg-white">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                Property Videos
-              </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Take a virtual tour and see the property in motion
-              </p>
-            </div>
+        {/* Videos Section - Show after gallery for other listings */}
+        {listing.id !== '13151-lakeridge-road' && (
+          <section id="videos" className="py-20 bg-white">
+            <div className="container mx-auto px-4">
+              <div className="text-center mb-16">
+                <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                  Property Videos
+                </h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                  Take a virtual tour and see the property in motion
+                </p>
+              </div>
 
-            {/* Walkthrough Video - Full Width */}
-            <div className="max-w-4xl mx-auto">
-              <div className="space-y-6">
-                <h3 className="text-2xl font-bold text-gray-900 text-center">Property Walkthrough</h3>
-                <div className="aspect-video rounded-lg overflow-hidden shadow-lg">
-                  {listing.walkthroughVideoUrl ? (
-                    <iframe
-                      src={listing.walkthroughVideoUrl}
-                      title="Property Walkthrough"
-                      className="w-full h-full"
-                      allowFullScreen
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <p className="text-gray-500">Video coming soon</p>
-                    </div>
-                  )}
+              {/* Walkthrough Video - Full Width */}
+              <div className="max-w-4xl mx-auto">
+                <div className="space-y-6">
+                  <h3 className="text-2xl font-bold text-gray-900 text-center">Property Walkthrough</h3>
+                  <div className="aspect-video rounded-lg overflow-hidden shadow-lg">
+                    {listing.walkthroughVideoUrl ? (
+                      <iframe
+                        src={listing.walkthroughVideoUrl}
+                        title="Property Walkthrough"
+                        className="w-full h-full"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <p className="text-gray-500">Video coming soon</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Floor Plans Section - Only show if floor plans exist */}
         {(listing.floorPlans && listing.floorPlans.length > 0) || listing.floorPlanUrl ? (
@@ -448,9 +540,6 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
 
             {/* Image Info */}
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 text-center">
-              <h3 className="text-white text-lg font-bold mb-1">
-                {listing.images[currentImageIndex].caption || listing.images[currentImageIndex].alt}
-              </h3>
               <p className="text-white/80 text-sm">
                 {currentImageIndex + 1} of {listing.images.length}
               </p>
