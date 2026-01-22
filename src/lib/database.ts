@@ -90,7 +90,18 @@ export const db = {
     budget?: string;
     timeline?: string;
     serviceTier?: string;
+    selectedAddOns?: string[] | null;
+    preferredDate?: string;
+    preferredTime?: string;
+    totalPrice?: string;
     message?: string;
+    packagePrice?: number;
+    addonsPrice?: number;
+    subtotal?: number;
+    taxRate?: number;
+    taxAmount?: number;
+    finalTotal?: number;
+    priceBreakdown?: string | object;
   }) {
     const {
       name,
@@ -103,15 +114,27 @@ export const db = {
       budget,
       timeline,
       serviceTier,
+      selectedAddOns,
+      preferredDate,
+      preferredTime,
+      totalPrice,
       message,
+      packagePrice,
+      addonsPrice,
+      subtotal,
+      taxRate,
+      taxAmount,
+      finalTotal,
+      priceBreakdown,
     } = bookingData;
 
     const result = await query(
       `INSERT INTO bookings (
         name, email, phone, service_type, property_address, 
         property_type, property_size, budget, timeline, 
-        service_tier, message
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+        service_tier, selected_addons, preferred_date, preferred_time, total_price, message,
+        package_price, addons_price, subtotal, tax_rate, tax_amount, final_total, price_breakdown
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22) RETURNING *`,
       [
         name,
         email,
@@ -123,7 +146,18 @@ export const db = {
         budget ?? null,
         timeline ?? null,
         serviceTier ?? null,
+        selectedAddOns && selectedAddOns.length > 0 ? JSON.stringify(selectedAddOns) : null,
+        preferredDate ?? null,
+        preferredTime ?? null,
+        totalPrice ?? null,
         message ?? null,
+        packagePrice ?? null,
+        addonsPrice ?? null,
+        subtotal ?? null,
+        taxRate ?? 13.00,
+        taxAmount ?? null,
+        finalTotal ?? null,
+        priceBreakdown ? JSON.stringify(priceBreakdown) : null,
       ]
     );
     return result.rows[0];

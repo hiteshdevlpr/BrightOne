@@ -6,11 +6,14 @@ export interface BookingFormData {
   phone?: string;
   serviceType: string;
   propertyAddress: string;
-  propertyType?: string;
+  unitNumber?: string;
   propertySize?: string;
   budget?: string;
   timeline?: string;
   serviceTier?: string;
+  selectedPackage?: string;
+  selectedAddOns?: string[];
+  totalPrice?: string;
   message?: string;
 }
 
