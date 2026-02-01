@@ -13,12 +13,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Write SSH key to file so newlines are preserved (fixes drone-scp auth failure)
+      - name: Prepare SSH key
+        run: |
+          echo "${{ secrets.DROPLET_SSH_KEY }}" > deploy_key.pem
+          chmod 600 deploy_key.pem
+
       - name: Copy files to server
         uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
+          key_path: ${{ github.workspace }}/deploy_key.pem
           source: "."
           target: "/home/brightone/website"
           strip_components: 1
@@ -28,7 +34,7 @@ jobs:
         with:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
+          key_path: ${{ github.workspace }}/deploy_key.pem
           timeout: 3m
           script: |
             cd /home/brightone/website
@@ -48,17 +54,17 @@ jobs:
             EOF
 
             echo "🛑 Stopping existing containers..."
-            sudo docker-compose -f docker-compose.prod.yml down || true
+            docker compose -f docker-compose.prod.yml down || true
             
             echo "🧹 Cleaning up Docker..."
-            sudo docker system prune -f || true
+            docker system prune -f || true
 
       - name: Build and start services
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
+          key_path: ${{ github.workspace }}/deploy_key.pem
           timeout: 10m
           script: |
             cd /home/brightone/website
@@ -66,10 +72,10 @@ jobs:
             echo "🏗️ Building services..."
             echo "🔍 Checking .env file contents..."
             cat .env | grep NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || echo "❌ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY not found in .env"
-            sudo docker-compose -f docker-compose.prod.yml build --no-cache
+            docker compose -f docker-compose.prod.yml build --no-cache
             
             echo "🚀 Starting services..."
-            sudo docker-compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml up -d
             
             echo "⏳ Waiting for services to start..."
             sleep 30
@@ -79,13 +85,13 @@ jobs:
         with:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
+          key_path: ${{ github.workspace }}/deploy_key.pem
           timeout: 5m
           script: |
             cd /home/brightone/website
             
             echo "📊 Checking service status..."
-            sudo docker-compose -f docker-compose.prod.yml ps
+            docker compose -f docker-compose.prod.yml ps
             
             echo "🔍 Testing application health on port 3000..."
             for i in {1..6}; do
@@ -100,5 +106,5 @@ jobs:
             
             echo "❌ Application health check failed"
             echo "📋 Container logs:"
-            sudo docker-compose -f docker-compose.prod.yml logs app
+            docker compose -f docker-compose.prod.yml logs app
             exit 1
