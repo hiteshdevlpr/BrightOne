@@ -7,9 +7,10 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
+# Install dependencies (limit Node memory to avoid OOM kill on CI)
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+ENV NODE_OPTIONS=--max-old-space-size=3072
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -18,16 +19,14 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
 
 # Accept build-time arguments for environment variables
 ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
-# Debug: Print the API key (first 10 chars only for security)
-RUN echo "🔍 Build-time API Key: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:0:10}..."
+# Limit Node memory during build to avoid OOM kill on CI
+ENV NODE_OPTIONS=--max-old-space-size=3072
 
 RUN npm run build
 

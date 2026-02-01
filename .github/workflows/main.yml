@@ -19,6 +19,14 @@ jobs:
           echo "${{ secrets.DROPLET_SSH_KEY }}" > deploy_key.pem
           chmod 600 deploy_key.pem
 
+      # Build and pull all images on runner (has internet); droplet cannot reach Docker Hub
+      - name: Build and save all images
+        run: |
+          docker build --build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}" -t website-app:latest .
+          docker pull postgres:15-alpine
+          docker pull redis:7-alpine
+          docker save website-app:latest postgres:15-alpine redis:7-alpine -o images.tar
+
       - name: Copy files to server
         uses: appleboy/scp-action@v1
         with:
@@ -55,7 +63,7 @@ jobs:
             EOF
 
             echo "🛑 Stopping existing containers..."
-            docker-compose -f docker-compose.prod.yml down || true
+            docker-compose -f docker-compose.prod.from-image.yml down || true
             
             echo "🧹 Cleaning up Docker..."
             docker system prune -f || true
@@ -71,24 +79,24 @@ jobs:
             set -e
             cd /home/brightone/website
             
-            echo "🔍 Checking .env exists..."
+            echo "🔍 Checking .env and images..."
             test -f .env || (echo "❌ .env missing"; exit 1)
-            echo "🔍 Checking docker-compose.prod.yml exists..."
-            test -f docker-compose.prod.yml || (echo "❌ docker-compose.prod.yml missing"; exit 1)
+            test -f images.tar || (echo "❌ images.tar missing"; exit 1)
+            test -f docker-compose.prod.from-image.yml || (echo "❌ docker-compose.prod.from-image.yml missing"; exit 1)
             
-            echo "🏗️ Building services..."
-            docker-compose -f docker-compose.prod.yml build --no-cache
+            echo "📦 Loading all images (no Docker Hub needed on droplet)..."
+            docker load -i images.tar
             
             echo "🚀 Starting services..."
-            docker-compose -f docker-compose.prod.yml up -d
+            docker-compose -f docker-compose.prod.from-image.yml up -d
             
             echo "⏳ Waiting 60s for db healthcheck and app startup..."
             sleep 60
             
             echo "📊 Container status after up:"
-            docker-compose -f docker-compose.prod.yml ps -a
+            docker-compose -f docker-compose.prod.from-image.yml ps -a
             echo "📋 Recent logs (all services):"
-            docker-compose -f docker-compose.prod.yml logs --tail=80
+            docker-compose -f docker-compose.prod.from-image.yml logs --tail=80
 
       - name: Verify deployment
         uses: appleboy/ssh-action@v1
@@ -102,7 +110,7 @@ jobs:
             cd /home/brightone/website
             
             echo "📊 Container status..."
-            docker-compose -f docker-compose.prod.yml ps -a
+            docker-compose -f docker-compose.prod.from-image.yml ps -a
             
             echo "🔍 Testing application health on port 3000..."
             for i in {1..6}; do
@@ -117,11 +125,11 @@ jobs:
             
             echo "❌ Application health check failed"
             echo "📋 Container status:"
-            docker-compose -f docker-compose.prod.yml ps -a
+            docker-compose -f docker-compose.prod.from-image.yml ps -a
             echo "📋 App logs:"
-            docker-compose -f docker-compose.prod.yml logs --tail=150 app
+            docker-compose -f docker-compose.prod.from-image.yml logs --tail=150 app
             echo "📋 DB logs:"
-            docker-compose -f docker-compose.prod.yml logs --tail=50 db
+            docker-compose -f docker-compose.prod.from-image.yml logs --tail=50 db
             echo "📋 Redis logs:"
-            docker-compose -f docker-compose.prod.yml logs --tail=20 redis
+            docker-compose -f docker-compose.prod.from-image.yml logs --tail=20 redis
             exit 1
