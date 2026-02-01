@@ -37,6 +37,7 @@ jobs:
           key_path: ${{ github.workspace }}/deploy_key.pem
           timeout: 3m
           script: |
+            set -e
             cd /home/brightone/website
 
             echo "📝 Creating .env file..."
@@ -54,7 +55,7 @@ jobs:
             EOF
 
             echo "🛑 Stopping existing containers..."
-            docker compose -f docker-compose.prod.yml down || true
+            docker-compose -f docker-compose.prod.yml down || true
             
             echo "🧹 Cleaning up Docker..."
             docker system prune -f || true
@@ -65,20 +66,29 @@ jobs:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
           key_path: ${{ github.workspace }}/deploy_key.pem
-          timeout: 10m
+          timeout: 15m
           script: |
+            set -e
             cd /home/brightone/website
             
+            echo "🔍 Checking .env exists..."
+            test -f .env || (echo "❌ .env missing"; exit 1)
+            echo "🔍 Checking docker-compose.prod.yml exists..."
+            test -f docker-compose.prod.yml || (echo "❌ docker-compose.prod.yml missing"; exit 1)
+            
             echo "🏗️ Building services..."
-            echo "🔍 Checking .env file contents..."
-            cat .env | grep NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || echo "❌ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY not found in .env"
-            docker compose -f docker-compose.prod.yml build --no-cache
+            docker-compose -f docker-compose.prod.yml build --no-cache
             
             echo "🚀 Starting services..."
-            docker compose -f docker-compose.prod.yml up -d
+            docker-compose -f docker-compose.prod.yml up -d
             
-            echo "⏳ Waiting for services to start..."
-            sleep 30
+            echo "⏳ Waiting 60s for db healthcheck and app startup..."
+            sleep 60
+            
+            echo "📊 Container status after up:"
+            docker-compose -f docker-compose.prod.yml ps -a
+            echo "📋 Recent logs (all services):"
+            docker-compose -f docker-compose.prod.yml logs --tail=80
 
       - name: Verify deployment
         uses: appleboy/ssh-action@v1
@@ -88,10 +98,11 @@ jobs:
           key_path: ${{ github.workspace }}/deploy_key.pem
           timeout: 5m
           script: |
+            set -e
             cd /home/brightone/website
             
-            echo "📊 Checking service status..."
-            docker compose -f docker-compose.prod.yml ps
+            echo "📊 Container status..."
+            docker-compose -f docker-compose.prod.yml ps -a
             
             echo "🔍 Testing application health on port 3000..."
             for i in {1..6}; do
@@ -106,9 +117,11 @@ jobs:
             
             echo "❌ Application health check failed"
             echo "📋 Container status:"
-            docker compose -f docker-compose.prod.yml ps -a
-            echo "📋 Container logs (app):"
-            docker compose -f docker-compose.prod.yml logs --tail=100 app
-            echo "📋 Container logs (db):"
-            docker compose -f docker-compose.prod.yml logs --tail=30 db
+            docker-compose -f docker-compose.prod.yml ps -a
+            echo "📋 App logs:"
+            docker-compose -f docker-compose.prod.yml logs --tail=150 app
+            echo "📋 DB logs:"
+            docker-compose -f docker-compose.prod.yml logs --tail=50 db
+            echo "📋 Redis logs:"
+            docker-compose -f docker-compose.prod.yml logs --tail=20 redis
             exit 1
