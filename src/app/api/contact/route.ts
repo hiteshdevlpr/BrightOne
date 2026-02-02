@@ -1,45 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, query } from '@/lib/database';
 import { handleContactSubmissionServer } from '@/lib/server-form-handlers';
+import { verifyRecaptchaToken } from '@/lib/recaptcha';
+import { sanitizeContactInput, validateContactForm, HONEYPOT_FIELD } from '@/lib/validation';
+
+const RECAPTCHA_ACTION = 'contact';
 
 // POST /api/contact - Create a new contact message
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    // Validate required fields
-    const requiredFields = ['name', 'email', 'subject', 'message'];
-    const missingFields = requiredFields.filter(field => !body[field]);
-    
-    if (missingFields.length > 0) {
+
+    // Honeypot: if filled, pretend success and do not store or email
+    const honeypot = body[HONEYPOT_FIELD];
+    if (honeypot != null && String(honeypot).trim() !== '') {
       return NextResponse.json(
-        { error: `Missing required fields: ${missingFields.join(', ')}` },
+        { success: true, message: 'Contact message submitted successfully' },
+        { status: 201 }
+      );
+    }
+
+    // reCAPTCHA v3
+    const token = body.recaptchaToken;
+    const recaptcha = await verifyRecaptchaToken(token, RECAPTCHA_ACTION);
+    if (!recaptcha.valid) {
+      return NextResponse.json(
+        { error: recaptcha.error ?? 'Verification failed. Please try again.' },
         { status: 400 }
       );
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(body.email)) {
+    const sanitized = sanitizeContactInput(body);
+
+    // Validate required fields and formats
+    const validationErrors = validateContactForm(sanitized);
+    if (validationErrors.length > 0) {
       return NextResponse.json(
-        { error: 'Invalid email format' },
+        { error: validationErrors.map(e => e.message).join(', ') },
         { status: 400 }
       );
     }
 
-    // Validate phone format (if provided)
-    if (body.phone && body.phone.trim()) {
-      const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-      if (!phoneRegex.test(body.phone.replace(/[\s\-\(\)]/g, ''))) {
-        return NextResponse.json(
-          { error: 'Invalid phone number format' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Validate message length
-    if (body.message.length > 2000) {
+    // Validate message length after sanitization
+    if (sanitized.message.length > 2000) {
       return NextResponse.json(
         { error: 'Message is too long. Maximum 2000 characters allowed.' },
         { status: 400 }
@@ -48,11 +51,11 @@ export async function POST(request: NextRequest) {
 
     // Use server-side form handler to handle submission and emails
     const result = await handleContactSubmissionServer({
-      name: body.name,
-      email: body.email,
-      phone: body.phone,
-      subject: body.subject,
-      message: body.message,
+      name: sanitized.name,
+      email: sanitized.email,
+      phone: sanitized.phone || undefined,
+      subject: sanitized.subject,
+      message: sanitized.message,
     });
 
     if (result.success) {

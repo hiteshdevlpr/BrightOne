@@ -214,10 +214,16 @@ export class EmailService {
       });
 
       const result = await sesClient.send(command);
-      console.log('Email sent successfully:', result.MessageId);
+      console.log('APP_LOG:: Email sent successfully:', result.MessageId);
       return true;
     } catch (error) {
-      console.error('Error sending email:', error);
+      const err = error as { name?: string; message?: string; code?: string; $metadata?: { httpStatusCode?: number } };
+      console.error('APP_LOG:: Error sending email:', {
+        name: err?.name,
+        message: err?.message,
+        code: err?.code,
+        statusCode: err?.$metadata?.httpStatusCode,
+      });
       return false;
     }
   }

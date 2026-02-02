@@ -15,6 +15,8 @@ export interface BookingFormData {
   selectedAddOns?: string[];
   totalPrice?: string;
   message?: string;
+  recaptchaToken?: string;
+  website_url?: string;
 }
 
 export interface BookingResponse {
@@ -33,12 +35,17 @@ export interface BookingResponse {
 
 export async function submitBooking(formData: BookingFormData): Promise<BookingResponse> {
   try {
+    const payload = {
+      ...formData,
+      recaptchaToken: formData.recaptchaToken ?? '',
+      website_url: formData.website_url ?? '',
+    };
     const response = await fetch('/api/bookings', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(payload),
     });
 
     const data = await response.json();
@@ -60,6 +67,8 @@ export interface ContactFormData {
   phone?: string;
   subject: string;
   message: string;
+  recaptchaToken?: string;
+  website_url?: string;
 }
 
 export interface ContactResponse {
@@ -78,12 +87,17 @@ export interface ContactResponse {
 
 export async function submitContact(formData: ContactFormData): Promise<ContactResponse> {
   try {
+    const payload = {
+      ...formData,
+      recaptchaToken: formData.recaptchaToken ?? '',
+      website_url: formData.website_url ?? '',
+    };
     const response = await fetch('/api/contact', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(payload),
     });
 
     const data = await response.json();

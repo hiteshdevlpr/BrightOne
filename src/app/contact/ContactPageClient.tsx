@@ -6,6 +6,8 @@ import Footer from '../components/Footer';
 import Image from 'next/image';
 import servicebg from '@/assets/images/service-bg-2.jpg';
 import { handleContactSubmission } from './contact-form-handler';
+import { getRecaptchaToken } from '@/lib/recaptcha-client';
+import { HONEYPOT_FIELD } from '@/lib/validation';
 import { 
   trackFormFieldFocus, 
   trackFormFieldBlur, 
@@ -21,7 +23,8 @@ export default function ContactPageClient() {
     email: '',
     phone: '',
     subject: '',
-    message: ''
+    message: '',
+    [HONEYPOT_FIELD]: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,7 +81,8 @@ export default function ContactPageClient() {
       email: '',
       phone: '',
       subject: '',
-      message: ''
+      message: '',
+      [HONEYPOT_FIELD]: ''
     });
     setErrors([]);
     setFieldErrors({});
@@ -144,22 +148,22 @@ export default function ContactPageClient() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("APP_LOG:: Form Submitted formData", formData);
-    
-    // Track form submission attempt
     trackFormSubmission('contact', true);
-    
-    // Store current form data for submission
-    const currentFormData = { ...formData };
-    
+
+    const recaptchaToken = await getRecaptchaToken('contact');
+    const payload = {
+      ...formData,
+      recaptchaToken,
+      [HONEYPOT_FIELD]: formData[HONEYPOT_FIELD as keyof typeof formData] ?? '',
+    };
+
     const success = await handleContactSubmission(
-      currentFormData,
+      payload,
       setIsSubmitting,
       setIsSubmitted,
       setErrors
     );
-    
-    // Track form submission result
+
     if (success) {
       trackFormSubmission('contact', true);
       clearForm();
@@ -245,6 +249,19 @@ export default function ContactPageClient() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+                {/* Honeypot – hidden from users, leave empty */}
+                <div className="absolute -left-[9999px] top-0 opacity-0 w-px h-px overflow-hidden" aria-hidden="true">
+                  <label htmlFor="contact-website_url">Leave this blank</label>
+                  <input
+                    type="text"
+                    id="contact-website_url"
+                    name={HONEYPOT_FIELD}
+                    value={formData[HONEYPOT_FIELD as keyof typeof formData] ?? ''}
+                    onChange={handleInputChange}
+                    tabIndex={-1}
+                    autoComplete="off"
+                  />
+                </div>
                 <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <label className="block text-xs font-medium text-white mb-2 font-montserrat">Name *</label>

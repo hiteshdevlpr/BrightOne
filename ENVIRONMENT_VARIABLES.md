@@ -15,6 +15,12 @@ DATABASE_URL=postgresql://brightone:${DB_PASSWORD}@db:5432/brightone_db
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ```
 
+### Google reCAPTCHA v3
+```bash
+NEXT_PUBLIC_RECAPTCHA_SITE_KEY=your_recaptcha_v3_site_key
+RECAPTCHA_SECRET_KEY=your_recaptcha_v3_secret_key
+```
+
 ### NextAuth Configuration
 ```bash
 NEXTAUTH_SECRET=your_nextauth_secret_key

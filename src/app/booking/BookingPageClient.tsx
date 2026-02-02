@@ -7,6 +7,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import heroBg from '@/assets/images/booking-bg.jpg';
 import { handleBookingSubmission } from './booking-form-handler';
+import { getRecaptchaToken } from '@/lib/recaptcha-client';
+import { HONEYPOT_FIELD } from '@/lib/validation';
 import {
   trackFormFieldFocus,
   trackFormFieldBlur,
@@ -111,7 +113,8 @@ export default function BookingPage() {
     virtualStagingPhotos: 3,
     preferredDate: '',
     preferredTime: '',
-    message: ''
+    message: '',
+    [HONEYPOT_FIELD]: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -136,7 +139,8 @@ export default function BookingPage() {
     virtualStagingPhotos: 3,
     preferredDate: '',
     preferredTime: '',
-    message: ''
+    message: '',
+    [HONEYPOT_FIELD]: ''
   };
 
   // Reset form function
@@ -665,14 +669,16 @@ export default function BookingPage() {
     trackFormSubmission('booking', true);
 
     try {
+      const recaptchaToken = await getRecaptchaToken('booking');
       const bookingData = {
         ...formData,
         serviceType: 'Real Estate Photography Package',
         serviceTier: formData.selectedPackage,
         totalPrice: calculateTotal().toString(),
-        // Keep original add-on IDs for database storage
         selectedAddOns: formData.selectedAddOns,
-        message: formData.message // Keep only the user's message, addons are now separate
+        message: formData.message,
+        recaptchaToken,
+        [HONEYPOT_FIELD]: formData[HONEYPOT_FIELD as keyof typeof formData] ?? ''
       };
 
       await handleBookingSubmission(
@@ -820,6 +826,19 @@ export default function BookingPage() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+                  {/* Honeypot – hidden from users, leave empty */}
+                  <div className="absolute -left-[9999px] top-0 opacity-0 w-px h-px overflow-hidden" aria-hidden="true">
+                    <label htmlFor="booking-website_url">Leave this blank</label>
+                    <input
+                      type="text"
+                      id="booking-website_url"
+                      name={HONEYPOT_FIELD}
+                      value={formData[HONEYPOT_FIELD as keyof typeof formData] ?? ''}
+                      onChange={handleInputChange}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </div>
 
                   {/* Step 1: Property Address */}
                   {currentStep === 1 && (
