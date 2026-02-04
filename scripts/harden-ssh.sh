@@ -19,8 +19,9 @@ EOF
 echo "=== Testing sshd config ==="
 sshd -t
 
-echo "=== Restarting sshd ==="
-systemctl restart sshd
+echo "=== Restarting SSH service ==="
+# Debian/Ubuntu use 'ssh'; RHEL/CentOS use 'sshd'
+systemctl restart ssh 2>/dev/null || systemctl restart sshd
 
 echo ""
 echo "✅ SSH hardened: password auth disabled, root key-only (prohibit-password)."

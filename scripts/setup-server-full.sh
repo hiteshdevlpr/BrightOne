@@ -135,7 +135,7 @@ PasswordAuthentication no
 PermitRootLogin prohibit-password
 PubkeyAuthentication yes
 EOF
-  sshd -t && systemctl restart sshd
+  sshd -t && (systemctl restart ssh 2>/dev/null || systemctl restart sshd)
 else
   echo ""
   echo "=== Skipping SSH hardening (SKIP_SSH_HARDEN=1) ==="
