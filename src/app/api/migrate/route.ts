@@ -6,10 +6,14 @@ import path from 'path';
 // POST /api/migrate - Run database migrations
 export async function POST(request: NextRequest) {
   try {
-    // Check for authorization (you might want to add proper auth here)
     const authHeader = request.headers.get('authorization');
-    const expectedToken = process.env.MIGRATION_TOKEN || 'migrate-brightone-2024';
-    
+    const expectedToken = process.env.MIGRATION_TOKEN;
+    if (!expectedToken) {
+      return NextResponse.json(
+        { error: 'Migration not configured. Set MIGRATION_TOKEN on the server.' },
+        { status: 503 }
+      );
+    }
     if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
       return NextResponse.json(
         { error: 'Unauthorized. Migration token required.' },
@@ -92,10 +96,14 @@ export async function POST(request: NextRequest) {
 // GET /api/migrate - Check migration status
 export async function GET(request: NextRequest) {
   try {
-    // Check for authorization
     const authHeader = request.headers.get('authorization');
-    const expectedToken = process.env.MIGRATION_TOKEN || 'migrate-brightone-2024';
-    
+    const expectedToken = process.env.MIGRATION_TOKEN;
+    if (!expectedToken) {
+      return NextResponse.json(
+        { error: 'Migration not configured. Set MIGRATION_TOKEN on the server.' },
+        { status: 503 }
+      );
+    }
     if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
       return NextResponse.json(
         { error: 'Unauthorized. Migration token required.' },

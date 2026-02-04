@@ -5,6 +5,10 @@ services:
     image: website-app:latest
     ports:
       - "3000:3000"
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64m
     environment:
       - NODE_ENV=production
       - DATABASE_URL=${DATABASE_URL}

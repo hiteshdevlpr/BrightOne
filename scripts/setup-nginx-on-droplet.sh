@@ -13,10 +13,18 @@ echo "=== Installing Certbot (for SSL) ==="
 apt-get install -y certbot python3-certbot-nginx
 
 echo "=== Creating Nginx config (HTTP only; Certbot will add SSL) ==="
+# Rate limiting: 10 req/s per IP for general; 2 req/s for API (burst 5)
+mkdir -p /etc/nginx/conf.d
+cat > /etc/nginx/conf.d/rate-limit.conf << 'RATELIMIT'
+limit_req_zone $binary_remote_addr zone=general:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=api:10m rate=2r/s;
+RATELIMIT
+
 cat > /etc/nginx/sites-available/brightone << 'NGINX_HTTP'
 server {
     listen 80;
     server_name brightone.ca www.brightone.ca;
+    limit_req zone=general burst=20 nodelay;
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -33,6 +41,7 @@ server {
         add_header Cache-Control "public, max-age=31536000, immutable";
     }
     location /api/ {
+        limit_req zone=api burst=5 nodelay;
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
         proxy_set_header Host $host;

@@ -52,4 +52,7 @@ cat /home/brightone/.ssh/authorized_keys
 
 echo ""
 echo "✅ Bootstrap complete."
-echo "Next: Update GitHub Secret DROPLET_IP to this droplet's IP, then push to main to deploy."
+echo "Next:"
+echo "  1. Update GitHub Secret DROPLET_IP to this droplet's IP, then push to main to deploy."
+echo "  2. (Security) Install fail2ban to block SSH brute-force: ssh root@DROPLET_IP 'bash -s' < scripts/install-fail2ban.sh"
+echo "  3. (Security) Set MIGRATION_TOKEN in GitHub Secrets (Settings > Actions > Secrets) so /api/migrate is protected."

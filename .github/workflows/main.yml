@@ -13,6 +13,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Dependency audit
+        run: |
+          npm ci
+          npm audit --audit-level=high
+
       # Write SSH key to file so newlines are preserved (fixes drone-scp auth failure)
       - name: Prepare SSH key
         run: |
@@ -60,6 +65,7 @@ jobs:
             FROM_EMAIL=${{ secrets.FROM_EMAIL }}
             ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
             DATABASE_URL=postgresql://brightone:${{ secrets.DB_PASSWORD }}@db:5432/brightone_db
+            MIGRATION_TOKEN=${{ secrets.MIGRATION_TOKEN }}
             EOF
 
             echo "🛑 Stopping existing containers..."

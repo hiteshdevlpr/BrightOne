@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 });
+  }
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const awsRegion = process.env.AWS_REGION;
   const hasAwsKey = !!process.env.AWS_ACCESS_KEY_ID;

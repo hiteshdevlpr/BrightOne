@@ -24,6 +24,8 @@
 .DS_Store
 *.pem
 GITHUB_SECRETS.md
+backups/
+._*
 
 # debug
 npm-debug.log*
