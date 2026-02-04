@@ -42,6 +42,27 @@ jobs:
           target: "/home/brightone/website"
           strip_components: 1
 
+      - name: Server setup (Nginx, SSL, Fail2ban, UFW)
+        uses: appleboy/ssh-action@v1
+        env:
+          DOMAINS: ${{ secrets.DOMAINS }}
+          SKIP_SSL: ${{ vars.SKIP_SSL }}
+          SKIP_SSH_HARDEN: ${{ vars.SKIP_SSH_HARDEN }}
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key_path: ${{ github.workspace }}/deploy_key.pem
+          timeout: 8m
+          envs: DOMAINS,SKIP_SSL,SKIP_SSH_HARDEN
+          script: |
+            set -e
+            DOMAINS="${DOMAINS:-brightone.ca www.brightone.ca}"
+            SKIP_SSL="${SKIP_SSL:-0}"
+            SKIP_SSH_HARDEN="${SKIP_SSH_HARDEN:-0}"
+            echo "🔧 Running consolidated server setup (idempotent)..."
+            sudo /home/brightone/website/scripts/setup-server-full.sh "$DOMAINS" "$SKIP_SSL" "$SKIP_SSH_HARDEN"
+            echo "✅ Server setup done."
+
       - name: Setup environment and stop containers
         uses: appleboy/ssh-action@v1
         with:

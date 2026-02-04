@@ -42,6 +42,11 @@ mkdir -p /home/brightone/website
 chown -R brightone:brightone /home/brightone/website
 getent group docker >/dev/null && usermod -aG docker brightone || true
 
+# Allow brightone to run the consolidated setup script as root (for CI/CD, no manual SSH as root).
+SETUP_SCRIPT="/home/brightone/website/scripts/setup-server-full.sh"
+echo "brightone ALL=(ALL) NOPASSWD: $SETUP_SCRIPT" > /etc/sudoers.d/brightone-setup
+chmod 440 /etc/sudoers.d/brightone-setup
+
 echo ""
 echo "=== Verifying ==="
 docker --version
@@ -54,5 +59,5 @@ echo ""
 echo "✅ Bootstrap complete."
 echo "Next:"
 echo "  1. Update GitHub Secret DROPLET_IP to this droplet's IP, then push to main to deploy."
-echo "  2. (Security) Install fail2ban to block SSH brute-force: ssh root@DROPLET_IP 'bash -s' < scripts/install-fail2ban.sh"
-echo "  3. (Security) Set MIGRATION_TOKEN in GitHub Secrets (Settings > Actions > Secrets) so /api/migrate is protected."
+echo "  2. (Optional) Server security (Nginx, SSL, Fail2ban, UFW) runs automatically in CI via scripts/setup-server-full.sh."
+echo "  3. Set MIGRATION_TOKEN and ADMIN_API_KEY in GitHub Secrets so /api/migrate and admin APIs are protected."
