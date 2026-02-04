@@ -32,9 +32,16 @@ chown brightone:brightone /home/brightone/.ssh
 chmod 700 /home/brightone/.ssh
 
 # Deploy key (public key for GitHub Actions - matches ~/.ssh/github_actions_deploy.pub)
-echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINjc4/pH7n5KkeOLWlZhB8WuSo2YUFhHihXJlgIBFAYH github-actions-deploy@github.com' > /home/brightone/.ssh/authorized_keys
+DEPLOY_KEY='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINjc4/pH7n5KkeOLWlZhB8WuSo2YUFhHihXJlgIBFAYH github-actions-deploy@github.com'
+echo "$DEPLOY_KEY" > /home/brightone/.ssh/authorized_keys
 chown brightone:brightone /home/brightone/.ssh/authorized_keys
 chmod 600 /home/brightone/.ssh/authorized_keys
+
+# Allow CI to SSH as root for the server-setup step (no sudo/password needed)
+mkdir -p /root/.ssh
+grep -qF "$DEPLOY_KEY" /root/.ssh/authorized_keys 2>/dev/null || echo "$DEPLOY_KEY" >> /root/.ssh/authorized_keys
+chmod 700 /root/.ssh
+chmod 600 /root/.ssh/authorized_keys
 
 echo ""
 echo "=== Creating website dir and docker group ==="
