@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, query } from '@/lib/database';
+import { requireAdminKey } from '@/lib/admin-auth';
 import { handleContactSubmissionServer } from '@/lib/server-form-handlers';
 import { verifyRecaptchaToken } from '@/lib/recaptcha';
 import { sanitizeContactInput, validateContactForm, HONEYPOT_FIELD } from '@/lib/validation';
@@ -94,10 +95,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/contact - Get all contact messages (admin only)
+// GET /api/contact - Get all contact messages (admin only, requires ADMIN_API_KEY)
 export async function GET(request: NextRequest) {
   try {
-    // In a real app, you'd check for admin authentication here
+    const authError = requireAdminKey(request);
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');

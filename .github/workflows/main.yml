@@ -66,6 +66,7 @@ jobs:
             ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
             DATABASE_URL=postgresql://brightone:${{ secrets.DB_PASSWORD }}@db:5432/brightone_db
             MIGRATION_TOKEN=${{ secrets.MIGRATION_TOKEN }}
+            ADMIN_API_KEY=${{ secrets.ADMIN_API_KEY }}
             EOF
 
             echo "🛑 Stopping existing containers..."

@@ -44,7 +44,19 @@ interface DashboardData {
   serviceBreakdown: Array<{ service_type: string; count: string }>;
 }
 
+const ADMIN_KEY_STORAGE = 'brightone_admin_key';
+
+function getAdminHeaders(): HeadersInit {
+  if (typeof window === 'undefined') return {};
+  const key = sessionStorage.getItem(ADMIN_KEY_STORAGE);
+  if (!key) return {};
+  return { Authorization: `Bearer ${key}` };
+}
+
 export default function AdminPage() {
+  const [adminKey, setAdminKey] = useState<string | null>(null);
+  const [keyInput, setKeyInput] = useState('');
+  const [keyError, setKeyError] = useState('');
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
@@ -52,14 +64,29 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'bookings' | 'messages'>('dashboard');
 
   useEffect(() => {
-    fetchDashboardData();
-    fetchBookings();
-    fetchMessages();
+    if (typeof window !== 'undefined') {
+      setAdminKey(sessionStorage.getItem(ADMIN_KEY_STORAGE));
+    }
   }, []);
+
+  useEffect(() => {
+    if (adminKey !== null) {
+      fetchDashboardData();
+      fetchBookings();
+      fetchMessages();
+    } else {
+      setLoading(false);
+    }
+  }, [adminKey]);
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch('/api/admin/dashboard');
+      const response = await fetch('/api/admin/dashboard', { headers: getAdminHeaders() });
+      if (response.status === 401 || response.status === 503) {
+        sessionStorage.removeItem(ADMIN_KEY_STORAGE);
+        setAdminKey(null);
+        return;
+      }
       const data = await response.json();
       if (data.success) {
         setDashboardData(data.dashboard);
@@ -71,7 +98,12 @@ export default function AdminPage() {
 
   const fetchBookings = async () => {
     try {
-      const response = await fetch('/api/bookings');
+      const response = await fetch('/api/bookings', { headers: getAdminHeaders() });
+      if (response.status === 401 || response.status === 503) {
+        sessionStorage.removeItem(ADMIN_KEY_STORAGE);
+        setAdminKey(null);
+        return;
+      }
       const data = await response.json();
       if (data.success) {
         setBookings(data.bookings);
@@ -83,7 +115,12 @@ export default function AdminPage() {
 
   const fetchMessages = async () => {
     try {
-      const response = await fetch('/api/contact');
+      const response = await fetch('/api/contact', { headers: getAdminHeaders() });
+      if (response.status === 401 || response.status === 503) {
+        sessionStorage.removeItem(ADMIN_KEY_STORAGE);
+        setAdminKey(null);
+        return;
+      }
       const data = await response.json();
       if (data.success) {
         setMessages(data.messages);
@@ -101,6 +138,7 @@ export default function AdminPage() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          ...getAdminHeaders(),
         },
         body: JSON.stringify({ status }),
       });
@@ -120,6 +158,7 @@ export default function AdminPage() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          ...getAdminHeaders(),
         },
         body: JSON.stringify({ status }),
       });
@@ -161,6 +200,49 @@ export default function AdminPage() {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  if (adminKey === null) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+        <div className="bg-gray-800 rounded-xl p-8 max-w-md w-full border border-gray-700">
+          <h2 className="text-xl font-bold text-white mb-2 font-heading">Admin access</h2>
+          <p className="text-white/80 text-sm mb-4 font-montserrat">Enter the admin API key to continue.</p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const key = keyInput.trim();
+              if (!key) {
+                setKeyError('Please enter the key');
+                return;
+              }
+              setKeyError('');
+              sessionStorage.setItem(ADMIN_KEY_STORAGE, key);
+              setAdminKey(key);
+              setKeyInput('');
+              setLoading(true);
+            }}
+            className="space-y-4"
+          >
+            <input
+              type="password"
+              value={keyInput}
+              onChange={(e) => setKeyInput(e.target.value)}
+              placeholder="Admin API key"
+              className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:border-white focus:outline-none"
+              autoComplete="off"
+            />
+            {keyError && <p className="text-red-400 text-sm">{keyError}</p>}
+            <button
+              type="submit"
+              className="w-full py-3 px-4 rounded-lg bg-white text-gray-900 font-semibold hover:bg-gray-100 transition-colors"
+            >
+              Continue
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

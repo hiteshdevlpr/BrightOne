@@ -1,14 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/database';
+import { requireAdminKey } from '@/lib/admin-auth';
 
-// GET /api/admin/dashboard - Get dashboard statistics
-export async function GET() {
+// GET /api/admin/dashboard - Get dashboard statistics (requires ADMIN_API_KEY)
+export async function GET(request: NextRequest) {
   try {
-    // In a real app, you'd check for admin authentication here
-    // const isAdmin = await checkAdminAuth(request);
-    // if (!isAdmin) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    // }
+    const authError = requireAdminKey(request);
+    if (authError) return authError;
 
     // Get booking statistics
     const bookingStats = await query(`

@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, query } from '@/lib/database';
+import { requireAdminKey } from '@/lib/admin-auth';
 
-// GET /api/bookings/[id] - Get a specific booking
+// GET /api/bookings/[id] - Get a specific booking (admin only)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authError = requireAdminKey(request);
+    if (authError) return authError;
     const { id } = await params;
 
     if (!id) {
@@ -39,12 +42,14 @@ export async function GET(
   }
 }
 
-// PUT /api/bookings/[id] - Update booking status
+// PUT /api/bookings/[id] - Update booking status (admin only)
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authError = requireAdminKey(request);
+    if (authError) return authError;
     const { id } = await params;
     const body = await request.json();
 

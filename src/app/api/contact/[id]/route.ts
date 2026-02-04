@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, query } from '@/lib/database';
+import { requireAdminKey } from '@/lib/admin-auth';
 
-// GET /api/contact/[id] - Get a specific contact message
+// GET /api/contact/[id] - Get a specific contact message (admin only)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authError = requireAdminKey(request);
+    if (authError) return authError;
     const { id } = await params;
 
     if (!id) {
@@ -42,12 +45,14 @@ export async function GET(
   }
 }
 
-// PUT /api/contact/[id] - Update contact message status
+// PUT /api/contact/[id] - Update contact message status (admin only)
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authError = requireAdminKey(request);
+    if (authError) return authError;
     const { id } = await params;
     const body = await request.json();
 
