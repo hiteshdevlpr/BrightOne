@@ -6,6 +6,9 @@
 
 .tp-header-3{
     &-area{
+        min-height: 80px;
+        display: flex;
+        align-items: center;
         &.header-sticky{
             &::after{
                 backdrop-filter: initial;
@@ -20,21 +23,43 @@
             }
         }
     }
+    &-logo{
+        display: flex;
+        align-items: center;
+        height: 100%;
+        overflow: hidden;
+        & img{
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+        @media #{$lg,$md,$xs}{
+            & img{
+                max-width: 120px;
+            }
+        }
+    }
     &-menu-box{
         display: inline-block;
         padding: 0px 15px;
         padding-right: 30px;
+        flex-shrink: 0;
         @at-root{
             .menu-bg{
                 position: absolute;
-                top: 0;
                 display: inline-block;
                 backdrop-filter: blur(8px);
                 background: rgba(46, 46, 46, 0.9); 
                 border-radius: 100px;
                 z-index: -1;
+                transition: all 0.3s ease;
             }
         }
+    }
+    &-menu-wrap{
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
     &-bar{
         height: 40px;

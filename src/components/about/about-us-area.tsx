@@ -11,19 +11,21 @@ import ab_3 from "@/assets/img/inner-about/about/about-2.jpg";
 export default function AboutUsArea() {
     return (
         <div className="ab-about-area mt-120 pb-90 z-index-5">
-            <div className="container container-1480">
+            <div className="container">
                 <div id="about-info" className="row">
-                    <div className="col-xxl-9">
+                    <div className="col-12">
                         <div className="ab-about-content p-relative">
                             <span>
                                 <Hand />
                                 Hi!
                             </span>
                             <p className="tp-dropcap tp_fade_bottom">
-                                We are a creative studio that specializes in providing
-                                high-quality design and branding solutions to businesses and
-                                individuals. Our team is composed of talented designers,
-                                developers, and marketers.!
+                                We are a creative media studio specializing in professional
+                                real estate photography, videography, and personal branding
+                                services. Our team delivers high-quality visual content including
+                                HDR photography, cinematic video tours, drone aerials, virtual
+                                staging, and social media content to help you showcase properties
+                                and elevate your personal brand.
                             </p>
                         </div>
                     </div>
@@ -34,8 +36,8 @@ export default function AboutUsArea() {
                             <div className="col-xl-5 col-lg-5 col-md-4 mb-40">
                                 <div className="ab-about-category-title-box p-relative">
                                     <h4 className="ab-about-category-title">
-                                        Something <br />
-                                        <span>WHAT I DO</span>
+                                        Our <br />
+                                        <span>SERVICES</span>
                                     </h4>
                                     <Image
                                         className="ab-about-shape-1 d-none d-md-block"
@@ -49,21 +51,22 @@ export default function AboutUsArea() {
                                     <div className="col-xl-6 col-lg-6 col-md-6 mb-40">
                                         <div className="ab-about-category-list category-space-1 tp_fade_bottom">
                                             <ul>
-                                                <li>Art direction</li>
-                                                <li>Branding</li>
-                                                <li>Content Production</li>
-                                                <li>User Interface Design</li>
-                                                <li>Animation</li>
+                                                <li>Real Estate Photography</li>
+                                                <li>Drone Photography & Video</li>
+                                                <li>Cinematic Video Tours</li>
+                                                <li>3D Virtual Tours</li>
+                                                <li>Twilight Photography</li>
                                             </ul>
                                         </div>
                                     </div>
                                     <div className="col-xl-6 col-lg-6 col-md-6 mb-40">
                                         <div className="ab-about-category-list category-space-2 tp_fade_bottom">
                                             <ul>
-                                                <li>Brand Identity</li>
-                                                <li>User Interface</li>
-                                                <li>User Experience</li>
-                                                <li>Responsive Design</li>
+                                                <li>Personal Branding Media</li>
+                                                <li>Social Media Content</li>
+                                                <li>Virtual Staging</li>
+                                                <li>Floor Plans</li>
+                                                <li>Listing Websites</li>
                                             </ul>
                                         </div>
                                     </div>

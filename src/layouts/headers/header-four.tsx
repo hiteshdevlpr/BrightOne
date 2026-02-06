@@ -2,15 +2,17 @@
 import React, { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import HeaderMenus from "./header-menus";
 import { Cart } from "@/components/svg";
-import logo_1 from '../../../public/assets/img/logo/logo.png';
-import logo_2 from '../../../public/assets/img/logo/logo-white.png';
+import logo_2 from '../../../public/assets/img/logo/logo-wo-shadow.png';
 import CartOffcanvas from "@/components/offcanvas/cart-offcanvas";
 import MobileOffcanvas from "@/components/offcanvas/mobile-offcanvas";
 import useStickyHeader from "@/hooks/use-sticky-header";
 
 export default function HeaderFour() {
+    const pathname = usePathname();
+    const isHomepage = pathname === '/';
     const { isSticky, headerFullWidth, adjustMenuBackground } = useStickyHeader(20);
     const [openCartMini, setOpenCartMini] = React.useState(false);
     const [openOffCanvas, setOpenOffCanvas] = React.useState(false);
@@ -18,6 +20,23 @@ export default function HeaderFour() {
     useEffect(() => {
         headerFullWidth();
         adjustMenuBackground();
+        
+        // Recalculate menu background after DOM updates
+        const timeoutId = setTimeout(() => {
+            adjustMenuBackground();
+        }, 100);
+        
+        // Recalculate on window resize
+        const handleResize = () => {
+            adjustMenuBackground();
+        };
+        
+        window.addEventListener('resize', handleResize);
+        
+        return () => {
+            clearTimeout(timeoutId);
+            window.removeEventListener('resize', handleResize);
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -31,10 +50,10 @@ export default function HeaderFour() {
                             <div className="col-xl-3 col-lg-6 col-md-6 col-6">
                                 <div className="tp-header-logo tp-header-3-logo">
                                     <Link className="logo-1" href="/">
-                                        <Image src={logo_1} alt="logo" />
+                                        <Image src="/logo-wo-shadow.png" alt="logo" width={170} height={200} />
                                     </Link>
                                     <Link className="logo-2" href="/">
-                                        <Image src={logo_2} alt="logo" />
+                                        <Image src={logo_2} alt="logo" width={170} height={200} />
                                     </Link>
                                 </div>
                             </div>
@@ -48,14 +67,16 @@ export default function HeaderFour() {
                                                 {/* header menus */}
                                             </nav>
                                         </div>
-                                        <div className="tp-header-3-cart p-relative">
-                                            <button className="cartmini-open-btn" onClick={() => setOpenCartMini(true)}>
-                                                <span>
-                                                    <Cart clr="white" />
-                                                </span>
-                                                <em>0</em>
-                                            </button>
-                                        </div>
+                                        {!isHomepage && (
+                                            <div className="tp-header-3-cart p-relative">
+                                                <button className="cartmini-open-btn" onClick={() => setOpenCartMini(true)}>
+                                                    <span>
+                                                        <Cart clr="white" />
+                                                    </span>
+                                                    <em>0</em>
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -86,7 +107,9 @@ export default function HeaderFour() {
             </header>
 
             {/* cart mini */}
-            <CartOffcanvas openCartMini={openCartMini} setOpenCartMini={setOpenCartMini} />
+            {!isHomepage && (
+                <CartOffcanvas openCartMini={openCartMini} setOpenCartMini={setOpenCartMini} />
+            )}
             {/* cart mini */}
 
             {/* off canvas */}

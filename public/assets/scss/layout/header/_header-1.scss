@@ -60,8 +60,9 @@
 .tp-header{
     &-logo{
         & img{
-            width: 85px !important;
-            height: 100% !important;
+            width: 170px !important;
+            height: auto !important;
+            max-height: 200px !important;
         }
     }
     &-area{

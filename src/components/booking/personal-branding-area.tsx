@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getPackages, ADD_ONS, Package, AddOn, getAdjustedPackagePrice } from '@/data/booking-data';
+import { getPersonalPackages, PERSONAL_ADD_ONS, PersonalPackage, PersonalAddOn } from '@/data/personal-branding-data';
 import { handleBookingSubmission } from './booking-form-handler';
 import {
     trackBookingStart,
@@ -11,7 +11,6 @@ import {
 } from '@/lib/analytics';
 import ErrorMsg from '../error-msg';
 import { RightArrowTwo, ArrowBg, UpArrow } from '../svg';
-
 
 // Simple hand SVG
 const HandIcon = () => (
@@ -42,11 +41,7 @@ function PkgCarousel({ images, packageId }: { images: string[]; packageId: strin
             <div className="pkg-carousel-track" style={{ transform: `translateX(-${current * 100}%)` }}>
                 {images.map((src, i) => (
                     <div key={`${packageId}-img-${i}`} className="pkg-carousel-slide">
-                        <img
-                            src={src}
-                            alt={`${packageId} example ${i + 1}`}
-                            loading="lazy"
-                        />
+                        <img src={src} alt={`${packageId} example ${i + 1}`} loading="lazy" />
                     </div>
                 ))}
             </div>
@@ -60,11 +55,7 @@ function PkgCarousel({ images, packageId }: { images: string[]; packageId: strin
                     </button>
                     <div className="pkg-carousel-dots">
                         {images.map((_, i) => (
-                            <span
-                                key={i}
-                                className={`pkg-carousel-dot ${i === current ? 'active' : ''}`}
-                                onClick={(e) => { e.stopPropagation(); setCurrent(i); }}
-                            />
+                            <span key={i} className={`pkg-carousel-dot ${i === current ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); setCurrent(i); }} />
                         ))}
                     </div>
                 </>
@@ -73,15 +64,14 @@ function PkgCarousel({ images, packageId }: { images: string[]; packageId: strin
     );
 }
 
-export default function BookingArea() {
+export default function PersonalBrandingArea() {
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         phone: '',
-        propertyAddress: '',
-        unitNumber: '',
-        propertySize: '',
+        sessionPurpose: '',
+        sessionLocation: '',
         selectedPackage: '',
         selectedAddOns: [] as string[],
         preferredDate: '',
@@ -94,15 +84,7 @@ export default function BookingArea() {
     const [formErrors, setFormErrors] = useState<string[]>([]);
     const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
-    useEffect(() => {
-        trackBookingStart();
-    }, []);
-
-    // Helper function to calculate adjusted package price based on property size
-    // Uses centralized pricing function from booking-data.ts
-    const calculateAdjustedPrice = (basePrice: number): number => {
-        return getAdjustedPackagePrice(basePrice, formData.propertySize);
-    };
+    useEffect(() => { trackBookingStart(); }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -115,7 +97,7 @@ export default function BookingArea() {
             const newPackage = prev.selectedPackage === packageId ? '' : packageId;
             return { ...prev, selectedPackage: newPackage };
         });
-        const pkg = getPackages().find(p => p.id === packageId);
+        const pkg = getPersonalPackages().find(p => p.id === packageId);
         if (pkg && formData.selectedPackage !== packageId) {
             trackPackageSelection(packageId, pkg.name, pkg.basePrice);
         }
@@ -131,38 +113,24 @@ export default function BookingArea() {
             const updatedAddOns = isSelected
                 ? prev.selectedAddOns.filter(id => id !== addOnId)
                 : [...prev.selectedAddOns, addOnId];
-
-            const addOn = ADD_ONS.find(a => a.id === addOnId);
-            if (addOn) {
-                trackAddOnToggle(addOnId, addOn.name, !isSelected, addOn.price);
-            }
-
+            const addOn = PERSONAL_ADD_ONS.find(a => a.id === addOnId);
+            if (addOn) { trackAddOnToggle(addOnId, addOn.name, !isSelected, addOn.price); }
             return { ...prev, selectedAddOns: updatedAddOns };
         });
     };
 
     const calculateTotal = () => {
-        const pkg = getPackages().find(p => p.id === formData.selectedPackage);
-        const basePrice = pkg?.basePrice || 0;
-        const packagePrice = calculateAdjustedPrice(basePrice);
-
+        const pkg = getPersonalPackages().find(p => p.id === formData.selectedPackage);
+        const packagePrice = pkg?.basePrice || 0;
         const addOnsPrice = formData.selectedAddOns.reduce((total, id) => {
-            const addOn = ADD_ONS.find(a => a.id === id);
+            const addOn = PERSONAL_ADD_ONS.find(a => a.id === id);
             return total + (addOn?.price || 0);
         }, 0);
-
         return packagePrice + addOnsPrice;
     };
 
     const handleNext = () => {
-        if (currentStep === 1 && (!formData.propertyAddress || !formData.propertySize)) {
-            setFieldErrors({
-                propertyAddress: !formData.propertyAddress ? 'Address is required' : '',
-                propertySize: !formData.propertySize ? 'Property size is required' : ''
-            });
-            return;
-        }
-        if (currentStep === 2 && !formData.selectedPackage) {
+        if (currentStep === 1 && !formData.selectedPackage) {
             setFormErrors(['Please select a package to continue']);
             return;
         }
@@ -184,9 +152,10 @@ export default function BookingArea() {
         await handleBookingSubmission(
             {
                 ...formData,
-                serviceType: 'Real Estate Media',
+                propertyAddress: formData.sessionLocation || '',
+                serviceType: 'Personal Branding',
                 serviceTier: formData.selectedPackage,
-                totalPrice: calculateTotal().toString(),
+                totalPrice: (calculateTotal() * 1.13).toFixed(2),
             },
             setIsSubmitting,
             setIsSubmitted,
@@ -203,17 +172,11 @@ export default function BookingArea() {
                             <div className="success-box p-5 bg-dark border border-secondary rounded">
                                 <h2 className="text-white mb-4">Booking Submitted Successfully!</h2>
                                 <p className="text-white-50 mb-5">
-                                    Thank you for your interest. Our team will review your property details and get back to you with a final confirmation and timeline within 24 hours.
+                                    Thank you for your interest. Our team will review your session details and get back to you with a confirmation within 24 hours.
                                 </p>
-                                <button
-                                    className="tp-btn-black-2"
-                                    onClick={() => window.location.href = '/'}
-                                >
+                                <button className="tp-btn-black-2" onClick={() => window.location.href = '/'}>
                                     Back to Home
-                                    <span className="p-relative ml-10">
-                                        <RightArrowTwo />
-                                        <ArrowBg />
-                                    </span>
+                                    <span className="p-relative ml-10"><RightArrowTwo /><ArrowBg /></span>
                                 </button>
                             </div>
                         </div>
@@ -223,7 +186,7 @@ export default function BookingArea() {
         );
     }
 
-    const packages = getPackages();
+    const packages = getPersonalPackages();
 
     return (
         <div className="cn-contactform-area pt-100 pb-100" style={{ fontFamily: 'var(--font-inter)' }}>
@@ -235,24 +198,22 @@ export default function BookingArea() {
                                 <HandIcon /> Book Your Session
                             </span>
                             <h4 className="ab-about-category-title text-white">
-                                {currentStep === 1 && "Start With Property Details"}
-                                {currentStep === 2 && "Select Your Media Package"}
-                                {currentStep === 3 && "Finalize Your Booking"}
+                                {currentStep === 1 && "Choose Your Package"}
+                                {currentStep === 2 && "Finalize Your Booking"}
                             </h4>
 
                             <div className="booking-stepper d-flex justify-content-center mt-30">
                                 <div className="booking-stepper-inner d-flex align-items-center">
-                                    {[1, 2, 3].map((step, idx) => (
+                                    {[1, 2].map((step, idx) => (
                                         <React.Fragment key={step}>
                                             <div className={`booking-step ${currentStep === step ? 'active' : ''} ${currentStep > step ? 'completed' : ''}`}>
                                                 <div className="step-num">{step}</div>
                                                 <span className="step-txt">
-                                                    {step === 1 && "Property"}
-                                                    {step === 2 && "Package"}
-                                                    {step === 3 && "Contact"}
+                                                    {step === 1 && "Package"}
+                                                    {step === 2 && "Contact"}
                                                 </span>
                                             </div>
-                                            {idx < 2 && (
+                                            {idx < 1 && (
                                                 <div className={`step-connector ${currentStep > step ? 'completed' : ''}`} />
                                             )}
                                         </React.Fragment>
@@ -265,59 +226,10 @@ export default function BookingArea() {
                     <div className="col-12">
                         <div className="cn-contactform-wrap p-relative">
                             <form onSubmit={onSubmit}>
+                                {/* Step 1 - Packages & Add-ons */}
                                 {currentStep === 1 && (
                                     <div className="step-content fadeIn">
-                                        <div className="row justify-content-center">
-                                            <div className="col-lg-8">
-                                                <div className="cn-contactform-input mb-25">
-                                                    <label className="text-white">Property Address *</label>
-                                                    <input
-                                                        name="propertyAddress"
-                                                        type="text"
-                                                        placeholder="123 Main St, Toronto, ON"
-                                                        value={formData.propertyAddress}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                    />
-                                                    {fieldErrors.propertyAddress && <ErrorMsg msg={fieldErrors.propertyAddress} />}
-                                                </div>
-                                                <div className="row">
-                                                    <div className="col-md-6">
-                                                        <div className="cn-contactform-input mb-25">
-                                                            <label className="text-white">Unit / Suite (Optional)</label>
-                                                            <input
-                                                                name="unitNumber"
-                                                                type="text"
-                                                                placeholder="Apt 2B"
-                                                                value={formData.unitNumber}
-                                                                onChange={handleInputChange}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-md-6">
-                                                        <div className="cn-contactform-input mb-25">
-                                                            <label className="text-white">Square Footage (sq ft) *</label>
-                                                            <input
-                                                                name="propertySize"
-                                                                type="number"
-                                                                placeholder="e.g. 1500"
-                                                                value={formData.propertySize}
-                                                                onChange={handleInputChange}
-                                                                required
-                                                            />
-                                                            {fieldErrors.propertySize && <ErrorMsg msg={fieldErrors.propertySize} />}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {currentStep === 2 && (
-                                    <div className="step-content fadeIn">
                                         <div className="step2-layout">
-                                            {/* Left column - 70% - Packages & Add-ons */}
                                             <div className="step2-left">
                                                 <div className="tp-price-area">
                                                     {packages.map((item, index) => (
@@ -335,7 +247,7 @@ export default function BookingArea() {
                                                                         {item.popular && <span className="pkg-popular-tag">Popular</span>}
                                                                     </div>
                                                                     <div className="pkg-card-price">
-                                                                        <span className="pkg-price-amount">${getAdjustedPackagePrice(item.basePrice)}</span>
+                                                                        <span className="pkg-price-amount">${item.basePrice}</span>
                                                                     </div>
                                                                 </div>
                                                                 <div className="pkg-card-features">
@@ -352,15 +264,10 @@ export default function BookingArea() {
                                                                     <button
                                                                         type="button"
                                                                         className={`tp-btn-black-md ${formData.selectedPackage === item.id ? "pkg-btn-selected" : "pkg-btn-default"}`}
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handlePackageSelect(item.id);
-                                                                        }}
+                                                                        onClick={(e) => { e.stopPropagation(); handlePackageSelect(item.id); }}
                                                                     >
                                                                         {formData.selectedPackage === item.id ? "Selected" : "Choose Package"}
-                                                                        <span>
-                                                                            <UpArrow />
-                                                                        </span>
+                                                                        <span><UpArrow /></span>
                                                                     </button>
                                                                 </div>
                                                             </div>
@@ -369,9 +276,9 @@ export default function BookingArea() {
                                                 </div>
 
                                                 <div className="addons-section mt-50">
-                                                    <h6 className="text-white mb-20" style={{ fontSize: '18px', letterSpacing: '0.5px' }}>Enhance Your Listing</h6>
+                                                    <h6 className="text-white mb-20" style={{ fontSize: '18px', letterSpacing: '0.5px' }}>Enhance Your Session</h6>
                                                     <div className="addons-grid">
-                                                        {ADD_ONS.map(addon => (
+                                                        {PERSONAL_ADD_ONS.map(addon => (
                                                             <div
                                                                 key={addon.id}
                                                                 className={`addon-thumb ${formData.selectedAddOns.includes(addon.id) ? 'addon-thumb-active' : ''}`}
@@ -393,44 +300,23 @@ export default function BookingArea() {
                                                 </div>
                                             </div>
 
-                                            {/* Right column - 30% - Address & Price Summary */}
                                             <div className="step2-right">
                                                 <div className="sidebar-sticky">
-                                                    {/* Property Address */}
                                                     <div className="sidebar-address">
-                                                        <div className="d-flex justify-content-between align-items-center mb-14">
-                                                            <h6 className="sidebar-label mb-0">Property</h6>
-                                                            <button
-                                                                type="button"
-                                                                className="sidebar-edit-btn"
-                                                                onClick={() => setCurrentStep(1)}
-                                                                title="Edit property details"
-                                                            >
-                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                                                </svg>
-                                                            </button>
-                                                        </div>
+                                                        <h6 className="sidebar-label">Package Selection</h6>
                                                         <p className="sidebar-address-text">
-                                                            {formData.propertyAddress}
+                                                            Select a package to see pricing details
                                                         </p>
-                                                        {formData.unitNumber && (
-                                                            <p className="sidebar-address-unit">Unit {formData.unitNumber}</p>
-                                                        )}
-                                                        <span className="sidebar-sqft">{formData.propertySize} sq ft</span>
                                                     </div>
 
-                                                    {/* Price Summary */}
                                                     <div className="sidebar-pricing">
                                                         <h6 className="sidebar-label">Estimate</h6>
-
                                                         {formData.selectedPackage ? (
                                                             <>
                                                                 <div className="sidebar-line-item sidebar-package-item">
                                                                     <span>{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
                                                                     <div className="d-flex align-items-center gap-2">
-                                                                        <span>${packages.find(p => p.id === formData.selectedPackage) ? getAdjustedPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice) : 0}</span>
+                                                                        <span>${packages.find(p => p.id === formData.selectedPackage)?.basePrice}</span>
                                                                         <button
                                                                             type="button"
                                                                             className="sidebar-remove-btn"
@@ -444,11 +330,10 @@ export default function BookingArea() {
                                                                         </button>
                                                                     </div>
                                                                 </div>
-
                                                                 {formData.selectedAddOns.length > 0 && (
                                                                     <div className="sidebar-addons-list">
                                                                         {formData.selectedAddOns.map(id => {
-                                                                            const addon = ADD_ONS.find(a => a.id === id);
+                                                                            const addon = PERSONAL_ADD_ONS.find(a => a.id === id);
                                                                             return (
                                                                                 <div key={id} className="sidebar-line-item sidebar-addon-line">
                                                                                     <span>{addon?.name}</span>
@@ -458,9 +343,7 @@ export default function BookingArea() {
                                                                         })}
                                                                     </div>
                                                                 )}
-
                                                                 <div className="sidebar-divider"></div>
-
                                                                 <div className="sidebar-total">
                                                                     <span>Total</span>
                                                                     <span>${calculateTotal()}</span>
@@ -482,7 +365,8 @@ export default function BookingArea() {
                                     </div>
                                 )}
 
-                                {currentStep === 3 && (
+                                {/* Step 2 - Contact & Summary */}
+                                {currentStep === 2 && (
                                     <div className="step-content fadeIn">
                                         <div className="row justify-content-center">
                                             <div className="col-lg-10">
@@ -490,61 +374,31 @@ export default function BookingArea() {
                                                     <div className="col-md-6">
                                                         <div className="cn-contactform-input mb-25">
                                                             <label className="text-white">Full Name *</label>
-                                                            <input
-                                                                name="name"
-                                                                type="text"
-                                                                placeholder="John Doe"
-                                                                value={formData.name}
-                                                                onChange={handleInputChange}
-                                                                required
-                                                            />
+                                                            <input name="name" type="text" placeholder="John Doe" value={formData.name} onChange={handleInputChange} required />
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
                                                         <div className="cn-contactform-input mb-25">
                                                             <label className="text-white">Email Address *</label>
-                                                            <input
-                                                                name="email"
-                                                                type="email"
-                                                                placeholder="john@example.com"
-                                                                value={formData.email}
-                                                                onChange={handleInputChange}
-                                                                required
-                                                            />
+                                                            <input name="email" type="email" placeholder="john@example.com" value={formData.email} onChange={handleInputChange} required />
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
                                                         <div className="cn-contactform-input mb-25">
                                                             <label className="text-white">Phone Number</label>
-                                                            <input
-                                                                name="phone"
-                                                                type="tel"
-                                                                placeholder="(123) 456-7890"
-                                                                value={formData.phone}
-                                                                onChange={handleInputChange}
-                                                            />
+                                                            <input name="phone" type="tel" placeholder="(123) 456-7890" value={formData.phone} onChange={handleInputChange} />
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
                                                         <div className="cn-contactform-input mb-25">
                                                             <label className="text-white">Preferred Date</label>
-                                                            <input
-                                                                name="preferredDate"
-                                                                type="date"
-                                                                value={formData.preferredDate}
-                                                                onChange={handleInputChange}
-                                                            />
+                                                            <input name="preferredDate" type="date" value={formData.preferredDate} onChange={handleInputChange} />
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
                                                         <div className="cn-contactform-input mb-25">
                                                             <label className="text-white">Preferred Start Time</label>
-                                                            <input
-                                                                name="preferredTime"
-                                                                type="time"
-                                                                value={formData.preferredTime}
-                                                                onChange={handleInputChange}
-                                                            />
+                                                            <input name="preferredTime" type="time" value={formData.preferredTime} onChange={handleInputChange} />
                                                         </div>
                                                     </div>
                                                     <div className="col-12">
@@ -552,7 +406,7 @@ export default function BookingArea() {
                                                             <label className="text-white">Notes or Special Requirements</label>
                                                             <textarea
                                                                 name="message"
-                                                                placeholder="Tell us about the property, access instructions, or any specific shots you need..."
+                                                                placeholder="Tell us about your vision, wardrobe ideas, specific shots you need..."
                                                                 value={formData.message}
                                                                 onChange={handleInputChange}
                                                             ></textarea>
@@ -569,14 +423,14 @@ export default function BookingArea() {
                                                         </div>
                                                         <div className="d-flex justify-content-between mb-15">
                                                             <span className="text-white-50">Base Price:</span>
-                                                            <span className="text-white">${packages.find(p => p.id === formData.selectedPackage) ? getAdjustedPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice) : 0}</span>
+                                                            <span className="text-white">${packages.find(p => p.id === formData.selectedPackage)?.basePrice}</span>
                                                         </div>
 
                                                         {formData.selectedAddOns.length > 0 && (
                                                             <div className="addon-summary mb-15">
                                                                 <span className="text-white-50 d-block mb-10">Add-ons:</span>
                                                                 {formData.selectedAddOns.map(id => {
-                                                                    const addon = ADD_ONS.find(a => a.id === id);
+                                                                    const addon = PERSONAL_ADD_ONS.find(a => a.id === id);
                                                                     return (
                                                                         <div key={id} className="d-flex justify-content-between mb-5 pl-20">
                                                                             <span className="text-white-50 small">- {addon?.name}</span>
@@ -619,39 +473,20 @@ export default function BookingArea() {
 
                                 <div className="form-navigation mt-60 d-flex justify-content-center gap-4">
                                     {currentStep > 1 && (
-                                        <button
-                                            type="button"
-                                            className="tp-btn-black-2 booking-btn-outline"
-                                            onClick={handlePrevious}
-                                            disabled={isSubmitting}
-                                        >
+                                        <button type="button" className="tp-btn-black-2 booking-btn-outline" onClick={handlePrevious} disabled={isSubmitting}>
                                             Previous Step
                                         </button>
                                     )}
 
-                                    {currentStep < 3 ? (
-                                        <button
-                                            type="button"
-                                            className="tp-btn-black-2 booking-btn-primary"
-                                            onClick={handleNext}
-                                        >
+                                    {currentStep < 2 ? (
+                                        <button type="button" className="tp-btn-black-2 booking-btn-primary" onClick={handleNext}>
                                             Continue
-                                            <span className="p-relative">
-                                                <RightArrowTwo />
-                                                <ArrowBg />
-                                            </span>
+                                            <span className="p-relative"><RightArrowTwo /><ArrowBg /></span>
                                         </button>
                                     ) : (
-                                        <button
-                                            type="submit"
-                                            className="tp-btn-black-2 booking-btn-primary"
-                                            disabled={isSubmitting}
-                                        >
+                                        <button type="submit" className="tp-btn-black-2 booking-btn-primary" disabled={isSubmitting}>
                                             {isSubmitting ? 'Processing...' : 'Complete Booking'}
-                                            <span className="p-relative">
-                                                <RightArrowTwo />
-                                                <ArrowBg />
-                                            </span>
+                                            <span className="p-relative"><RightArrowTwo /><ArrowBg /></span>
                                         </button>
                                     )}
                                 </div>
@@ -775,4 +610,3 @@ export default function BookingArea() {
         </div>
     );
 }
-

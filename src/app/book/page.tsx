@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import BookingPageClient from './BookingPageClient';
+import BookClient from './BookClient';
 
 export const metadata: Metadata = {
     title: "Book Your Session | BrightOne Creative",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function BookPage() {
-    return <BookingPageClient />;
+    return <BookClient />;
 }

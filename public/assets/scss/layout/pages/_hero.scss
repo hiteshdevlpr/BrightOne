@@ -277,25 +277,25 @@
         }
     }
     &-title{
-        font-size: 140px;
+        font-size: 112px;
         font-weight: 400;
         line-height: 1;
-        letter-spacing: -5.6px;
+        letter-spacing: -4.48px;
         color: var(--tp-common-black);
         font-family: var(--tp-ff-marcellus);
         margin-bottom: 35px;
         @media #{$lg}{
-            font-size: 115px;
+            font-size: 92px;
         }
         @media #{$md}{
-            font-size: 95px;
+            font-size: 76px;
         }
         @media #{$xs}{
-            font-size: 60px;
+            font-size: 48px;
         }
     }
     &-category{
-        font-size: 20px;
+        font-size: 16px;
         font-weight: 400;
         line-height: 1;
         display: block;

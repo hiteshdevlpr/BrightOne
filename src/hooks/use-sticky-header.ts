@@ -19,26 +19,27 @@ const useStickyHeader = (offset = 20) => {
     function adjustMenuBackground() {
         if (typeof window === 'undefined') return;
 
-        const headerArea = document.querySelector('.tp-header-3-area');
+        const headerArea = document.querySelector<HTMLElement>('.tp-header-3-area');
         if (headerArea) {
             const menuBox = document.querySelector<HTMLElement>('.tp-header-3-menu-box');
             const menuBg = document.querySelector<HTMLElement>('.menu-bg');
 
-            if (menuBox && menuBg) {
-                const rect = menuBox.getBoundingClientRect();
-                // jQuery .width() is content width, but offsetWidth is border-box. 
-                // Example logic assumed: menuBoxWidth + 46. 
-                // We will match the logic: .width() + 46.
-                const width = menuBox.offsetWidth; // approximate replacement
+            if (menuBox && menuBg && headerArea) {
+                const menuBoxRect = menuBox.getBoundingClientRect();
+                const headerAreaRect = headerArea.getBoundingClientRect();
+                
+                // Calculate width and height
+                const width = menuBox.offsetWidth;
                 const height = menuBox.offsetHeight;
 
-                // jQuery .offset() is relative to document.
-                // getBoundingClientRect is relative to viewport.
-                const left = rect.left + window.scrollX;
+                // Calculate positions relative to header area
+                const left = menuBoxRect.left - headerAreaRect.left;
+                const top = menuBoxRect.top - headerAreaRect.top;
 
                 menuBg.style.width = `${width + 46}px`;
                 menuBg.style.height = `${height}px`;
-                menuBg.style.left = `${left}px`;
+                menuBg.style.left = `${left - 23}px`; // Center the extra 46px padding (23px on each side)
+                menuBg.style.top = `${top}px`;
             }
         }
     }
@@ -57,13 +58,30 @@ const useStickyHeader = (offset = 20) => {
     useEffect(() => {
         const handleScroll = () => {
             setIsSticky(window.scrollY > offset);
+            adjustMenuBackground();
+        };
+
+        const handleResize = () => {
+            adjustMenuBackground();
         };
 
         // Initial check
         handleScroll();
+        adjustMenuBackground();
 
         window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
+        window.addEventListener('resize', handleResize);
+        
+        // Recalculate after a short delay to ensure DOM is ready
+        const timeoutId = setTimeout(() => {
+            adjustMenuBackground();
+        }, 100);
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('resize', handleResize);
+            clearTimeout(timeoutId);
+        };
     }, [offset]);
 
     return { isSticky, headerFullWidth, adjustMenuBackground, headerRef };
