@@ -84,7 +84,7 @@ export default function ServicesPage() {
               <a href="/contact" className="btn-primary font-light font-montserrat border-x-0 border-y-2 border-white text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
                 Get In Touch
               </a>
-              <a href="/booking" className="btn-secondary font-light font-montserrat text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
+              <a href="/booking/real-estate" className="btn-secondary font-light font-montserrat text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
                 Book Now
               </a>
             </div>
@@ -104,7 +104,7 @@ export default function ServicesPage() {
                 <h2 className="text-white text-sm sm:text-lg md:text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-bold uppercase leading-tight mb-3 sm:mb-4 md:mb-6">
                   PROFESSIONAL REAL ESTATE PHOTOGRAPHY THAT SELLS PROPERTIES FASTER
                 </h2>
-                <Link href={'/booking'} className="btn-primary font-light font-montserrat bg-transparent text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
+                <Link href={'/booking/real-estate'} className="btn-primary font-light font-montserrat bg-transparent text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
                   Book Now
                 </Link>
               </div>
@@ -248,7 +248,7 @@ export default function ServicesPage() {
                     </div>
                   </div>
                 </div>
-                <Link href={'/booking'} className="btn-secondary text-white bg-gray-800 hover:text-black font-light font-montserrat border-x-0 border-y-2 mt-4 sm:mt-6 border-white text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
+                <Link href={'/booking/real-estate'} className="btn-secondary text-white bg-gray-800 hover:text-black font-light font-montserrat border-x-0 border-y-2 mt-4 sm:mt-6 border-white text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
                   Create Website
                 </Link>
               </div>
@@ -305,7 +305,7 @@ export default function ServicesPage() {
                     </div>
                   </div>
                 </div>
-                <Link href={'/booking'} className="bg-white text-black text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3 rounded-lg hover:text-white font-montserrat hover:bg-gray-800 font-light border-x-0 border-y-2 transition-colors duration-300 border-gray-900">
+                <Link href={'/booking/real-estate'} className="bg-white text-black text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3 rounded-lg hover:text-white font-montserrat hover:bg-gray-800 font-light border-x-0 border-y-2 transition-colors duration-300 border-gray-900">
                   Get Floor Plans
                 </Link>
               </div>

@@ -161,3 +161,14 @@ jobs:
             echo "📋 Redis logs:"
             docker-compose -f docker-compose.prod.from-image.yml logs --tail=20 redis
             exit 1
+
+      - name: Validate security
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: root
+          key_path: ${{ github.workspace }}/deploy_key.pem
+          timeout: 2m
+          script: |
+            set -e
+            bash /home/brightone/website/scripts/validate-security.sh

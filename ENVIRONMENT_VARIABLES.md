@@ -86,6 +86,11 @@ AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY
 FROM_EMAIL
 ADMIN_EMAIL
+DROPLET_IP
+DROPLET_USER
+DROPLET_SSH_KEY
+MIGRATION_TOKEN   # Required for /api/migrate; use a long random string. If unset, migration API returns 503.
+ADMIN_API_KEY     # Required for /admin and /api/admin/*, /api/bookings (GET), /api/contact (GET). Use a long random string.
 ```
 
 ## Local Development
@@ -108,3 +113,4 @@ The GitHub Actions workflow will automatically create the `.env` file on the ser
 - Rotate AWS access keys regularly
 - Monitor SES usage and costs
 - Set up CloudWatch alarms for SES metrics
+- Set **MIGRATION_TOKEN** (e.g. `openssl rand -hex 32`) in GitHub Secrets so `/api/migrate` is protected; without it the migration endpoint returns 503

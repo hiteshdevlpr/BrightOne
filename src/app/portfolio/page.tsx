@@ -68,7 +68,7 @@ export default function PortfolioPage() {
               <a href="/contact" className="btn-primary font-light font-montserrat border-x-0 border-y-2 border-white text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
                 Get In Touch
               </a>
-              <a href="/booking" className="btn-secondary font-light font-montserrat text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
+              <a href="/booking/real-estate" className="btn-secondary font-light font-montserrat text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
                 Book Now
               </a>
             </div>
@@ -121,7 +121,7 @@ export default function PortfolioPage() {
               <a href="/contact" className="btn-primary font-light font-montserrat border-x-0 border-y-2 border-white text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
                 Get In Touch
               </a>
-              <a href="/booking" className="btn-secondary text-white bg-gray-800 font-light font-montserrat border-x-0 border-y-2 border-white text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
+              <a href="/booking/real-estate" className="btn-secondary text-white bg-gray-800 font-light font-montserrat border-x-0 border-y-2 border-white text-xs sm:text-base px-3 sm:px-6 py-1.5 sm:py-3">
                 Book A Session
               </a>
             </div>

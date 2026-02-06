@@ -185,7 +185,7 @@ export default function RecentWork({ isPortfolioPage = false }: RecentWorkProps)
                 View Full Portfolio
               </a>
             )}
-            <a href="/booking" className="btn-secondary border-y-2 border-x-0 bg-white font-light font-montserrat text-xs sm:text-sm md:text-base px-2 sm:px-4 md:px-6 py-1.5 sm:py-3 md:py-4">
+            <a href="/booking/real-estate" className="btn-secondary border-y-2 border-x-0 bg-white font-light font-montserrat text-xs sm:text-sm md:text-base px-2 sm:px-4 md:px-6 py-1.5 sm:py-3 md:py-4">
               Book Your Shoot
             </a>
             {isPortfolioPage && (

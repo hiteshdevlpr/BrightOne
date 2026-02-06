@@ -83,8 +83,6 @@ interface Package {
   name: string;
   description: string;
   basePrice: number;
-  originalPrice: number;
-  discountPercent: number;
   services: string[];
   photoCount: number;
   propertySize: string;
@@ -221,16 +219,6 @@ export default function BookingPage() {
     return multipliers[slab] || 1.0;
   };
 
-  // Discount configuration
-  const PACKAGE_DISCOUNTS = {
-    essentials: 10,
-    enhanced: 10,
-    showcase: 10,
-    premium: 15,
-    ultimate: 15,
-    airbnb: 15
-  };
-
   // Package definitions with dynamic pricing based on property size
   const getPackages = (propertySize: string): Package[] => {
     const multiplier = getSizeMultiplier(propertySize);
@@ -241,9 +229,7 @@ export default function BookingPage() {
         id: 'essentials',
         name: 'Essentials Package',
         description: 'For small listings, rentals, or budget-conscious clients',
-        originalPrice: Math.round(199 * multiplier),
-        basePrice: Math.round(199 * multiplier * (1 - PACKAGE_DISCOUNTS.essentials / 100)),
-        discountPercent: PACKAGE_DISCOUNTS.essentials,
+        basePrice: Math.round(199 * multiplier),
         photoCount: getPhotoCount(propertySize, 'essentials'),
         propertySize: slab,
         services: [
@@ -256,9 +242,7 @@ export default function BookingPage() {
         id: 'enhanced',
         name: 'Enhanced Package',
         description: 'Ideal for agents who want to show both visuals & layout',
-        originalPrice: Math.round(319 * multiplier),
-        basePrice: Math.round(319 * multiplier * (1 - PACKAGE_DISCOUNTS.enhanced / 100)),
-        discountPercent: PACKAGE_DISCOUNTS.enhanced,
+        basePrice: Math.round(319 * multiplier),
         photoCount: getPhotoCount(propertySize, 'enhanced'),
         propertySize: slab,
         services: [
@@ -271,9 +255,7 @@ export default function BookingPage() {
         id: 'showcase',
         name: 'Showcase Package',
         description: 'Designed for premium listings that need extra visibility',
-        originalPrice: Math.round(429 * multiplier),
-        basePrice: Math.round(429 * multiplier * (1 - PACKAGE_DISCOUNTS.showcase / 100)),
-        discountPercent: PACKAGE_DISCOUNTS.showcase,
+        basePrice: Math.round(429 * multiplier),
         photoCount: getPhotoCount(propertySize, 'showcase'),
         propertySize: slab,
         popular: true,
@@ -288,9 +270,7 @@ export default function BookingPage() {
         id: 'premium',
         name: 'Premium Marketing Package',
         description: 'A complete package for mid to high-end properties',
-        originalPrice: Math.round(549 * multiplier),
-        basePrice: Math.round(549 * multiplier * (1 - PACKAGE_DISCOUNTS.premium / 100)),
-        discountPercent: PACKAGE_DISCOUNTS.premium,
+        basePrice: Math.round(549 * multiplier),
         photoCount: getPhotoCount(propertySize, 'premium'),
         propertySize: slab,
         services: [
@@ -303,9 +283,7 @@ export default function BookingPage() {
         id: 'ultimate',
         name: 'Ultimate Property Experience',
         description: 'Best for luxury homes or when agents want the full marketing suite',
-        originalPrice: Math.round(699 * multiplier),
-        basePrice: Math.round(699 * multiplier * (1 - PACKAGE_DISCOUNTS.ultimate / 100)),
-        discountPercent: PACKAGE_DISCOUNTS.ultimate,
+        basePrice: Math.round(699 * multiplier),
         photoCount: getPhotoCount(propertySize, 'ultimate'),
         propertySize: slab,
         services: [
@@ -317,9 +295,7 @@ export default function BookingPage() {
         id: 'airbnb',
         name: 'Airbnb / Short-Term Rental Package',
         description: 'Tailored for Airbnb & vacation rental owners',
-        originalPrice: Math.round(149 * multiplier),
-        basePrice: Math.round(149 * multiplier * (1 - PACKAGE_DISCOUNTS.airbnb / 100)),
-        discountPercent: PACKAGE_DISCOUNTS.airbnb,
+        basePrice: Math.round(149 * multiplier),
         photoCount: getPhotoCount(propertySize, 'airbnb'),
         propertySize: slab,
         services: [
@@ -714,9 +690,18 @@ export default function BookingPage() {
 
         <div className="relative z-10 flex items-center justify-center h-full">
           <div className="text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+            <Link
+              href="/booking"
+              className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm font-montserrat mb-6 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to services
+            </Link>
             <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight font-heading">
-              <span className="bright-text-shadow text-black">Book Your</span>
-              <span className="bright-text-shadow-dark"> Session</span>
+              <span className="bright-text-shadow text-black">Real Estate</span>
+              <span className="bright-text-shadow-dark"> Listing Media</span>
             </h1>
             <p className="text-sm sm:text-lg md:text-xl lg:text-2xl text-white/90 mb-6 sm:mb-8 leading-relaxed font-montserrat">
               Get a personalized quote and book your professional real estate photography session
@@ -1051,14 +1036,8 @@ export default function BookingPage() {
                                     {pkg.name}
                                   </h3>
                                   <div className="mb-3">
-                                    <div className="text-lg sm:text-xl text-gray-400 line-through font-montserrat">
-                                      ${pkg.originalPrice}
-                                    </div>
                                     <div className="text-3xl sm:text-4xl font-bold text-white font-heading">
                                       ${pkg.basePrice}
-                                    </div>
-                                    <div className="text-sm text-green-400 font-montserrat font-semibold">
-                                      Save {pkg.discountPercent}% (${pkg.originalPrice - pkg.basePrice})
                                     </div>
                                   </div>
                                   <div className="flex justify-center gap-2 mb-2">
@@ -1476,14 +1455,9 @@ export default function BookingPage() {
                                 <span className="font-montserrat">
                                   {getPackages(formData.propertySize).find(p => p.id === formData.selectedPackage)?.name}
                                 </span>
-                                <div className="text-right">
-                                  <div className="text-sm text-gray-400 line-through font-montserrat">
-                                    ${getPackages(formData.propertySize).find(p => p.id === formData.selectedPackage)?.originalPrice}
-                                  </div>
-                                  <span className="font-montserrat font-bold text-white">
-                                    ${getPackages(formData.propertySize).find(p => p.id === formData.selectedPackage)?.basePrice}
-                                  </span>
-                                </div>
+                                <span className="font-montserrat font-bold text-white">
+                                  ${getPackages(formData.propertySize).find(p => p.id === formData.selectedPackage)?.basePrice}
+                                </span>
                               </div>
                               
                               {/* Preferred Date and Time */}

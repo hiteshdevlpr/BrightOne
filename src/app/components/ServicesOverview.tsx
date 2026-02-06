@@ -140,7 +140,7 @@ export default function ServicesOverview() {
               View All Services
             </a>
             <a href="/booking" className="btn-secondary font-light font-montserrat text-xs sm:text-sm md:text-base px-2 sm:px-4 md:px-6 py-1.5 sm:py-3 md:py-4">
-              Book Now
+              Book A Session
             </a>
           </div>
         </div>
