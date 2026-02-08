@@ -23,13 +23,14 @@ type FormData = {
     [HONEYPOT_FIELD]?: string;
 };
 
-const schema = yup.object().shape({
+const schema: yup.ObjectSchema<FormData> = yup.object().shape({
     name: yup.string().required("Name is required").min(2, "Name must be at least 2 characters"),
     email: yup.string().required("Email is required").email("Invalid email format"),
     phone: yup.string().optional(),
     subject: yup.string().required("Please select a subject"),
     message: yup.string().required("Message is required").min(10, "Message must be at least 10 characters"),
-});
+    [HONEYPOT_FIELD]: yup.string().optional(),
+}) as yup.ObjectSchema<FormData>;
 
 export default function ContactForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);

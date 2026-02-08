@@ -112,8 +112,10 @@ export async function GET(request: NextRequest) {
     if (authError) return authError;
 
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const limitRaw = parseInt(searchParams.get('limit') || '50', 10);
+    const offsetRaw = parseInt(searchParams.get('offset') || '0', 10);
+    const limit = Number.isFinite(limitRaw) && limitRaw > 0 && limitRaw <= 100 ? limitRaw : 50;
+    const offset = Number.isFinite(offsetRaw) && offsetRaw >= 0 ? offsetRaw : 0;
     const status = searchParams.get('status');
 
     let bookings;

@@ -89,6 +89,7 @@ export default function CounterOne() {
                             <div className="col-xl-4 col-lg-4 col-md-4 mb-30">
                                 <div className="slide-funfact-item text-center">
                                     {/* <h4><CounterItem min={0} max={12} />+</h4>
+                                    {/* <h4><CounterItem min={0} max={12} />+</h4>
                                     <span>Years of Experience</span> */}
                                 </div>
                             </div>

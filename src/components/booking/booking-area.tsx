@@ -1,17 +1,56 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { getPackages, ADD_ONS, Package, AddOn, getAdjustedPackagePrice } from '@/data/booking-data';
-import { handleBookingSubmission } from './booking-form-handler';
+import React, { useState, useEffect, useRef } from 'react';
+import { getPackages, ADD_ONS, getAdjustedPackagePrice } from '@/data/booking-data';
+import { handleBookingSubmission, type BookingFormData } from './booking-form-handler';
+import { getRecaptchaToken } from '@/lib/recaptcha-client';
+import { HONEYPOT_FIELD } from '@/lib/validation';
 import {
     trackBookingStart,
     trackBookingStepChange,
     trackPackageSelection,
     trackAddOnToggle,
+    trackAddressAutosuggestSelection,
 } from '@/lib/analytics';
 import ErrorMsg from '../error-msg';
 import { RightArrowTwo, ArrowBg, UpArrow } from '../svg';
 
+const GOOGLE_MAPS_SCRIPT_ID = 'google-maps-places-script';
+
+function loadGoogleMapsPlaces(apiKey: string): Promise<void> {
+    if (typeof window === 'undefined') return Promise.resolve();
+    const existing = document.getElementById(GOOGLE_MAPS_SCRIPT_ID);
+    if (existing) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.id = GOOGLE_MAPS_SCRIPT_ID;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Google Maps script failed to load'));
+        document.head.appendChild(script);
+    });
+}
+
+declare global {
+    interface Window {
+        google?: {
+            maps: {
+                places: {
+                    Autocomplete: new (
+                        input: HTMLInputElement,
+                        opts?: { types?: string[]; componentRestrictions?: { country: string | string[] }; fields?: string[] }
+                    ) => {
+                        addListener: (event: string, fn: () => void) => { remove: () => void };
+                        getPlace: () => { formatted_address?: string };
+                    };
+                };
+                event: { removeListener: (listener: { remove: () => void }) => void };
+            };
+        };
+    }
+}
 
 // Simple hand SVG
 const HandIcon = () => (
@@ -75,6 +114,10 @@ function PkgCarousel({ images, packageId }: { images: string[]; packageId: strin
 
 export default function BookingArea() {
     const [currentStep, setCurrentStep] = useState(1);
+    const [placesReady, setPlacesReady] = useState(false);
+    const addressInputRef = useRef<HTMLInputElement>(null);
+    const autocompleteListenerRef = useRef<{ remove: () => void } | null>(null);
+
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -87,6 +130,7 @@ export default function BookingArea() {
         preferredDate: '',
         preferredTime: '',
         message: '',
+        [HONEYPOT_FIELD]: '',
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,9 +138,41 @@ export default function BookingArea() {
     const [formErrors, setFormErrors] = useState<string[]>([]);
     const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
+    const apiKey = typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY : '';
+
     useEffect(() => {
         trackBookingStart();
     }, []);
+
+    useEffect(() => {
+        if (!apiKey || typeof window === 'undefined') return;
+        loadGoogleMapsPlaces(apiKey).then(() => setPlacesReady(true)).catch(() => {});
+    }, [apiKey]);
+
+    useEffect(() => {
+        if (currentStep !== 1 || !placesReady || !addressInputRef.current || !window.google?.maps?.places) return;
+        const input = addressInputRef.current;
+        const Autocomplete = window.google.maps.places.Autocomplete;
+        const autocomplete = new Autocomplete(input, {
+            types: ['address'],
+            componentRestrictions: { country: 'ca' },
+            fields: ['formatted_address'],
+        });
+        const listener = autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (place.formatted_address) {
+                setFormData(prev => ({ ...prev, propertyAddress: place.formatted_address! }));
+                trackAddressAutosuggestSelection(place.formatted_address);
+            }
+        });
+        autocompleteListenerRef.current = listener;
+        return () => {
+            if (autocompleteListenerRef.current) {
+                autocompleteListenerRef.current.remove();
+                autocompleteListenerRef.current = null;
+            }
+        };
+    }, [currentStep, placesReady]);
 
     // Helper function to calculate adjusted package price based on property size
     // Uses centralized pricing function from booking-data.ts
@@ -181,17 +257,25 @@ export default function BookingArea() {
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        await handleBookingSubmission(
-            {
-                ...formData,
-                serviceType: 'Real Estate Media',
-                serviceTier: formData.selectedPackage,
-                totalPrice: calculateTotal().toString(),
-            },
-            setIsSubmitting,
-            setIsSubmitted,
-            setFormErrors
-        );
+        let recaptchaToken = '';
+        try {
+            recaptchaToken = await getRecaptchaToken('booking');
+        } catch (err) {
+            console.error('reCAPTCHA error:', err);
+            setFormErrors(['Security check failed. Please refresh and try again.']);
+            return;
+        }
+        const honeypotValue = formData[HONEYPOT_FIELD as keyof typeof formData];
+        const websiteUrl = typeof honeypotValue === 'string' ? honeypotValue : '';
+        const payload: BookingFormData = {
+            ...formData,
+            serviceType: 'Real Estate Media',
+            serviceTier: formData.selectedPackage,
+            totalPrice: calculateTotal().toString(),
+            recaptchaToken,
+            website_url: websiteUrl,
+        };
+        await handleBookingSubmission(payload, setIsSubmitting, setIsSubmitted, setFormErrors);
     };
 
     if (isSubmitted) {
@@ -235,9 +319,9 @@ export default function BookingArea() {
                                 <HandIcon /> Book Your Session
                             </span>
                             <h4 className="ab-about-category-title text-white">
-                                {currentStep === 1 && "Start With Property Details"}
-                                {currentStep === 2 && "Select Your Media Package"}
-                                {currentStep === 3 && "Finalize Your Booking"}
+                                {currentStep === 1 && "Property Details"}
+                                {currentStep === 2 && "Select Package"}
+                                {currentStep === 3 && "Contact Info"}
                             </h4>
 
                             <div className="booking-stepper d-flex justify-content-center mt-30">
@@ -247,9 +331,9 @@ export default function BookingArea() {
                                             <div className={`booking-step ${currentStep === step ? 'active' : ''} ${currentStep > step ? 'completed' : ''}`}>
                                                 <div className="step-num">{step}</div>
                                                 <span className="step-txt">
-                                                    {step === 1 && "Property"}
-                                                    {step === 2 && "Package"}
-                                                    {step === 3 && "Contact"}
+                                                    {step === 1 && "Property Details"}
+                                                    {step === 2 && "Select Package"}
+                                                    {step === 3 && "Contact Info"}
                                                 </span>
                                             </div>
                                             {idx < 2 && (
@@ -269,15 +353,32 @@ export default function BookingArea() {
                                     <div className="step-content fadeIn">
                                         <div className="row justify-content-center">
                                             <div className="col-lg-8">
+                                                <h5 className="text-white mb-2">Property Details</h5>
+                                                <p className="text-white-50 mb-25">Enter your property address and details to get started</p>
+                                                {/* Honeypot - leave blank */}
+                                                <div className="visually-hidden" aria-hidden="true">
+                                                    <label htmlFor="booking-website_url">Leave this blank</label>
+                                                    <input
+                                                        id="booking-website_url"
+                                                        name={HONEYPOT_FIELD}
+                                                        type="text"
+                                                        tabIndex={-1}
+                                                        autoComplete="off"
+                                                        value={formData[HONEYPOT_FIELD as keyof typeof formData] ?? ''}
+                                                        onChange={handleInputChange}
+                                                    />
+                                                </div>
                                                 <div className="cn-contactform-input mb-25">
                                                     <label className="text-white">Property Address *</label>
                                                     <input
+                                                        ref={addressInputRef}
                                                         name="propertyAddress"
                                                         type="text"
-                                                        placeholder="123 Main St, Toronto, ON"
+                                                        placeholder="Start typing an address..."
                                                         value={formData.propertyAddress}
                                                         onChange={handleInputChange}
                                                         required
+                                                        autoComplete="off"
                                                     />
                                                     {fieldErrors.propertyAddress && <ErrorMsg msg={fieldErrors.propertyAddress} />}
                                                 </div>
@@ -335,7 +436,7 @@ export default function BookingArea() {
                                                                         {item.popular && <span className="pkg-popular-tag">Popular</span>}
                                                                     </div>
                                                                     <div className="pkg-card-price">
-                                                                        <span className="pkg-price-amount">${getAdjustedPackagePrice(item.basePrice)}</span>
+                                                                        <span className="pkg-price-amount">${getAdjustedPackagePrice(item.basePrice, formData.propertySize)}</span>
                                                                     </div>
                                                                 </div>
                                                                 <div className="pkg-card-features">
@@ -430,7 +531,7 @@ export default function BookingArea() {
                                                                 <div className="sidebar-line-item sidebar-package-item">
                                                                     <span>{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
                                                                     <div className="d-flex align-items-center gap-2">
-                                                                        <span>${packages.find(p => p.id === formData.selectedPackage) ? getAdjustedPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice) : 0}</span>
+                                                                        <span>${packages.find(p => p.id === formData.selectedPackage) ? getAdjustedPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.propertySize) : 0}</span>
                                                                         <button
                                                                             type="button"
                                                                             className="sidebar-remove-btn"
@@ -569,7 +670,7 @@ export default function BookingArea() {
                                                         </div>
                                                         <div className="d-flex justify-content-between mb-15">
                                                             <span className="text-white-50">Base Price:</span>
-                                                            <span className="text-white">${packages.find(p => p.id === formData.selectedPackage) ? getAdjustedPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice) : 0}</span>
+                                                            <span className="text-white">${packages.find(p => p.id === formData.selectedPackage) ? getAdjustedPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.propertySize) : 0}</span>
                                                         </div>
 
                                                         {formData.selectedAddOns.length > 0 && (
@@ -629,13 +730,25 @@ export default function BookingArea() {
                                         </button>
                                     )}
 
-                                    {currentStep < 3 ? (
+                                    {currentStep === 1 ? (
                                         <button
                                             type="button"
                                             className="tp-btn-black-2 booking-btn-primary"
                                             onClick={handleNext}
                                         >
-                                            Continue
+                                            Next: Select Package
+                                            <span className="p-relative">
+                                                <RightArrowTwo />
+                                                <ArrowBg />
+                                            </span>
+                                        </button>
+                                    ) : currentStep === 2 ? (
+                                        <button
+                                            type="button"
+                                            className="tp-btn-black-2 booking-btn-primary"
+                                            onClick={handleNext}
+                                        >
+                                            Next: Contact Info
                                             <span className="p-relative">
                                                 <RightArrowTwo />
                                                 <ArrowBg />

@@ -17,6 +17,8 @@ export interface BookingFormData {
     preferredDate?: string;
     preferredTime?: string;
     totalPrice?: string;
+    recaptchaToken?: string;
+    website_url?: string;
 }
 
 export async function handleBookingSubmission(

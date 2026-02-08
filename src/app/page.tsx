@@ -9,8 +9,8 @@ import useScrollSmooth from "@/hooks/use-scroll-smooth";
 import Wrapper from "@/layouts/wrapper";
 import HeaderFour from "@/layouts/headers/header-four";
 import HeroBannerFour from "@/components/hero-banner/hero-banner-four";
+import AboutFiveArea from "@/components/about/about-five-area";
 import CounterOne from "@/components/counter/counter-one";
-import AboutUsArea from "@/components/about/about-us-area";
 import FooterFour from "@/layouts/footers/footer-four";
 
 import { textInvert } from "@/utils/text-invert";
@@ -55,13 +55,13 @@ const HomeFourMain = () => {
             <HeroBannerFour />
             {/* hero area end */}
 
+            {/* about 5 area (Liko tp-about-5-area) start */}
+            <AboutFiveArea />
+            {/* about 5 area end */}
+
             {/* counter area start */}
             <CounterOne />
             {/* counter area end */}
-
-            {/* about area start */}
-            <AboutUsArea />
-            {/* about area end */}
 
           </main>
 

@@ -27,7 +27,10 @@ jobs:
       # Build and pull all images on runner (has internet); droplet cannot reach Docker Hub
       - name: Build and save all images
         run: |
-          docker build --build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}" -t website-app:latest .
+          docker build \
+            --build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}" \
+            --build-arg NEXT_PUBLIC_RECAPTCHA_SITE_KEY="${{ secrets.NEXT_PUBLIC_RECAPTCHA_SITE_KEY }}" \
+            -t website-app:latest .
           docker pull postgres:15-alpine
           docker pull redis:7-alpine
           docker save website-app:latest postgres:15-alpine redis:7-alpine -o images.tar
@@ -78,6 +81,8 @@ jobs:
             cat > .env << 'EOF'
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
+            NEXT_PUBLIC_RECAPTCHA_SITE_KEY=${{ secrets.NEXT_PUBLIC_RECAPTCHA_SITE_KEY }}
+            RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             NEXTAUTH_URL=https://brightone.ca
             AWS_REGION=${{ secrets.AWS_REGION }}

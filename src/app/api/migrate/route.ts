@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     console.log('Starting complete database migration via API...');
 
     // Read the comprehensive migration SQL file
-    const migrationPath = path.join(process.cwd(), 'migrate-complete.sql');
+    const migrationPath = path.join(process.cwd(), 'database', 'migrate-complete.sql');
     const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
 
     // Execute the complete migration

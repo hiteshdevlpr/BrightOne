@@ -1,0 +1,113 @@
+# Deployment readiness vs origin/old-codebase
+
+This checklist compares the current `main` branch with **origin/old-codebase** and confirms what is required for deployment on the remote server.
+
+---
+
+## Branch note
+
+There is no branch named **origin/old-database**. Comparison is with **origin/old-codebase**. The branch **origin/docker-db-setup** exists but does not include `docker-compose.prod.from-image.yml` or the full CI workflow used for production.
+
+---
+
+## Comparison with origin/old-codebase
+
+| Item | origin/old-codebase | Current main | Status |
+|------|---------------------|--------------|--------|
+| **.github/workflows/main.yml** | Deploy on push to main, audit, build image, scp, server setup, .env, load images, compose up, verify, validate security | Same structure; reCAPTCHA env vars added | Ready |
+| **Dockerfile** | Node 18, standalone, healthcheck | Node 20, standalone, healthcheck, `database/` copied | Ready |
+| **.dockerignore** | Yes | Yes (includes *.pem, images.tar) | Ready |
+| **docker-compose.prod.from-image.yml** | app (127.0.0.1:3000, security_opt, cap_drop, tmpfs), db (init.sql at root), redis | Same; init at `./database/init.sql`; reCAPTCHA env vars | Ready |
+| **next.config.ts** | output: standalone, serverExternalPackages: ['pg'] | Same + security headers | Ready |
+| **scripts/setup-server-full.sh** | Nginx, rate limit, SSL, Fail2ban, UFW, SSH hardening | Present | Ready |
+| **scripts/validate-security.sh** | Docker, Nginx, Fail2ban, UFW, API checks, .env, port 3000 | Present | Ready |
+| **Database init** | `./init.sql` (repo root) | `./database/init.sql` (compose and copy both use `database/`) | Ready |
+| **Migrate API** | Reads `migrate-complete.sql` at cwd | Reads `database/migrate-complete.sql`; Dockerfile copies `database/` into image | Ready |
+| **API routes** | /api/health, /api/migrate, /api/debug-env, /api/admin/* | Same | Ready |
+| **reCAPTCHA (contact/booking)** | Not in workflow .env | Added to workflow .env + Docker build arg + compose env | Ready |
+
+---
+
+## What the CI pipeline does
+
+1. **Checkout** → **Dependency audit** (`npm ci`, `npm audit --audit-level=high`)
+2. **Prepare SSH key** → `deploy_key.pem` from `DROPLET_SSH_KEY`
+3. **Build and save images** → `docker build` (with Maps + reCAPTCHA site key), pull postgres/redis, `docker save` → `images.tar`
+4. **Copy files to server** → SCP whole repo (including `database/`, `scripts/`, `docker-compose.prod.from-image.yml`) to `/home/brightone/website`
+5. **Server setup** → SSH as root, run `scripts/setup-server-full.sh` (Nginx, SSL, Fail2ban, UFW)
+6. **Setup environment** → Write `.env` from GitHub secrets, `docker-compose down`, `docker system prune`
+7. **Build and start** → `docker load -i images.tar`, `docker-compose -f docker-compose.prod.from-image.yml up -d`, wait 60s
+8. **Verify** → Health check `/api/health` (up to 6 attempts)
+9. **Validate security** → Run `scripts/validate-security.sh`
+
+---
+
+## Required GitHub secrets
+
+Set these in the repo **Settings → Secrets and variables → Actions**:
+
+| Secret | Required | Purpose |
+|--------|----------|---------|
+| **DROPLET_IP** | Yes | Server IP for SSH/SCP |
+| **DROPLET_USER** | Yes | SSH user (e.g. `brightone`) |
+| **DROPLET_SSH_KEY** | Yes | Private key for deploy (newlines preserved) |
+| **DB_PASSWORD** | Yes | Postgres password; used in DATABASE_URL |
+| **NEXT_PUBLIC_GOOGLE_MAPS_API_KEY** | Yes | Maps/Places in app and Docker build |
+| **NEXT_PUBLIC_RECAPTCHA_SITE_KEY** | Yes | reCAPTCHA v3 site key (client + build) |
+| **RECAPTCHA_SECRET_KEY** | Yes | reCAPTCHA v3 secret (server verification) |
+| **NEXTAUTH_SECRET** | Yes | Auth secret |
+| **AWS_REGION** | Yes | SES region |
+| **AWS_ACCESS_KEY_ID** | Yes | SES |
+| **AWS_SECRET_ACCESS_KEY** | Yes | SES |
+| **FROM_EMAIL** | Yes | Sender for emails |
+| **ADMIN_EMAIL** | Yes | Recipient for contact/booking emails |
+| **MIGRATION_TOKEN** | Yes | Bearer token for POST /api/migrate |
+| **ADMIN_API_KEY** | Yes | Bearer / X-Admin-Key for admin APIs |
+| **DOMAINS** | Optional | Default `brightone.ca www.brightone.ca` for Nginx/Certbot |
+
+---
+
+## Optional GitHub variables
+
+- **SKIP_SSL** – set to `1` to skip Certbot (e.g. if DNS not ready).
+- **SKIP_SSH_HARDEN** – set to `1` to skip SSH hardening (e.g. until key-based login is confirmed).
+
+---
+
+## Server prerequisites
+
+1. **Bootstrap (one-time)**  
+   If the droplet is new, run as root (e.g. from your machine):
+   ```bash
+   ssh root@DROPLET_IP 'bash -s' < scripts/bootstrap-new-droplet.sh
+   ```
+   *(If you don’t have this script, ensure the server has a user for deploy, Docker, and that the deploy SSH key is in `authorized_keys`.)*
+
+2. **Root SSH key**  
+   The workflow runs “Server setup” and “Validate security” as **root**. Root must be able to log in with the same key used for deploy (or the key in `DROPLET_SSH_KEY` must be in root’s `authorized_keys`).
+
+---
+
+## First deployment / database
+
+- **New server:** The compose file mounts `./database/init.sql` into Postgres’s `docker-entrypoint-initdb.d`, so the DB is initialized on first `up`.
+- **Existing DB / schema changes:** After the app is running, call the migrate API once (with token):
+  ```bash
+  curl -X POST https://brightone.ca/api/migrate -H "Authorization: Bearer YOUR_MIGRATION_TOKEN"
+  ```
+
+---
+
+## Validation after deploy
+
+- **Health:** `https://brightone.ca/api/health` → `{"ok":true}`.
+- **Security script:** Run on server: `bash /home/brightone/website/scripts/validate-security.sh` (CI runs this automatically).
+- **Contact/booking forms:** Submit test requests; reCAPTCHA and email depend on the secrets above.
+
+---
+
+## Summary
+
+- **CI and app setup are aligned with origin/old-codebase** (workflow, Dockerfile, compose, scripts, init/migrate paths, reCAPTCHA).
+- **Ready for deployment** once GitHub secrets (and optional variables) are set and the server is bootstrapped.
+- **Difference:** This repo uses `database/` for SQL (e.g. `database/init.sql`, `database/migrate-complete.sql`); compose and Dockerfile are configured for that. Old-codebase used `init.sql` and `migrate-complete.sql` at repo root.

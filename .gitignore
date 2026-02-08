@@ -23,6 +23,10 @@
 # misc
 .DS_Store
 *.pem
+GITHUB_SECRETS.md
+backups/
+._*
+images.tar
 
 # debug
 npm-debug.log*

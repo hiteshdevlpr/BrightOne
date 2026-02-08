@@ -31,14 +31,18 @@ export default function useScrollSmooth() {
                 ignoreMobileResize: true,
             });
 
-            // example ScrollTrigger (you can remove if not needed)
-            ScrollTrigger.create({
-                trigger: ".shape",
-                pin: true,
-                start: "center center",
-                end: "+=300",
-                markers: false,
-            });
+            // Only create shape pin if element exists
+            const shapeEl = document.querySelector(".shape");
+            if (shapeEl) {
+                ScrollTrigger.create({
+                    trigger: ".shape",
+                    pin: true,
+                    start: "center center",
+                    end: "+=300",
+                    markers: false,
+                });
+            }
+            ScrollTrigger.refresh();
         }
     }, [isScrollSmooth]);
 }
