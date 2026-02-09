@@ -7,7 +7,6 @@ import useScrollSmooth from "@/hooks/use-scroll-smooth";
 
 // internal imports
 import Wrapper from "@/layouts/wrapper";
-import HeaderFour from "@/layouts/headers/header-four";
 import HeroBannerFour from "@/components/hero-banner/hero-banner-four";
 import AboutFiveArea from "@/components/about/about-five-area";
 import CounterOne from "@/components/counter/counter-one";
@@ -42,11 +41,6 @@ const HomeFourMain = () => {
 
   return (
     <Wrapper>
-
-      {/* header area start */}
-      <HeaderFour />
-      {/* header area end */}
-
       <div id="smooth-wrapper">
         <div id="smooth-content">
           <main>

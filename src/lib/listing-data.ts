@@ -1,38 +1,74 @@
-// Import images for 13151 Lakeridge Road
-import lakeridge1 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-1.jpg';
-import lakeridge2 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-2.jpg';
-import lakeridge3 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-3.jpg';
-import lakeridge4 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-4.jpg';
-import lakeridge5 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-5.jpg';
-import lakeridge6 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-6.jpg';
-import lakeridge7 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-7.jpg';
-import lakeridge8 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-8.jpg';
-import lakeridge9 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-9.jpg';
-import lakeridge10 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-10.jpg';
-import lakeridge11 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-11.jpg';
-import lakeridge12 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-12.jpg';
-import lakeridge13 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-13.jpg';
-import lakeridge14 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-14.jpg';
-import lakeridge15 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-15.jpg';
-import lakeridge16 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-16.jpg';
-import lakeridge17 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-17.jpg';
-import lakeridge18 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-18.jpg';
-import lakeridge19 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-19.jpg';
-import lakeridge20 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-20.jpg';
-import lakeridge21 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-21.jpg';
-import lakeridge22 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-22.jpg';
-import lakeridge23 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-23.jpg';
-import lakeridge24 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-24.jpg';
-import lakeridge25 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-25.jpg';
-import lakeridge26 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-26.jpg';
-import lakeridge27 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-27.jpg';
-import lakeridge28 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-28.jpg';
-import lakeridge29 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-29.jpg';
-import lakeridge30 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-30.jpg';
-import lakeridge31 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-31.jpg';
-import lakeridge32 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-32.jpg';
-import lakeridge33 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-33.jpg';
-import lakeridge34 from '@/assets/images/portfolio/13151-lakeridge/13151_LAKERIDGE-34.jpg';
+// 13151 Lakeridge Road images are served from public/assets/img/portfolio/13151-lakeridge/
+const LAKERIDGE_IMG_BASE = '/assets/img/portfolio/13151-lakeridge';
+const lakeridgeImages = Array.from({ length: 34 }, (_, i) => ({
+  src: `${LAKERIDGE_IMG_BASE}/13151_LAKERIDGE-${i + 1}.jpg`,
+  alt: `13151 Lakeridge Road - Property View ${i + 1}`,
+  caption: i === 0 ? 'Stunning view of the property showcasing its best features' : `13151 Lakeridge Road - View ${i + 1}`,
+}));
+// First image as hero (order: 9, 1, 2, ... 8, 10...34 per original)
+const lakeridgeImagesOrdered = [
+  lakeridgeImages[8],  // 9
+  ...lakeridgeImages.slice(0, 8),  // 1-8
+  ...lakeridgeImages.slice(9),    // 10-34
+].map((img, idx) => ({
+  ...img,
+  caption: [
+    'Two-car garage with additional storage',
+    'Stunning view of the property showcasing its best features',
+    'Beautiful property exterior and surroundings',
+    'Exterior view with modern design elements',
+    'Spacious interior with natural light',
+    'Modern living spaces with contemporary finishes',
+    'Elegant interior design and layout',
+    'Comfortable living areas perfect for families',
+    'Private outdoor space with landscaping',
+    'Finished basement with recreation area',
+    'Convenient main floor laundry room',
+    'Spacious bedrooms perfect for home office or guest room',
+    'Bright hallway with hardwood flooring',
+    'Side view showing architectural details',
+    'Elegant staircase with hardwood railing',
+    'Large deck perfect for outdoor dining',
+    'Professional landscaping with mature trees',
+    'Wide driveway with space for multiple vehicles',
+    'Additional storage in basement',
+    'Utility room with mechanical systems',
+    'Back exterior showing deck and yard',
+    'View of the surrounding neighborhood',
+    'Modern kitchen with island and stainless appliances',
+    'Master bedroom with walk-in closet',
+    'Dining space perfect for entertaining',
+    'Second bedroom with large windows',
+    'Modern bathroom with contemporary fixtures',
+    'Backyard with deck and landscaping',
+    'Additional property features and details',
+    'Interior design highlights',
+    'Property amenities and features',
+    'Exterior and interior views',
+    'Property showcasing quality finishes',
+    'Comprehensive view of the property',
+  ][idx] || img.caption,
+}));
+
+// 385 The East Mall Unit 23 - images from public/assets/img/portfolio/385-the-east-mall/
+const EAST_MALL_IMG_BASE = '/assets/img/portfolio/385-the-east-mall';
+const eastMallImageFilenames = [
+  '005A3645-HDR-Edit.jpg', // primary/hero image
+  '005A3529-HDR-Edit.jpg', '005A3535-HDR-Edit.jpg', '005A3554-HDR-Edit.jpg', '005A3569-HDR.jpg', '005A3580-HDR.jpg',
+  '005A3585-HDR-Edit.jpg', '005A3590-HDR.jpg', '005A3620-HDR-Edit.jpg', '005A3625-HDR.jpg',
+  '005A3655-HDR.jpg', '005A3660-HDR-Edit.jpg', '005A3665-HDR-Edit.jpg', '005A3670-HDR-Edit.jpg',
+  '005A3679-HDR.jpg', '005A3685-HDR-Edit.jpg', '005A3689-HDR-Edit.jpg', '005A3696-HDR.jpg', '005A3705-HDR.jpg',
+  '005A3710-HDR-Edit.jpg', '005A3720-HDR.jpg', '005A3725-HDR.jpg', '005A3730-HDR.jpg', '005A3735-HDR.jpg',
+  '005A3740-HDR-Edit.jpg', '005A3745-HDR-Edit-Edit.jpg', '005A3749-HDR.jpg', '005A3759-HDR.jpg', '005A3776-HDR.jpg',
+  '005A3791-HDR-Edit.jpg', '005A3796-HDR-Edit.jpg', '005A3801-HDR.jpg', '005A3806-HDR.jpg', '005A3825-HDR.jpg',
+  '005A4026-HDR.jpg', '005A4031-HDR-Edit.jpg', '005A4036-HDR.jpg', '005A4046-HDR-Edit.jpg',
+  'DJI_20260124163946_0243_D-HDR.jpg', 'DJI_20260124164633_0251_D-HDR.jpg'
+];
+const eastMallImages: { src: string; alt: string; caption?: string }[] = eastMallImageFilenames.map((name, i) => ({
+  src: `${EAST_MALL_IMG_BASE}/${name}`,
+  alt: `385 The East Mall Unit 23 - View ${i + 1}`,
+  caption: i === 0 ? 'Stunning view of the property' : `385 The East Mall Unit 23 - View ${i + 1}`,
+}));
 
 // Types for listing data
 export interface ListingImage {
@@ -77,6 +113,12 @@ export interface ListingData {
   status: 'active' | 'sold' | 'pending';
   dateListed: string;
   lastUpdated: string;
+  /** When set, location section uses this iframe src instead of API key or fallback link */
+  mapEmbedUrl?: string;
+  /** When set, shows a "3D Virtual Tour" section with this iframe embed URL (e.g. youriguide.com embed) */
+  virtualTourEmbedUrl?: string;
+  /** Bullet points for the "Highlights of the Property" box in the hero (enhanced layout) */
+  highlights?: string[];
 }
 
 // Sample listing data - in a real app, this would come from a database
@@ -247,42 +289,7 @@ const sampleListings: Record<string, ListingData> = {
     city: 'Uxbridge',
     province: 'Ontario',
     postalCode: 'L1S 3J4',
-    images: [
-      { src: lakeridge9.src, alt: '13151 Lakeridge Road Ajax - Property View 9', caption: 'Two-car garage with additional storage' },
-      { src: lakeridge1.src, alt: '13151 Lakeridge Road Ajax - Property View 1', caption: 'Stunning view of the property showcasing its best features' },
-      { src: lakeridge2.src, alt: '13151 Lakeridge Road Ajax - Property View 2', caption: 'Beautiful property exterior and surroundings' },
-      { src: lakeridge3.src, alt: '13151 Lakeridge Road Ajax - Property View 3', caption: 'Exterior view with modern design elements' },
-      { src: lakeridge4.src, alt: '13151 Lakeridge Road Ajax - Property View 4', caption: 'Spacious interior with natural light' },
-      { src: lakeridge5.src, alt: '13151 Lakeridge Road Ajax - Property View 5', caption: 'Modern living spaces with contemporary finishes' },
-      { src: lakeridge6.src, alt: '13151 Lakeridge Road Ajax - Property View 6', caption: 'Elegant interior design and layout' },
-      { src: lakeridge7.src, alt: '13151 Lakeridge Road Ajax - Property View 7', caption: 'Comfortable living areas perfect for families' },
-      { src: lakeridge8.src, alt: '13151 Lakeridge Road Ajax - Property View 8', caption: 'Private outdoor space with landscaping' },
-      { src: lakeridge10.src, alt: '13151 Lakeridge Road Ajax - Property View 10', caption: 'Finished basement with recreation area' },
-      { src: lakeridge11.src, alt: '13151 Lakeridge Road Ajax - Property View 11', caption: 'Convenient main floor laundry room' },
-      { src: lakeridge12.src, alt: '13151 Lakeridge Road Ajax - Property View 12', caption: 'Spacious bedrooms perfect for home office or guest room' },
-      { src: lakeridge13.src, alt: '13151 Lakeridge Road Ajax - Property View 13', caption: 'Bright hallway with hardwood flooring' },
-      { src: lakeridge14.src, alt: '13151 Lakeridge Road Ajax - Property View 14', caption: 'Side view showing architectural details' },
-      { src: lakeridge15.src, alt: '13151 Lakeridge Road Ajax - Property View 15', caption: 'Elegant staircase with hardwood railing' },
-      { src: lakeridge16.src, alt: '13151 Lakeridge Road Ajax - Property View 16', caption: 'Large deck perfect for outdoor dining' },
-      { src: lakeridge17.src, alt: '13151 Lakeridge Road Ajax - Property View 17', caption: 'Professional landscaping with mature trees' },
-      { src: lakeridge18.src, alt: '13151 Lakeridge Road Ajax - Property View 18', caption: 'Wide driveway with space for multiple vehicles' },
-      { src: lakeridge19.src, alt: '13151 Lakeridge Road Ajax - Property View 19', caption: 'Additional storage in basement' },
-      { src: lakeridge20.src, alt: '13151 Lakeridge Road Ajax - Property View 20', caption: 'Utility room with mechanical systems' },
-      { src: lakeridge21.src, alt: '13151 Lakeridge Road Ajax - Property View 21', caption: 'Back exterior showing deck and yard' },
-      { src: lakeridge22.src, alt: '13151 Lakeridge Road Ajax - Property View 22', caption: 'View of the surrounding neighborhood' },
-      { src: lakeridge23.src, alt: '13151 Lakeridge Road Ajax - Property View 23', caption: 'Modern kitchen with island and stainless appliances' },
-      { src: lakeridge24.src, alt: '13151 Lakeridge Road Ajax - Property View 24', caption: 'Master bedroom with walk-in closet' },
-      { src: lakeridge25.src, alt: '13151 Lakeridge Road Ajax - Property View 25', caption: 'Dining space perfect for entertaining' },
-      { src: lakeridge26.src, alt: '13151 Lakeridge Road Ajax - Property View 26', caption: 'Second bedroom with large windows' },
-      { src: lakeridge27.src, alt: '13151 Lakeridge Road Ajax - Property View 27', caption: 'Modern bathroom with contemporary fixtures' },
-      { src: lakeridge28.src, alt: '13151 Lakeridge Road Ajax - Property View 28', caption: 'Backyard with deck and landscaping' },
-      { src: lakeridge29.src, alt: '13151 Lakeridge Road Ajax - Property View 29', caption: 'Additional property features and details' },
-      { src: lakeridge30.src, alt: '13151 Lakeridge Road Ajax - Property View 30', caption: 'Interior design highlights' },
-      { src: lakeridge31.src, alt: '13151 Lakeridge Road Ajax - Property View 31', caption: 'Property amenities and features' },
-      { src: lakeridge32.src, alt: '13151 Lakeridge Road Ajax - Property View 32', caption: 'Exterior and interior views' },
-      { src: lakeridge33.src, alt: '13151 Lakeridge Road Ajax - Property View 33', caption: 'Property showcasing quality finishes' },
-      { src: lakeridge34.src, alt: '13151 Lakeridge Road Ajax - Property View 34', caption: 'Comprehensive view of the property' },
-    ],
+    images: lakeridgeImagesOrdered,
     features: [
       { icon: '🏠', label: 'Property Type', value: 'Single Family Home' },
       { icon: '🛏️', label: 'Bedrooms', value: '3' },
@@ -303,6 +310,45 @@ const sampleListings: Record<string, ListingData> = {
     status: 'active',
     dateListed: '2024-01-25',
     lastUpdated: '2024-01-30',
+  },
+  '23-385-the-east-mall': {
+    id: '23-385-the-east-mall',
+    address: '385 The East Mall Unit 23, Etobicoke, ON M9B 6J4',
+    title: 'Gorgeous Etobicoke Townhome — Rare End-Unit',
+    description: 'Welcome home to this gorgeous Etobicoke townhome—where comfort, space, and convenience come together effortlessly. Lovingly maintained by the same family for over 25 years, this rare end-unit offers the kind of warmth and care you can feel the moment you walk in. The bright, spacious kitchen is the heart of the home, featuring granite countertops and brand-new appliances—perfect for busy mornings, family dinners, or hosting friends. The open main level showcases gleaming hardwood floors and a walkout to a beautiful outdoor space, ideal for summer barbecues or a quiet morning coffee. Upstairs, two generous bedrooms each offer their own complete ensuite and walk-in closet. The tastefully finished lower-level recreation room, complete with a cozy custom built gas fireplace and large, bright windows, is an inviting space for movie nights, a playroom, or a home office. A rare double garage, a one-year-old furnace, fresh paint throughout, and pride of ownership at every turn make this home truly move-in ready. Set in a highly convenient Etobicoke location close to public transit, major highways (401 & 407), shopping, restaurants, and just minutes to Pearson Airport. Pre-listing home inspection available.',
+    price: 0,
+    priceFormatted: 'Price on request',
+    bedrooms: 2,
+    bathrooms: 3,
+    squareFootage: 0,
+    propertyType: 'Townhouse',
+    city: 'Etobicoke',
+    province: 'Ontario',
+    postalCode: 'M9B 6J4',
+    images: eastMallImages,
+    features: [
+      { icon: '🏠', label: 'Property Type', value: 'Townhouse' },
+      { icon: '🛏️', label: 'Bedrooms', value: '2' },
+      { icon: '🚿', label: 'Bathrooms', value: '3' },
+      { icon: '📍', label: 'Location', value: 'The East Mall, Etobicoke' },
+      { icon: '🅿️', label: 'Parking', value: 'Double garage' },
+    ],
+    highlights: [
+      'Rare end-unit townhome, same family 25+ years; double garage, new furnace, fresh paint—move-in ready.',
+      'Bright kitchen with granite and new appliances; main level with hardwood and walkout to outdoor space.',
+      'Two generous bedrooms, each with full ensuite and walk-in closet.',
+      'Finished lower-level rec room with gas fireplace; upgraded laundry and abundant storage.',
+      'Convenient Etobicoke: transit, 401 & 407, shopping, Pearson. Pre-listing inspection available.',
+    ],
+    walkthroughVideoUrl: 'https://www.youtube.com/embed/bOXYWuLXBzY',
+    agentName: 'BrightOne Creative',
+    agentPhone: '(416) 419-9689',
+    agentEmail: 'contact@brightone.ca',
+    status: 'active',
+    dateListed: '2024-01-01',
+    lastUpdated: '2024-01-01',
+    mapEmbedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2887.1422228502106!2d-79.56166392342185!3d43.6452092529471!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x882b37111de7fce3%3A0x761d9a03b343092c!2s385%20The%20East%20Mall%20Unit%2023%2C%20Etobicoke%2C%20ON%20M9B%206J4!5e0!3m2!1sen!2sca!4v1770603348212!5m2!1sen!2sca',
+    virtualTourEmbedUrl: 'https://youriguide.com/embed/23_385_the_east_mall_toronto_on?unbranded=1&bgcolor=FFFFFF',
   },
 };
 

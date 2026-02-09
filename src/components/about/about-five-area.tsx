@@ -36,6 +36,7 @@ export default function AboutFiveArea() {
               <span className="tp_fade_bottom">Drone Photography & Video</span>
               <span className="tp_fade_bottom">Personal Branding Media</span>
               <span className="tp_fade_bottom">Virtual Staging & HDR</span>
+              <span className="tp_fade_bottom">iGuide 3D Virtual Tours</span>
             </div>
           </div>
           <div className="col-xl-6 col-lg-6 col-md-6">

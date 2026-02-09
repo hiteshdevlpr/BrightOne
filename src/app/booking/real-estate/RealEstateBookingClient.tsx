@@ -1,7 +1,6 @@
 'use client';
 
 import React from "react";
-import HeaderFour from "@/layouts/headers/header-four";
 import BookingArea from "@/components/booking/booking-area";
 import Wrapper from "@/layouts/wrapper";
 import FooterFour from "@/layouts/footers/footer-four";
@@ -25,8 +24,6 @@ const RealEstateBookingClient = () => {
 
     return (
         <Wrapper>
-            <HeaderFour />
-
             <div id="smooth-wrapper">
                 <div id="smooth-content">
                     <main>

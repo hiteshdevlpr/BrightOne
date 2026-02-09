@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import HeaderFour from '@/layouts/headers/header-four';
 import Wrapper from '@/layouts/wrapper';
 import FooterFour from '@/layouts/footers/footer-four';
 import useScrollSmooth from '@/hooks/use-scroll-smooth';
@@ -232,8 +231,6 @@ export default function ContactPageClient() {
 
     return (
         <Wrapper>
-            <HeaderFour />
-
             <div id="smooth-wrapper">
                 <div id="smooth-content">
                     <div className="inner-bg" style={{ backgroundImage: "url(/assets/img/home-01/team/team-details-bg.png)" }}>

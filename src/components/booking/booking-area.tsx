@@ -115,6 +115,8 @@ function PkgCarousel({ images, packageId }: { images: string[]; packageId: strin
 export default function BookingArea() {
     const [currentStep, setCurrentStep] = useState(1);
     const [placesReady, setPlacesReady] = useState(false);
+    const [enterManually, setEnterManually] = useState(false);
+    const [addressGiven, setAddressGiven] = useState(false);
     const addressInputRef = useRef<HTMLInputElement>(null);
     const autocompleteListenerRef = useRef<{ remove: () => void } | null>(null);
 
@@ -150,7 +152,7 @@ export default function BookingArea() {
     }, [apiKey]);
 
     useEffect(() => {
-        if (currentStep !== 1 || !placesReady || !addressInputRef.current || !window.google?.maps?.places) return;
+        if (currentStep !== 1 || !placesReady || enterManually || !addressInputRef.current || !window.google?.maps?.places) return;
         const input = addressInputRef.current;
         const Autocomplete = window.google.maps.places.Autocomplete;
         const autocomplete = new Autocomplete(input, {
@@ -162,6 +164,7 @@ export default function BookingArea() {
             const place = autocomplete.getPlace();
             if (place.formatted_address) {
                 setFormData(prev => ({ ...prev, propertyAddress: place.formatted_address! }));
+                setAddressGiven(true);
                 trackAddressAutosuggestSelection(place.formatted_address);
             }
         });
@@ -172,7 +175,7 @@ export default function BookingArea() {
                 autocompleteListenerRef.current = null;
             }
         };
-    }, [currentStep, placesReady]);
+    }, [currentStep, placesReady, enterManually]);
 
     // Helper function to calculate adjusted package price based on property size
     // Uses centralized pricing function from booking-data.ts
@@ -231,12 +234,20 @@ export default function BookingArea() {
     };
 
     const handleNext = () => {
-        if (currentStep === 1 && (!formData.propertyAddress || !formData.propertySize)) {
-            setFieldErrors({
-                propertyAddress: !formData.propertyAddress ? 'Address is required' : '',
-                propertySize: !formData.propertySize ? 'Property size is required' : ''
-            });
-            return;
+        if (currentStep === 1) {
+            if (!addressGiven) {
+                setFieldErrors({ propertyAddress: "Please select an address from the list or click 'Enter address manually'." });
+                return;
+            }
+            if (!formData.propertyAddress) {
+                setFieldErrors({ propertyAddress: 'Address is required' });
+                return;
+            }
+            if (!formData.propertySize) {
+                setFieldErrors({ propertySize: 'Property size is required' });
+                return;
+            }
+            setFieldErrors({});
         }
         if (currentStep === 2 && !formData.selectedPackage) {
             setFormErrors(['Please select a package to continue']);
@@ -371,45 +382,60 @@ export default function BookingArea() {
                                                 <div className="cn-contactform-input mb-25">
                                                     <label className="text-white">Property Address *</label>
                                                     <input
-                                                        ref={addressInputRef}
+                                                        key={enterManually ? 'manual' : 'autosuggest'}
+                                                        ref={!enterManually ? addressInputRef : undefined}
                                                         name="propertyAddress"
                                                         type="text"
-                                                        placeholder="Start typing an address..."
+                                                        placeholder={enterManually ? 'Enter full address' : 'Start typing an address...'}
                                                         value={formData.propertyAddress}
                                                         onChange={handleInputChange}
                                                         required
                                                         autoComplete="off"
                                                     />
+                                                    {!addressGiven && (
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-link p-0 mt-2 text-white-50 text-decoration-underline"
+                                                            onClick={() => {
+                                                                setEnterManually(true);
+                                                                setAddressGiven(true);
+                                                            }}
+                                                        >
+                                                            Enter address manually
+                                                        </button>
+                                                    )}
                                                     {fieldErrors.propertyAddress && <ErrorMsg msg={fieldErrors.propertyAddress} />}
                                                 </div>
-                                                <div className="row">
-                                                    <div className="col-md-6">
-                                                        <div className="cn-contactform-input mb-25">
-                                                            <label className="text-white">Unit / Suite (Optional)</label>
-                                                            <input
-                                                                name="unitNumber"
-                                                                type="text"
-                                                                placeholder="Apt 2B"
-                                                                value={formData.unitNumber}
-                                                                onChange={handleInputChange}
-                                                            />
+                                                {addressGiven && (
+                                                    <div className="row">
+                                                        <div className="col-md-6">
+                                                            <div className="cn-contactform-input mb-25">
+                                                                <label className="text-white">Unit / Suite (Optional)</label>
+                                                                <input
+                                                                    name="unitNumber"
+                                                                    type="text"
+                                                                    placeholder="Apt 2B"
+                                                                    value={formData.unitNumber}
+                                                                    onChange={handleInputChange}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="col-md-6">
+                                                            <div className="cn-contactform-input mb-25">
+                                                                <label className="text-white">Square Footage (sq ft) *</label>
+                                                                <input
+                                                                    name="propertySize"
+                                                                    type="number"
+                                                                    placeholder="e.g. 1500"
+                                                                    value={formData.propertySize}
+                                                                    onChange={handleInputChange}
+                                                                    required
+                                                                />
+                                                                {fieldErrors.propertySize && <ErrorMsg msg={fieldErrors.propertySize} />}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <div className="col-md-6">
-                                                        <div className="cn-contactform-input mb-25">
-                                                            <label className="text-white">Square Footage (sq ft) *</label>
-                                                            <input
-                                                                name="propertySize"
-                                                                type="number"
-                                                                placeholder="e.g. 1500"
-                                                                value={formData.propertySize}
-                                                                onChange={handleInputChange}
-                                                                required
-                                                            />
-                                                            {fieldErrors.propertySize && <ErrorMsg msg={fieldErrors.propertySize} />}
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

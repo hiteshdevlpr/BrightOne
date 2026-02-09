@@ -2,7 +2,6 @@
 
 import React, { useRef } from "react";
 import Link from "next/link";
-import HeaderFour from "@/layouts/headers/header-four";
 import BookingArea from "@/components/booking/booking-area";
 import Wrapper from "@/layouts/wrapper";
 import FooterFour from "@/layouts/footers/footer-four";
@@ -32,8 +31,6 @@ const BookPageClient = () => {
 
     return (
         <Wrapper>
-            <HeaderFour />
-
             <div id="smooth-wrapper">
                 <div id="smooth-content">
                     <main>
