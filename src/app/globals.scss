@@ -96,12 +96,30 @@ header.header-compact .tp-header-3-area .container {
   padding-bottom: 0;
 }
 header.header-compact .tp-header-3-logo {
-  height: 54px;
+  height: auto;
+  min-height: 54px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+header.header-compact .tp-header-3-logo.tp-header-logo-with-tagline {
+  min-height: 64px;
 }
 header.header-compact .tp-header-3-logo img {
-  max-height: 38px;
+  max-height: 52px;
   width: auto;
   object-fit: contain;
+}
+header.header-compact .tp-header-tagline {
+  font-size: 11px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.02em;
+  max-width: 200px;
+}
+header.header-compact .tp-header-3-area.header-sticky .tp-header-tagline {
+  display: none;
 }
 header.header-compact .tp-header-3-menu-box {
   padding: 0 8px;

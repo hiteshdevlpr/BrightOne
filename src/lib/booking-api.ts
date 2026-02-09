@@ -13,6 +13,7 @@ export interface BookingFormData {
   serviceTier?: string;
   selectedPackage?: string;
   selectedAddOns?: string[];
+  preferredPartnerCode?: string;
   totalPrice?: string;
   message?: string;
   recaptchaToken?: string;

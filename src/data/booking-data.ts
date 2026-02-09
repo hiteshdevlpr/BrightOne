@@ -28,8 +28,8 @@ export const ADD_ONS: AddOn[] = [
     { id: 'cinematic_video_extended', name: 'Cinematic Video Tour (Extended)', description: 'Professional property video tour (2-3 min)', price: 349, category: 'videography', image: 'https://picsum.photos/seed/addon-cinext/400/300' },
     { id: 'agent_walkthrough', name: 'Agent Walkthrough Video', description: 'Personalized agent introduction video', price: 319, category: 'videography', image: 'https://picsum.photos/seed/addon-agent/400/300' },
     { id: 'social_reel', name: 'Social Media Reel', description: 'Short form vertical cut for social platforms', price: 250, category: 'videography', image: 'https://picsum.photos/seed/addon-reel/400/300' },
-    { id: 'virtual_tour', name: '3D Virtual Tour (iGUIDE)', description: 'Interactive 3D property tour', price: 249, category: 'virtual_tour', image: 'https://picsum.photos/seed/addon-3dtour/400/300' },
-    { id: 'floor_plan', name: '2D Floor Plan', description: 'Accurate layout for MLS compliance', price: 99, category: 'floor_plans', image: 'https://picsum.photos/seed/addon-floor/400/300' },
+    { id: 'virtual_tour', name: '3D Virtual Tour (iGUIDE) & 2D Floor Plan', description: 'Interactive 3D property tour & accurate 2D floor plan', price: 249, category: 'virtual_tour', image: 'https://picsum.photos/seed/addon-3dtour/400/300' },
+    { id: 'floor_plan', name: '2D Floor Plan', description: 'Standard', price: 99, category: 'floor_plans', image: 'https://picsum.photos/seed/addon-floor/400/300' },
     { id: 'listing_website', name: 'Listing Website', description: 'Custom property showcase website', price: 149, category: 'listing_website', image: 'https://picsum.photos/seed/addon-website/400/300' },
     { id: 'virtual_staging', name: 'Virtual Staging', description: 'Digitally furnished and decorated photos (per photo)', price: 12, category: 'virtual_staging', image: 'https://picsum.photos/seed/addon-staging/400/300' }
 ];
@@ -45,10 +45,10 @@ export interface PropertySizeConfig {
 }
 
 export const PROPERTY_SIZE_CONFIGS: PropertySizeConfig[] = [
-    { id: 'small', label: '0-1500 sqft', multiplier: 1.0, minSqft: 0, maxSqft: 1500 },
-    { id: 'medium', label: '1500-2500 sqft', multiplier: 1.15, minSqft: 1501, maxSqft: 2500 },
-    { id: 'large', label: '2500-5000 sqft', multiplier: 1.30, minSqft: 2501, maxSqft: 5000 },
-    { id: 'xlarge', label: '5000+ sqft', multiplier: 1.50, minSqft: 5001, maxSqft: null },
+    { id: 'small', label: 'Up to 1499', multiplier: 1.0, minSqft: 0, maxSqft: 1499 },
+    { id: 'medium', label: '1500 - 2999', multiplier: 1.15, minSqft: 1500, maxSqft: 2999 },
+    { id: 'large', label: '3000 - 4999', multiplier: 1.30, minSqft: 3000, maxSqft: 4999 },
+    { id: 'xlarge', label: 'Above 5000', multiplier: 1.50, minSqft: 5000, maxSqft: null },
 ];
 
 /**
@@ -73,18 +73,55 @@ export function getAdjustedPackagePrice(basePrice: number, propertySize?: Proper
     else if (typeof propertySize === 'number' || (typeof propertySize === 'string' && !isNaN(Number(propertySize)))) {
         const sqft = typeof propertySize === 'string' ? parseInt(propertySize) : propertySize;
         
-        if (sqft <= 1500) {
+        if (sqft < 1500) {
             multiplier = 1.0;
-        } else if (sqft >= 1501 && sqft <= 2500) {
+        } else if (sqft >= 1500 && sqft < 3000) {
             multiplier = 1.15;
-        } else if (sqft >= 2501 && sqft <= 5000) {
+        } else if (sqft >= 3000 && sqft < 5000) {
             multiplier = 1.30;
-        } else if (sqft >= 5001) {
+        } else if (sqft >= 5000) {
             multiplier = 1.50;
         }
     }
 
     return Math.round(basePrice * multiplier);
+}
+
+/** Preferred partner codes (case-insensitive match). First code: RLPFRANK2026 */
+export const PREFERRED_PARTNER_CODES: string[] = ['RLPFRANK2026'];
+
+/** Discount % by package id when a valid preferred partner code is used. */
+export const PREFERRED_PARTNER_DISCOUNTS: Record<string, number> = {
+    essential: 4,
+    premium: 6,
+    luxury: 8,
+};
+
+export function isValidPreferredPartnerCode(code: string | undefined): boolean {
+    if (!code || typeof code !== 'string') return false;
+    const normalized = code.trim().toUpperCase();
+    return PREFERRED_PARTNER_CODES.some(c => c.toUpperCase() === normalized);
+}
+
+/**
+ * Get package price after property size adjustment and optional preferred partner discount.
+ * When a valid partner code is used, returns the discounted price only (no strike-through).
+ */
+export function getPackagePriceWithPartner(
+    basePrice: number,
+    propertySize?: PropertySize | number | string | null,
+    packageId?: string,
+    preferredPartnerCode?: string | null
+): { price: number; isPartnerDiscount: boolean } {
+    const sizeAdjusted = getAdjustedPackagePrice(basePrice, propertySize);
+    const hasValidCode = isValidPreferredPartnerCode(preferredPartnerCode ?? undefined);
+    const packageIdKey = packageId && typeof packageId === 'string' ? packageId.toLowerCase() : '';
+    const discountPercent = hasValidCode && packageIdKey ? (PREFERRED_PARTNER_DISCOUNTS[packageIdKey] ?? 0) : 0;
+    if (discountPercent <= 0) {
+        return { price: sizeAdjusted, isPartnerDiscount: false };
+    }
+    const price = Math.round(sizeAdjusted * (1 - discountPercent / 100));
+    return { price, isPartnerDiscount: true };
 }
 
 export const getPackages = (): Package[] => {
@@ -93,13 +130,11 @@ export const getPackages = (): Package[] => {
             id: 'essential',
             name: 'Essential',
             description: 'Perfect for regular listings and rental properties.',
-            basePrice: 499,
+            basePrice: 449,
             photoCount: 30,
             services: [
                 '30-40 Professional HDR Photos',
-                'Drone Photos',
-                '2D Floor Plan',
-                'Property Video (60 - 90 seconds) or Social Media Reel(48 hour turnaround)',
+                'Standard Property Video or Social Media Reel(60 - 90 seconds)',
                 'Interior & Exterior Coverage',
                 'Listing Website'
             ],
@@ -119,10 +154,10 @@ export const getPackages = (): Package[] => {
             popular: true,
             services: [
                 '40-50 Professional HDR Photos',
-                'Drone Photography',
+                'Drone Photography & Video',
                 'Twilight Photography',
-                '2D Floor Plan',
-                'Cinematic Property Video (90 - 150 seconds) or Social Media Reel(48 hour turnaround)',
+                '2D Floor Plan - Standard',
+                'Cinematic Property Video or Social Media Reel (60 - 90 seconds)',
                 'Listing Website'
             ],
             images: [
@@ -141,9 +176,11 @@ export const getPackages = (): Package[] => {
             services: [
                 '50 Professional HDR Photos',
                 'Drone Photography & Video',
+                'Twilight Photography',
                 '3D Virtual Tour (iGUIDE)',
-                '2D Floor Plan with Dimensions',
+                '2D Floor Plan - Accurate',
                 'Cinematic Property Video (90 - 150 seconds)',
+                'Premium Agent Walkthrough Video or Social Media Reel (60 - 90 seconds)',
                 'Listing Website'
             ],
             images: [

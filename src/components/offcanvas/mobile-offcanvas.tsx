@@ -87,7 +87,7 @@ export default function MobileOffcanvas({ openOffcanvas, setOpenOffcanvas }: IPr
                                     <Link href="https://www.linkedin.com/company/brightoneInc/" target="_blank" rel="noopener noreferrer" onClick={() => setOpenOffcanvas(false)}><i className="fa-brands fa-linkedin-in"></i></Link>
                                 </li>
                                 <li>
-                                    <Link href="https://youtube.com/@brightoneca" target="_blank" rel="noopener noreferrer" onClick={() => setOpenOffcanvas(false)}><Youtube /></Link>
+                                    <Link href="https://www.youtube.com/@BrightOneInc" target="_blank" rel="noopener noreferrer" onClick={() => setOpenOffcanvas(false)}><Youtube /></Link>
                                 </li>
                             </ul>
                         </div>

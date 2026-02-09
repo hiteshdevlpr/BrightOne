@@ -91,6 +91,7 @@ export const db = {
     timeline?: string;
     serviceTier?: string;
     selectedAddOns?: string[] | null;
+    preferredPartnerCode?: string;
     preferredDate?: string;
     preferredTime?: string;
     totalPrice?: string;
@@ -115,6 +116,7 @@ export const db = {
       timeline,
       serviceTier,
       selectedAddOns,
+      preferredPartnerCode,
       preferredDate,
       preferredTime,
       totalPrice,
@@ -132,9 +134,9 @@ export const db = {
       `INSERT INTO bookings (
         name, email, phone, service_type, property_address, 
         property_type, property_size, budget, timeline, 
-        service_tier, selected_addons, preferred_date, preferred_time, total_price, message,
+        service_tier, selected_addons, preferred_partner_code, preferred_date, preferred_time, total_price, message,
         package_price, addons_price, subtotal, tax_rate, tax_amount, final_total, price_breakdown
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22) RETURNING *`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23) RETURNING *`,
       [
         name,
         email,
@@ -147,6 +149,7 @@ export const db = {
         timeline ?? null,
         serviceTier ?? null,
         selectedAddOns && selectedAddOns.length > 0 ? JSON.stringify(selectedAddOns) : null,
+        preferredPartnerCode ?? null,
         preferredDate ?? null,
         preferredTime ?? null,
         totalPrice ?? null,

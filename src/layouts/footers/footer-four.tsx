@@ -26,7 +26,7 @@ export default function FooterFour() {
                             <Link href="https://www.linkedin.com/company/brightoneInc/" target="_blank" className="text-white-50 hover-white" aria-label="LinkedIn">
                                 <i className="fa-brands fa-linkedin-in"></i>
                             </Link>
-                            <Link href="https://youtube.com/@brightoneca" target="_blank" className="text-white-50 hover-white" aria-label="YouTube">
+                            <Link href="https://www.youtube.com/@BrightOneInc" target="_blank" className="text-white-50 hover-white" aria-label="YouTube">
                                 <Youtube />
                             </Link>
                         </div>

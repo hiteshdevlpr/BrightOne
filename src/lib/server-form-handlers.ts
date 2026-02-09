@@ -23,6 +23,7 @@ export interface BookingFormData {
   timeline?: string;
   serviceTier?: string;
   selectedAddOns?: string[];
+  preferredPartnerCode?: string;
   message?: string;
   preferredDate?: string;
   preferredTime?: string;
@@ -321,6 +322,7 @@ export async function handleBookingSubmissionServer(formData: BookingFormData): 
       timeline: formData.timeline || undefined,
       serviceTier: formData.serviceTier || undefined,
       selectedAddOns: formData.selectedAddOns || [],
+      preferredPartnerCode: formData.preferredPartnerCode?.trim() || undefined,
       preferredDate: formData.preferredDate || undefined,
       preferredTime: formData.preferredTime || undefined,
       totalPrice: formData.totalPrice || undefined,

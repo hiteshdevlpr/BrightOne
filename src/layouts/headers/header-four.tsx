@@ -45,13 +45,14 @@ export default function HeaderFour() {
                     <div className="container container-1740">
                         <div className="row align-items-center">
                             <div className="col-xl-3 col-lg-6 col-md-6 col-6">
-                                <div className="tp-header-logo tp-header-3-logo">
+                                <div className="tp-header-logo tp-header-3-logo tp-header-logo-with-tagline">
                                     <Link className="logo-1" href="/">
-                                        <Image src="/logo-wo-shadow.png" alt="logo" width={140} height={38} style={{ height: 38, width: 'auto' }} />
+                                        <Image src="/logo-wo-shadow.png" alt="BrightOne Creative" width={200} height={52} style={{ height: 52, width: 'auto' }} />
                                     </Link>
                                     <Link className="logo-2" href="/">
-                                        <Image src={logo_2} alt="logo" width={140} height={38} style={{ height: 38, width: 'auto' }} />
+                                        <Image src={logo_2} alt="BrightOne Creative" width={200} height={52} style={{ height: 52, width: 'auto' }} />
                                     </Link>
+                                    <span className="tp-header-tagline">Real Estate Media & Personal Branding</span>
                                 </div>
                             </div>
                             <div className="col-xl-6 col-lg-6 d-none d-xl-block">
@@ -79,7 +80,7 @@ export default function HeaderFour() {
                                         <Link href="https://www.linkedin.com/company/brightoneInc/" target="_blank">
                                             <i className="fa-brands fa-linkedin-in"></i>
                                         </Link>
-                                        <Link href="https://youtube.com/@brightoneca" target="_blank">
+                                        <Link href="https://www.youtube.com/@BrightOneInc" target="_blank">
                                             <i className="fa-brands fa-youtube"></i>
                                         </Link>
                                     </div>

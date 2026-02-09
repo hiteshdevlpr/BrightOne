@@ -61,6 +61,7 @@ export function sanitizeBookingInput(body: Record<string, unknown>): {
   preferredTime?: string;
   packageType?: string;
   totalPrice?: string;
+  preferredPartnerCode?: string;
 } {
   const arr = body.selectedAddOns;
   const addOns = Array.isArray(arr)
@@ -83,6 +84,7 @@ export function sanitizeBookingInput(body: Record<string, unknown>): {
     preferredTime: body.preferredTime != null ? sanitizeString(String(body.preferredTime), 20) : undefined,
     packageType: body.packageType != null ? sanitizeString(String(body.packageType), 100) : undefined,
     totalPrice: body.totalPrice != null ? sanitizeString(String(body.totalPrice), 20) : undefined,
+    preferredPartnerCode: body.preferredPartnerCode != null ? sanitizeString(String(body.preferredPartnerCode), 50) : undefined,
   };
 }
 

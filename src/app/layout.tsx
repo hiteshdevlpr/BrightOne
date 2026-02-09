@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Geist, Geist_Mono } from "next/font/google";
 import "./globals.scss";
-import HeaderFour from "@/layouts/headers/header-four";
+import ConditionalHeader from "@/components/layout/ConditionalHeader";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -41,7 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" data-theme="dark">
       <body className={`${inter.variable} ${geistSans.variable} ${geistMono.variable}`}>
-        <HeaderFour />
+        <ConditionalHeader />
         {children}
       </body>
     </html>

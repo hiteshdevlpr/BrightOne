@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { getPackages, ADD_ONS, getAdjustedPackagePrice } from '@/data/booking-data';
+import { useSearchParams } from 'next/navigation';
+import { getPackages, ADD_ONS, getPackagePriceWithPartner, isValidPreferredPartnerCode } from '@/data/booking-data';
 import { handleBookingSubmission, type BookingFormData } from './booking-form-handler';
 import { getRecaptchaToken } from '@/lib/recaptcha-client';
 import { HONEYPOT_FIELD } from '@/lib/validation';
@@ -113,6 +114,7 @@ function PkgCarousel({ images, packageId }: { images: string[]; packageId: strin
 }
 
 export default function BookingArea() {
+    const searchParams = useSearchParams();
     const [currentStep, setCurrentStep] = useState(1);
     const [placesReady, setPlacesReady] = useState(false);
     const [enterManually, setEnterManually] = useState(false);
@@ -129,12 +131,14 @@ export default function BookingArea() {
         propertySize: '',
         selectedPackage: '',
         selectedAddOns: [] as string[],
+        preferredPartnerCode: '',
         preferredDate: '',
         preferredTime: '',
         message: '',
         [HONEYPOT_FIELD]: '',
     });
 
+    const [appliedPartnerCode, setAppliedPartnerCode] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [formErrors, setFormErrors] = useState<string[]>([]);
@@ -145,6 +149,14 @@ export default function BookingArea() {
     useEffect(() => {
         trackBookingStart();
     }, []);
+
+    useEffect(() => {
+        const partnerCode = searchParams.get('partnerCode');
+        if (partnerCode && isValidPreferredPartnerCode(partnerCode)) {
+            setAppliedPartnerCode(partnerCode.trim());
+            setFormData(prev => ({ ...prev, preferredPartnerCode: partnerCode.trim() }));
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (!apiKey || typeof window === 'undefined') return;
@@ -177,15 +189,40 @@ export default function BookingArea() {
         };
     }, [currentStep, placesReady, enterManually]);
 
-    // Helper function to calculate adjusted package price based on property size
-    // Uses centralized pricing function from booking-data.ts
-    const calculateAdjustedPrice = (basePrice: number): number => {
-        return getAdjustedPackagePrice(basePrice, formData.propertySize);
+    // Package price after size + optional preferred partner discount (only when code applied via Apply button)
+    const getDisplayPackagePrice = (basePrice: number, packageId: string) => {
+        const { price } = getPackagePriceWithPartner(
+            basePrice,
+            formData.propertySize,
+            packageId,
+            appliedPartnerCode || null
+        );
+        return price;
+    };
+
+    const handleApplyPartnerCode = () => {
+        const code = formData.preferredPartnerCode?.trim() || '';
+        if (!code) {
+            setAppliedPartnerCode('');
+            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: '' }));
+            return;
+        }
+        if (isValidPreferredPartnerCode(code)) {
+            setAppliedPartnerCode(code);
+            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: '' }));
+        } else {
+            setAppliedPartnerCode('');
+            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: 'Invalid partner code' }));
+        }
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        if (name === 'preferredPartnerCode') {
+            setAppliedPartnerCode('');
+            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: '' }));
+        }
     };
 
     const handlePackageSelect = (packageId: string) => {
@@ -223,7 +260,7 @@ export default function BookingArea() {
     const calculateTotal = () => {
         const pkg = getPackages().find(p => p.id === formData.selectedPackage);
         const basePrice = pkg?.basePrice || 0;
-        const packagePrice = calculateAdjustedPrice(basePrice);
+        const packagePrice = pkg ? getDisplayPackagePrice(basePrice, pkg.id) : 0;
 
         const addOnsPrice = formData.selectedAddOns.reduce((total, id) => {
             const addOn = ADD_ONS.find(a => a.id === id);
@@ -282,6 +319,7 @@ export default function BookingArea() {
             ...formData,
             serviceType: 'Real Estate Media',
             serviceTier: formData.selectedPackage,
+            preferredPartnerCode: appliedPartnerCode || undefined,
             totalPrice: calculateTotal().toString(),
             recaptchaToken,
             website_url: websiteUrl,
@@ -462,7 +500,7 @@ export default function BookingArea() {
                                                                         {item.popular && <span className="pkg-popular-tag">Popular</span>}
                                                                     </div>
                                                                     <div className="pkg-card-price">
-                                                                        <span className="pkg-price-amount">${getAdjustedPackagePrice(item.basePrice, formData.propertySize)}</span>
+                                                                        <span className="pkg-price-amount">${getDisplayPackagePrice(item.basePrice, item.id)}</span>
                                                                     </div>
                                                                 </div>
                                                                 <div className="pkg-card-features">
@@ -548,6 +586,56 @@ export default function BookingArea() {
                                                         <span className="sidebar-sqft">{formData.propertySize} sq ft</span>
                                                     </div>
 
+                                                    {/* Preferred Partner Code */}
+                                                    <div className="sidebar-partner-code mb-20">
+                                                        <label className="sidebar-label d-block mb-10">Preferred partner code (optional)</label>
+                                                        {appliedPartnerCode ? (
+                                                            <div className="sidebar-partner-chip">
+                                                                <span className="sidebar-partner-chip-text">{appliedPartnerCode}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    className="sidebar-partner-chip-remove"
+                                                                    onClick={() => {
+                                                                        setAppliedPartnerCode('');
+                                                                        setFormData(prev => ({ ...prev, preferredPartnerCode: '' }));
+                                                                    }}
+                                                                    aria-label="Remove partner code"
+                                                                >
+                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <div className="sidebar-partner-row d-flex gap-2 align-items-flex-start">
+                                                                    <input
+                                                                        type="text"
+                                                                        name="preferredPartnerCode"
+                                                                        className="sidebar-partner-input"
+                                                                        placeholder="Enter code"
+                                                                        value={formData.preferredPartnerCode}
+                                                                        onChange={handleInputChange}
+                                                                        autoComplete="off"
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        className="sidebar-partner-apply-btn"
+                                                                        onClick={handleApplyPartnerCode}
+                                                                    >
+                                                                        Apply
+                                                                    </button>
+                                                                </div>
+                                                                {fieldErrors.preferredPartnerCode && (
+                                                                    <div className="sidebar-partner-error mt-2">
+                                                                        <ErrorMsg msg={fieldErrors.preferredPartnerCode} />
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </div>
+
                                                     {/* Price Summary */}
                                                     <div className="sidebar-pricing">
                                                         <h6 className="sidebar-label">Estimate</h6>
@@ -557,7 +645,7 @@ export default function BookingArea() {
                                                                 <div className="sidebar-line-item sidebar-package-item">
                                                                     <span>{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
                                                                     <div className="d-flex align-items-center gap-2">
-                                                                        <span>${packages.find(p => p.id === formData.selectedPackage) ? getAdjustedPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.propertySize) : 0}</span>
+                                                                        <span>${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
                                                                         <button
                                                                             type="button"
                                                                             className="sidebar-remove-btn"
@@ -696,7 +784,7 @@ export default function BookingArea() {
                                                         </div>
                                                         <div className="d-flex justify-content-between mb-15">
                                                             <span className="text-white-50">Base Price:</span>
-                                                            <span className="text-white">${packages.find(p => p.id === formData.selectedPackage) ? getAdjustedPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.propertySize) : 0}</span>
+                                                            <span className="text-white">${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
                                                         </div>
 
                                                         {formData.selectedAddOns.length > 0 && (
@@ -834,6 +922,32 @@ export default function BookingArea() {
                 .sidebar-address-text { color: #fff; font-size: 16px; font-weight: 500; margin-bottom: 4px; line-height: 1.5; }
                 .sidebar-address-unit { color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 4px; }
                 .sidebar-sqft { color: rgba(255,255,255,0.4); font-size: 13px; }
+                .sidebar-partner-row { flex-wrap: wrap; }
+                .sidebar-partner-code .sidebar-partner-input {
+                    flex: 1; min-width: 120px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2);
+                    color: #fff; padding: 10px 14px; border-radius: 6px; font-size: 14px;
+                }
+                .sidebar-partner-code .sidebar-partner-input::placeholder { color: rgba(255,255,255,0.4); }
+                .sidebar-partner-apply-btn {
+                    padding: 10px 18px; border-radius: 6px; font-size: 14px; font-weight: 500;
+                    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+                    color: #fff; cursor: pointer; white-space: nowrap;
+                }
+                .sidebar-partner-apply-btn:hover { background: rgba(255,255,255,0.25); }
+                .sidebar-partner-error { margin-top: 8px; }
+                .sidebar-partner-chip {
+                    display: inline-flex; align-items: center; gap: 8px;
+                    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+                    border-radius: 9999px; padding: 8px 6px 8px 16px;
+                }
+                .sidebar-partner-chip-text { color: #fff; font-size: 14px; font-weight: 500; }
+                .sidebar-partner-chip-remove {
+                    display: inline-flex; align-items: center; justify-content: center;
+                    width: 22px; height: 22px; border-radius: 50%;
+                    background: rgba(255,255,255,0.2); border: none; color: #fff;
+                    cursor: pointer; padding: 0;
+                }
+                .sidebar-partner-chip-remove:hover { background: rgba(255,255,255,0.35); }
                 .sidebar-pricing { border: 1px solid rgba(255,255,255,0.12); padding: 24px; }
                 .sidebar-line-item { display: flex; justify-content: space-between; align-items: baseline; color: #fff; font-size: 15px; margin-bottom: 10px; }
                 .sidebar-addon-line { color: rgba(255,255,255,0.6); font-size: 13px; margin-bottom: 6px; }

@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
       timeline: sanitized.timeline,
       serviceTier: sanitized.serviceTier,
       selectedAddOns: sanitized.selectedAddOns,
+      preferredPartnerCode: sanitized.preferredPartnerCode,
       message: sanitized.message,
       preferredDate: sanitized.preferredDate,
       preferredTime: sanitized.preferredTime,
