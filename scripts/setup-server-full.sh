@@ -40,13 +40,16 @@ limit_req_zone $binary_remote_addr zone=general:10m rate=10r/s;
 limit_req_zone $binary_remote_addr zone=api:10m rate=2r/s;
 RATELIMIT
 
+# Blue-green upstream: deploy script switches this to 127.0.0.1:3000 or 127.0.0.1:3001
+echo 'upstream app_backend { server 127.0.0.1:3000; }' > /etc/nginx/conf.d/brightone-app-upstream.conf
+
 cat > /etc/nginx/sites-available/brightone << NGINX_HTTP
 server {
     listen 80;
     server_name $SERVER_NAMES;
     limit_req zone=general burst=20 nodelay;
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://app_backend;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -57,12 +60,12 @@ server {
         proxy_cache_bypass \$http_upgrade;
     }
     location /_next/static {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://app_backend;
         add_header Cache-Control "public, max-age=31536000, immutable";
     }
     location /api/ {
         limit_req zone=api burst=5 nodelay;
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://app_backend;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -140,6 +143,14 @@ else
   echo ""
   echo "=== Skipping SSH hardening (SKIP_SSH_HARDEN=1) ==="
 fi
+
+# --- Sudoers for blue-green: allow deploy user to switch Nginx upstream ---
+echo ""
+echo "=== Allowing deploy user to switch Nginx upstream (blue-green) ==="
+SCRIPT_PATH="/home/brightone/website/scripts/nginx-switch-upstream.sh"
+mkdir -p /etc/sudoers.d
+echo "brightone ALL=(ALL) NOPASSWD: ${SCRIPT_PATH}" > /etc/sudoers.d/brightone-nginx
+chmod 440 /etc/sudoers.d/brightone-nginx
 
 echo ""
 echo "=== Setup summary ==="

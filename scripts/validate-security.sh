@@ -9,7 +9,8 @@
 set -e
 
 FAILED=0
-APP_URL="${APP_URL:-http://127.0.0.1:3000}"
+# Blue-green: try active slot (3000 or 3001); set below after detecting which is up
+APP_URL="${APP_URL:-}"
 
 ok()  { echo "  ✅ $1"; }
 fail() { echo "  ❌ $1"; FAILED=1; }
@@ -17,6 +18,18 @@ warn() { echo "  ⚠️  $1"; }
 
 echo "=============================================="
 echo " BrightOne security validation"
+echo "=============================================="
+
+# Detect active app (blue-green: one of 3000 or 3001)
+if [ -z "$APP_URL" ]; then
+  if curl -sf --connect-timeout 2 http://127.0.0.1:3000/api/health >/dev/null 2>&1; then
+    APP_URL="http://127.0.0.1:3000"
+  elif curl -sf --connect-timeout 2 http://127.0.0.1:3001/api/health >/dev/null 2>&1; then
+    APP_URL="http://127.0.0.1:3001"
+  else
+    APP_URL="http://127.0.0.1:3000"
+  fi
+fi
 echo " APP_URL=$APP_URL"
 echo "=============================================="
 
@@ -24,6 +37,12 @@ echo "=============================================="
 echo ""
 echo "1. Docker app container"
 APP_CONTAINER=$(docker ps --filter "ancestor=website-app:latest" --format '{{.Names}}' 2>/dev/null | head -1)
+if [ -z "$APP_CONTAINER" ]; then
+  APP_CONTAINER=$(docker ps --filter "name=website-app-blue" --format '{{.Names}}' 2>/dev/null | head -1)
+fi
+if [ -z "$APP_CONTAINER" ]; then
+  APP_CONTAINER=$(docker ps --filter "name=website-app-green" --format '{{.Names}}' 2>/dev/null | head -1)
+fi
 if [ -z "$APP_CONTAINER" ]; then
   APP_CONTAINER=$(docker ps -a --filter "name=app" --format '{{.Names}}' 2>/dev/null | head -1)
 fi
@@ -38,7 +57,7 @@ else
 
   echo "$SECOPTS" | grep -q "no-new-privileges" && ok "no-new-privileges:true" || fail "no-new-privileges missing"
   echo "$TMPFS" | grep -q "/tmp" && ok "tmpfs /tmp (noexec,nosuid)" || fail "tmpfs /tmp missing"
-  (echo "$BINDS" | grep -q "127.0.0.1" || docker port "$APP_CONTAINER" 2>/dev/null | grep -q "127.0.0.1") && ok "port 3000 bound to 127.0.0.1 only" || warn "port binding (expected 127.0.0.1:3000)"
+  (echo "$BINDS" | grep -q "127.0.0.1" || docker port "$APP_CONTAINER" 2>/dev/null | grep -q "127.0.0.1") && ok "app port bound to 127.0.0.1 only (3000 or 3001)" || warn "port binding (expected 127.0.0.1)"
   ([ -z "$CAPS" ] || echo "$CAPS" | grep -q "ALL") && ok "cap_drop: ALL" || warn "cap_drop (expected ALL)"
   [ -n "$PIDS" ] && [ "$PIDS" -gt 0 ] 2>/dev/null && ok "pids_limit: $PIDS" || warn "pids_limit not set"
 fi
@@ -144,17 +163,21 @@ else
   warn "SSH hardening drop-in not present (optional)"
 fi
 
-# --- 9. Port 3000 not public ---
+# --- 9. App ports (3000/3001) not public ---
 echo ""
-echo "9. App port 3000 not public"
+echo "9. App ports (3000/3001) not public"
 if command -v ss &>/dev/null; then
   LISTEN_3000=$(ss -tlnp 2>/dev/null | grep ':3000 ' || true)
-  if [ -z "$LISTEN_3000" ]; then
-    warn "Nothing listening on 3000 (app may be down)"
-  elif echo "$LISTEN_3000" | grep -q "127.0.0.1:3000"; then
-    ok "3000 bound to 127.0.0.1 only (not public)"
+  LISTEN_3001=$(ss -tlnp 2>/dev/null | grep ':3001 ' || true)
+  BAD=""
+  if [ -n "$LISTEN_3000" ] && ! echo "$LISTEN_3000" | grep -q "127.0.0.1:3000"; then BAD="3000"; fi
+  if [ -n "$LISTEN_3001" ] && ! echo "$LISTEN_3001" | grep -q "127.0.0.1:3001"; then BAD="${BAD} 3001"; fi
+  if [ -n "$BAD" ]; then
+    fail "Port(s) $BAD may be public (expected 127.0.0.1 only)"
+  elif [ -z "$LISTEN_3000" ] && [ -z "$LISTEN_3001" ]; then
+    warn "Nothing listening on 3000 or 3001 (app may be down)"
   else
-    fail "3000 may be public (not only 127.0.0.1)"
+    ok "App port(s) bound to 127.0.0.1 only (not public)"
   fi
 fi
 

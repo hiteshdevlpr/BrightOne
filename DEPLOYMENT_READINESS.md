@@ -17,10 +17,10 @@ There is no branch named **origin/old-database**. Comparison is with **origin/ol
 | **.github/workflows/main.yml** | Deploy on push to main, audit, build image, scp, server setup, .env, load images, compose up, verify, validate security | Same structure; reCAPTCHA env vars added | Ready |
 | **Dockerfile** | Node 18, standalone, healthcheck | Node 20, standalone, healthcheck, `database/` copied | Ready |
 | **.dockerignore** | Yes | Yes (includes *.pem, images.tar) | Ready |
-| **docker-compose.prod.from-image.yml** | app (127.0.0.1:3000, security_opt, cap_drop, tmpfs), db (init.sql at root), redis | Same; init at `./database/init.sql`; reCAPTCHA env vars | Ready |
+| **docker-compose.prod.from-image.yml** | app (127.0.0.1:3000, …) | app_blue (127.0.0.1:3000), app_green (127.0.0.1:3001); init at `./database/init.sql`; reCAPTCHA env vars | Ready |
 | **next.config.ts** | output: standalone, serverExternalPackages: ['pg'] | Same + security headers | Ready |
 | **scripts/setup-server-full.sh** | Nginx, rate limit, SSL, Fail2ban, UFW, SSH hardening | Present | Ready |
-| **scripts/validate-security.sh** | Docker, Nginx, Fail2ban, UFW, API checks, .env, port 3000 | Present | Ready |
+| **scripts/validate-security.sh** | Docker, Nginx, Fail2ban, UFW, API checks, .env, port 3000 | Present; supports blue-green (3000/3001, app_blue/app_green) | Ready |
 | **Database init** | `./init.sql` (repo root) | `./database/init.sql` (compose and copy both use `database/`) | Ready |
 | **Migrate API** | Reads `migrate-complete.sql` at cwd | Reads `database/migrate-complete.sql`; Dockerfile copies `database/` into image | Ready |
 | **API routes** | /api/health, /api/migrate, /api/debug-env, /api/admin/* | Same | Ready |
@@ -35,10 +35,18 @@ There is no branch named **origin/old-database**. Comparison is with **origin/ol
 3. **Build and save images** → `docker build` (with Maps + reCAPTCHA site key), pull postgres/redis, `docker save` → `images.tar`
 4. **Copy files to server** → SCP whole repo (including `database/`, `scripts/`, `docker-compose.prod.from-image.yml`) to `/home/brightone/website`
 5. **Server setup** → SSH as root, run `scripts/setup-server-full.sh` (Nginx, SSL, Fail2ban, UFW)
-6. **Setup environment** → Write `.env` from GitHub secrets, `docker-compose down`, `docker system prune`
-7. **Build and start** → `docker load -i images.tar`, `docker-compose -f docker-compose.prod.from-image.yml up -d`, wait 60s
-8. **Verify** → Health check `/api/health` (up to 6 attempts)
+6. **Setup environment** → Write `.env` from GitHub secrets (no `compose down` / `prune` so db/redis stay up)
+7. **Blue-green deploy** → `docker load -i images.tar`, then `./scripts/bluegreen-deploy.sh`: start inactive slot (app_blue or app_green), wait for health, switch Nginx upstream via `scripts/nginx-switch-upstream.sh`, stop other slot
+8. **Verify** → Health check on active app (127.0.0.1:3000 or 3001) up to 6 attempts
 9. **Validate security** → Run `scripts/validate-security.sh`
+
+### Blue-green app swap (minimal downtime)
+
+- **Slots**: `app_blue` (port 3000) and `app_green` (port 3001). Only one runs at a time; the other is started for the next deploy, then traffic is switched and the old slot is stopped.
+- **Nginx**: The app is reached via upstream `app_backend`. The file `/etc/nginx/conf.d/brightone-app-upstream.conf` defines `upstream app_backend { server 127.0.0.1:<port>; }`. `scripts/setup-server-full.sh` creates this file and configures the brightone site to use `proxy_pass http://app_backend`.
+- **Switch script**: `scripts/nginx-switch-upstream.sh <3000|3001>` writes the upstream file and runs `nginx -t` and `systemctl reload nginx`. The deploy user can run it via sudo (sudoers drop-in from setup-server-full.sh).
+- **Deploy script**: `scripts/bluegreen-deploy.sh` (run from repo root) picks the inactive slot, starts it, waits for health, runs the Nginx switch, then stops the other slot. Assumes images are already loaded (CI does that).
+- **First deploy / existing server**: Re-run `scripts/setup-server-full.sh` once so the upstream file and sudoers are in place; then the first blue-green deploy will start blue and switch Nginx to 3000.
 
 ---
 
