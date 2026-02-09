@@ -1,6 +1,6 @@
 'use client';
 
-import React from "react";
+import React, { Suspense } from "react";
 import BookingArea from "@/components/booking/booking-area";
 import Wrapper from "@/layouts/wrapper";
 import FooterFour from "@/layouts/footers/footer-four";
@@ -47,7 +47,9 @@ const RealEstateBookingClient = () => {
                             </div>
                         </div>
 
-                        <BookingArea />
+                        <Suspense fallback={<div className="cn-contactform-area pt-100 pb-100 text-center"><p className="text-white-50">Loading...</p></div>}>
+                            <BookingArea />
+                        </Suspense>
                     </main>
 
                     <FooterFour />

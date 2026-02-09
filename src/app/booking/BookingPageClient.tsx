@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from "react";
+import React, { Suspense, useRef } from "react";
 import Link from "next/link";
 import BookingArea from "@/components/booking/booking-area";
 import Wrapper from "@/layouts/wrapper";
@@ -68,7 +68,9 @@ const BookPageClient = () => {
                         </div>
 
                         <div ref={formSectionRef}>
-                            <BookingArea />
+                            <Suspense fallback={<div className="cn-contactform-area pt-100 pb-100 text-center"><p className="text-white-50">Loading...</p></div>}>
+                                <BookingArea />
+                            </Suspense>
                         </div>
                     </main>
 
