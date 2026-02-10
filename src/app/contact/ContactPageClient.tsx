@@ -10,7 +10,7 @@ import { ScrollSmoother, ScrollTrigger, SplitText } from '@/plugins';
 import { charAnimation } from '@/utils/title-animation';
 import { handleContactSubmission } from '@/components/contact/contact-form-handler';
 import { getRecaptchaToken } from '@/lib/recaptcha-client';
-import { HONEYPOT_FIELD } from '@/lib/validation';
+import { HONEYPOT_FIELD, validateContactForm } from '@/lib/validation';
 import {
     trackFormFieldFocus,
     trackFormFieldBlur,
@@ -156,6 +156,9 @@ export default function ContactPageClient() {
                 } else if (value.trim().length < 2) {
                     newFieldErrors.name = 'Name must be at least 2 characters';
                     trackFormValidationError('contact', 'name', 'min_length');
+                } else if (value.length > 200) {
+                    newFieldErrors.name = 'Name is too long.';
+                    trackFormValidationError('contact', 'name', 'max_length');
                 } else {
                     delete newFieldErrors.name;
                 }
@@ -194,6 +197,9 @@ export default function ContactPageClient() {
                 } else if (value.trim().length < 10) {
                     newFieldErrors.message = 'Message must be at least 10 characters';
                     trackFormValidationError('contact', 'message', 'min_length');
+                } else if (value.length > 2000) {
+                    newFieldErrors.message = 'Message is too long. Maximum 2000 characters allowed.';
+                    trackFormValidationError('contact', 'message', 'max_length');
                 } else {
                     delete newFieldErrors.message;
                 }
@@ -206,6 +212,27 @@ export default function ContactPageClient() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         trackFormSubmission('contact', true);
+
+        // Run same validation as API (validateContactForm) and show field-level errors
+        const validationErrors = validateContactForm({
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            subject: formData.subject,
+            message: formData.message,
+        });
+        if (validationErrors.length > 0) {
+            setErrors(validationErrors.map((err) => err.message));
+            const byField = validationErrors.reduce<{ [key: string]: string }>((acc, err) => {
+                acc[err.field] = err.message;
+                return acc;
+            }, {});
+            setFieldErrors(byField);
+            trackFormSubmission('contact', false);
+            return;
+        }
+        setErrors([]);
+        setFieldErrors({});
 
         const recaptchaToken = await getRecaptchaToken('contact');
         const payload = {

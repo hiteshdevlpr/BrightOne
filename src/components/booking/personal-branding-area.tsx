@@ -6,7 +6,7 @@ import { getPersonalPackages, PERSONAL_ADD_ONS, PersonalPackage, PersonalAddOn }
 import { getPackagePriceWithPartner, isValidPreferredPartnerCode } from '@/data/booking-data';
 import { handleBookingSubmission } from './booking-form-handler';
 import { getRecaptchaToken } from '@/lib/recaptcha-client';
-import { HONEYPOT_FIELD } from '@/lib/validation';
+import { HONEYPOT_FIELD, validateBookingForm } from '@/lib/validation';
 import {
     trackBookingStart,
     trackBookingStepChange,
@@ -129,6 +129,8 @@ export default function PersonalBrandingArea() {
         if (name === 'preferredPartnerCode') {
             setAppliedPartnerCode('');
             setFieldErrors(prev => ({ ...prev, preferredPartnerCode: '' }));
+        } else if (fieldErrors[name]) {
+            setFieldErrors(prev => ({ ...prev, [name]: '' }));
         }
     };
 
@@ -190,6 +192,27 @@ export default function PersonalBrandingArea() {
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const payloadForValidation = {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            serviceType: 'Personal Branding',
+            propertyAddress: formData.sessionLocation || '',
+            serviceTier: formData.selectedPackage,
+        };
+        const validationErrors = validateBookingForm(payloadForValidation);
+        if (validationErrors.length > 0) {
+            setFormErrors(validationErrors.map((err) => err.message));
+            const byField = validationErrors.reduce<{ [key: string]: string }>((acc, err) => {
+                acc[err.field] = err.message;
+                return acc;
+            }, {});
+            setFieldErrors((prev) => ({ ...prev, ...byField }));
+            return;
+        }
+        setFormErrors([]);
+        setFieldErrors({});
+
         let recaptchaToken = '';
         try {
             recaptchaToken = await getRecaptchaToken('booking');
@@ -490,18 +513,21 @@ export default function PersonalBrandingArea() {
                                                         <div className="cn-contactform-input mb-25">
                                                             <label className="text-white">Full Name *</label>
                                                             <input name="name" type="text" placeholder="John Doe" value={formData.name} onChange={handleInputChange} required />
+                                                            {fieldErrors.name && <ErrorMsg msg={fieldErrors.name} />}
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
                                                         <div className="cn-contactform-input mb-25">
                                                             <label className="text-white">Email Address *</label>
                                                             <input name="email" type="email" placeholder="john@example.com" value={formData.email} onChange={handleInputChange} required />
+                                                            {fieldErrors.email && <ErrorMsg msg={fieldErrors.email} />}
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
                                                         <div className="cn-contactform-input mb-25">
                                                             <label className="text-white">Phone Number</label>
                                                             <input name="phone" type="tel" placeholder="(123) 456-7890" value={formData.phone} onChange={handleInputChange} />
+                                                            {fieldErrors.phone && <ErrorMsg msg={fieldErrors.phone} />}
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">

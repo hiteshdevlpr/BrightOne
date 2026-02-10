@@ -7,7 +7,7 @@ import { getPackages, getPackagePriceWithPartner, isValidPreferredPartnerCode, A
 import { getPersonalPackages } from "@/data/personal-branding-data";
 import { handleBookingSubmission } from "@/components/booking/booking-form-handler";
 import { getRecaptchaToken } from "@/lib/recaptcha-client";
-import { HONEYPOT_FIELD } from "@/lib/validation";
+import { HONEYPOT_FIELD, validateBookingForm } from "@/lib/validation";
 
 type ServiceCategory = 'personal' | 'listing' | null;
 
@@ -116,6 +116,23 @@ export default function BookClient() {
         const subtotal = (pkgPrice ?? 0) + addonsTotal;
         const totalPrice = (subtotal * 1.13).toFixed(2);
 
+        const propertyAddress = selectedCategory === 'personal' ? (formData.message ? 'See message' : 'To be confirmed') : 'Address to be provided';
+        const serviceType = selectedCategory === 'personal' ? 'Personal Branding' : 'Real Estate Media';
+        const payloadForValidation = {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            serviceType,
+            propertyAddress,
+            serviceTier: selectedPackageId,
+        };
+        const validationErrors = validateBookingForm(payloadForValidation);
+        if (validationErrors.length > 0) {
+            setFormErrors(validationErrors.map((err) => err.message));
+            return;
+        }
+        setFormErrors([]);
+
         let recaptchaToken = '';
         try {
             recaptchaToken = await getRecaptchaToken('booking');
@@ -131,8 +148,8 @@ export default function BookClient() {
             name: formData.name,
             email: formData.email,
             phone: formData.phone,
-            serviceType: selectedCategory === 'personal' ? 'Personal Branding' : 'Real Estate Media',
-            propertyAddress: selectedCategory === 'personal' ? (formData.message ? 'See message' : 'To be confirmed') : 'Address to be provided',
+            serviceType,
+            propertyAddress,
             propertySize: selectedCategory === 'listing' ? appliedPropertySize : undefined,
             serviceTier: selectedPackageId,
             selectedAddOns,

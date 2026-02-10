@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { getPackages, ADD_ONS, getPackagePriceWithPartner, isValidPreferredPartnerCode } from '@/data/booking-data';
 import { handleBookingSubmission, type BookingFormData } from './booking-form-handler';
 import { getRecaptchaToken } from '@/lib/recaptcha-client';
-import { HONEYPOT_FIELD } from '@/lib/validation';
+import { HONEYPOT_FIELD, validateBookingForm } from '@/lib/validation';
 import {
     trackBookingStart,
     trackBookingStepChange,
@@ -222,6 +222,8 @@ export default function BookingArea() {
         if (name === 'preferredPartnerCode') {
             setAppliedPartnerCode('');
             setFieldErrors(prev => ({ ...prev, preferredPartnerCode: '' }));
+        } else if (fieldErrors[name]) {
+            setFieldErrors(prev => ({ ...prev, [name]: '' }));
         }
     };
 
@@ -305,6 +307,27 @@ export default function BookingArea() {
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const payloadForValidation = {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            serviceType: 'Real Estate Media',
+            propertyAddress: formData.propertyAddress,
+            serviceTier: formData.selectedPackage,
+        };
+        const validationErrors = validateBookingForm(payloadForValidation);
+        if (validationErrors.length > 0) {
+            setFormErrors(validationErrors.map((err) => err.message));
+            const byField = validationErrors.reduce<{ [key: string]: string }>((acc, err) => {
+                acc[err.field] = err.message;
+                return acc;
+            }, {});
+            setFieldErrors((prev) => ({ ...prev, ...byField }));
+            return;
+        }
+        setFormErrors([]);
+        setFieldErrors({});
+
         let recaptchaToken = '';
         try {
             recaptchaToken = await getRecaptchaToken('booking');
@@ -713,6 +736,7 @@ export default function BookingArea() {
                                                                 onChange={handleInputChange}
                                                                 required
                                                             />
+                                                            {fieldErrors.name && <ErrorMsg msg={fieldErrors.name} />}
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
@@ -726,6 +750,7 @@ export default function BookingArea() {
                                                                 onChange={handleInputChange}
                                                                 required
                                                             />
+                                                            {fieldErrors.email && <ErrorMsg msg={fieldErrors.email} />}
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
@@ -738,6 +763,7 @@ export default function BookingArea() {
                                                                 value={formData.phone}
                                                                 onChange={handleInputChange}
                                                             />
+                                                            {fieldErrors.phone && <ErrorMsg msg={fieldErrors.phone} />}
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
