@@ -43,8 +43,8 @@ export async function testConnection() {
   }
 }
 
-// Generic query function
-export async function query(text: string, params?: (string | number | boolean | null)[]) {
+// Generic query function (params can include arrays for PostgreSQL array columns)
+export async function query(text: string, params?: (string | number | boolean | null | string[])[]) {
   const start = Date.now();
   try {
     const res = await pool.query(text, params);
