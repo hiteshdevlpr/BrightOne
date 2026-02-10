@@ -23,7 +23,6 @@ export const ADD_ONS: AddOn[] = [
     { id: 'drone_photos', name: 'Drone Photos (Exterior Aerials)', description: 'Aerial property shots from unique perspectives', price: 199, category: 'photography', image: 'https://picsum.photos/seed/addon-drone/400/300', comments: 'This price is for properties 1 acre or less, contact us for larger properties' },
     { id: 'drone_video', name: 'Drone Video', description: 'Aerial property video from unique perspectives', price: 199, category: 'videography', image: 'https://picsum.photos/seed/addon-dronevid/400/300', comments: 'This price is for properties 1 acre or less, contact us for larger properties' },
     { id: 'twilight_photos', name: 'Twilight Photos', description: 'Dramatic evening shots with ambient lighting', price: 149, category: 'photography', image: 'https://picsum.photos/seed/addon-twilight/400/300' },
-    { id: 'extra_photos', name: 'Extra Photos (per 10 images)', description: 'Additional photos beyond package limit', price: 75, category: 'photography', image: 'https://picsum.photos/seed/addon-extra/400/300' },
     { id: 'cinematic_video', name: 'Cinematic Video Tour', description: 'Professional property video tour (1-2 min)', price: 249, category: 'videography', image: 'https://picsum.photos/seed/addon-cinematic/400/300' },
     { id: 'cinematic_video_extended', name: 'Cinematic Video Tour (Extended)', description: 'Professional property video tour (2-3 min)', price: 349, category: 'videography', image: 'https://picsum.photos/seed/addon-cinext/400/300' },
     { id: 'agent_walkthrough', name: 'Agent Walkthrough Video', description: 'Personalized agent introduction video', price: 319, category: 'videography', image: 'https://picsum.photos/seed/addon-agent/400/300' },
@@ -31,7 +30,7 @@ export const ADD_ONS: AddOn[] = [
     { id: 'virtual_tour', name: '3D Virtual Tour (iGUIDE) & 2D Floor Plan', description: 'Interactive 3D property tour & accurate 2D floor plan', price: 249, category: 'virtual_tour', image: 'https://picsum.photos/seed/addon-3dtour/400/300' },
     { id: 'floor_plan', name: '2D Floor Plan', description: 'Standard', price: 99, category: 'floor_plans', image: 'https://picsum.photos/seed/addon-floor/400/300' },
     { id: 'listing_website', name: 'Listing Website', description: 'Custom property showcase website', price: 149, category: 'listing_website', image: 'https://picsum.photos/seed/addon-website/400/300' },
-    { id: 'virtual_staging', name: 'Virtual Staging', description: 'Digitally furnished and decorated photos (per photo)', price: 12, category: 'virtual_staging', image: 'https://picsum.photos/seed/addon-staging/400/300' }
+    { id: 'virtual_staging', name: 'Virtual Staging', description: 'Digitally furnished and decorated spaces ($12 per photo)', price: 12, category: 'virtual_staging', image: 'https://picsum.photos/seed/addon-staging/400/300' }
 ];
 
 export type PropertySize = 'small' | 'medium' | 'large' | 'xlarge';
@@ -125,6 +124,36 @@ export function getPackagePriceWithPartner(
     const price = Math.round(sizeAdjusted * (1 - discountPercent / 100));
     return { price, isPartnerDiscount: true };
 }
+
+/**
+ * Add-on IDs that are already included in each real estate package (from package.services).
+ * Used to filter add-ons so we only show options not already in the selected package.
+ */
+export const PACKAGE_INCLUDED_ADDON_IDS: Record<string, string[]> = {
+    essential: [
+        'listing_website', // "Listing Website"
+    ],
+    premium: [
+        'drone_photos',    // "Drone Photography & Video"
+        'drone_video',
+        'twilight_photos', // "Twilight Photography"
+        'floor_plan',      // "2D Floor Plan - Standard"
+        'listing_website', // "Listing Website"
+        'cinematic_video', // "Cinematic Property Video or Social Media Reel" (one included)
+        'social_reel',
+    ],
+    luxury: [
+        'drone_photos',
+        'drone_video',
+        'twilight_photos',
+        'virtual_tour',    // "3D Virtual Tour (iGUIDE)"
+        'floor_plan',      // "2D Floor Plan - Accurate"
+        'cinematic_video', // "Cinematic Property Video"
+        'agent_walkthrough', // "Premium Agent Walkthrough Video or Social Media Reel"
+        'social_reel',
+        'listing_website',
+    ],
+};
 
 export const getPackages = (): Package[] => {
     return [

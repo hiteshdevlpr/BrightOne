@@ -77,7 +77,6 @@ export class EmailService {
     const addonNameMap: Record<string, string> = {
       'drone_photos': 'Drone Photos (Exterior Aerials)',
       'twilight_photos': 'Twilight Photos',
-      'extra_photos': 'Extra Photos (per 10 images)',
       'cinematic_video': 'Cinematic Video Tour',
       'agent_walkthrough': 'Agent Walkthrough Video',
       'social_reel': 'Social Media Reel',

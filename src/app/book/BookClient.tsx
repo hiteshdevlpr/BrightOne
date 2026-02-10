@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import ErrorMsg from "@/components/error-msg";
-import { getPackages, getPackagePriceWithPartner, isValidPreferredPartnerCode, ADD_ONS, AddOn } from "@/data/booking-data";
+import { getPackages, getPackagePriceWithPartner, isValidPreferredPartnerCode, ADD_ONS, AddOn, PACKAGE_INCLUDED_ADDON_IDS } from "@/data/booking-data";
 import { getPersonalPackages } from "@/data/personal-branding-data";
 import { handleBookingSubmission } from "@/components/booking/booking-form-handler";
 import { getRecaptchaToken } from "@/lib/recaptcha-client";
@@ -11,15 +12,31 @@ import { HONEYPOT_FIELD, validateBookingForm, validateEmail, validatePhone } fro
 
 type ServiceCategory = 'personal' | 'listing' | null;
 
-export default function BookClient() {
-    const [selectedCategory, setSelectedCategory] = useState<ServiceCategory>(null);
+type BookClientProps = {
+    defaultCategory?: 'personal' | 'listing';
+};
+
+export default function BookClient({ defaultCategory }: BookClientProps) {
+    const router = useRouter();
+    const [selectedCategory, setSelectedCategory] = useState<ServiceCategory>(defaultCategory ?? null);
+    const [propertyAddressInput, setPropertyAddressInput] = useState('');
+    const [appliedPropertyAddress, setAppliedPropertyAddress] = useState('');
+    const [propertySuiteInput, setPropertySuiteInput] = useState('');
+    const [appliedPropertySuite, setAppliedPropertySuite] = useState('');
     const [propertySizeInput, setPropertySizeInput] = useState('');
     const [appliedPropertySize, setAppliedPropertySize] = useState('');
+    const step1SectionRef = useRef<HTMLDivElement>(null);
+    const packagesSectionRef = useRef<HTMLDivElement>(null);
+    const addonsSectionRef = useRef<HTMLDivElement>(null);
     const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
     const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
+    const [virtualStagingPhotoCount, setVirtualStagingPhotoCount] = useState(1);
     const [preferredPartnerCodeInput, setPreferredPartnerCodeInput] = useState('');
     const [appliedPartnerCode, setAppliedPartnerCode] = useState('');
     const [partnerCodeError, setPartnerCodeError] = useState('');
+    const [showPartnerCodePopup, setShowPartnerCodePopup] = useState(false);
+    const [partnerCodePopupInput, setPartnerCodePopupInput] = useState('');
+    const [partnerCodePopupError, setPartnerCodePopupError] = useState('');
     const [openAccordion, setOpenAccordion] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         name: '',
@@ -43,6 +60,38 @@ export default function BookClient() {
     
     const realEstatePackages = getPackages();
     const personalPackages = getPersonalPackages();
+
+    const includedInSelectedPackage = selectedCategory === 'listing' && selectedPackageId
+        ? (PACKAGE_INCLUDED_ADDON_IDS[selectedPackageId] ?? [])
+        : [];
+    const availableAddOns = selectedCategory === 'listing' && selectedPackageId
+        ? ADD_ONS.filter((addon) => !includedInSelectedPackage.includes(addon.id))
+        : ADD_ONS;
+
+    const virtualStagingPricePerPhoto = ADD_ONS.find((a) => a.id === 'virtual_staging')?.price ?? 12;
+
+    const getAddonPrice = (addonId: string): number => {
+        if (addonId === 'virtual_staging') {
+            return virtualStagingPricePerPhoto * virtualStagingPhotoCount;
+        }
+        if (addonId.startsWith('virtual_staging_')) {
+            const n = parseInt(addonId.split('_')[2], 10) || 1;
+            return virtualStagingPricePerPhoto * n;
+        }
+        const addon = ADD_ONS.find((a) => a.id === addonId);
+        return addon?.price ?? 0;
+    };
+
+    const resolvedSelectedAddOns = selectedAddOns.map((id) =>
+        id === 'virtual_staging' ? `virtual_staging_${virtualStagingPhotoCount}` : id
+    );
+
+    useEffect(() => {
+        if (selectedCategory !== 'listing' || !selectedPackageId) return;
+        const included = PACKAGE_INCLUDED_ADDON_IDS[selectedPackageId] ?? [];
+        if (included.length === 0) return;
+        setSelectedAddOns((prev) => prev.filter((id) => !included.includes(id)));
+    }, [selectedCategory, selectedPackageId]);
 
     const calculatePrice = (basePrice: number, packageId: string): number | null => {
         if (selectedCategory === 'personal') {
@@ -74,6 +123,34 @@ export default function BookClient() {
         }
     };
 
+    const openPartnerCodePopup = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setPartnerCodePopupInput(appliedPartnerCode || '');
+        setPartnerCodePopupError('');
+        setShowPartnerCodePopup(true);
+    };
+
+    const closePartnerCodePopup = () => {
+        setShowPartnerCodePopup(false);
+        setPartnerCodePopupError('');
+    };
+
+    const applyPartnerCodeFromPopup = () => {
+        const code = partnerCodePopupInput.trim();
+        if (!code) {
+            setPartnerCodePopupError('Please enter a partner code');
+            return;
+        }
+        if (isValidPreferredPartnerCode(code)) {
+            setAppliedPartnerCode(code);
+            setPreferredPartnerCodeInput(code);
+            setPartnerCodeError('');
+            closePartnerCodePopup();
+        } else {
+            setPartnerCodePopupError('Invalid partner code');
+        }
+    };
+
     const handlePackageClick = (pkgId: string) => {
         if (selectedPackageId === pkgId) {
             setSelectedPackageId(null);
@@ -82,9 +159,40 @@ export default function BookClient() {
         }
     };
 
+    const handleSelectPackageAndGoToAddons = (pkgId: string) => {
+        setSelectedPackageId(pkgId);
+        if (selectedCategory === 'listing') {
+            setOpenAccordion('addons');
+            setTimeout(() => {
+                addonsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+    };
+
     const handleApplyPropertySize = () => {
         const val = propertySizeInput.trim();
         setAppliedPropertySize(val);
+    };
+
+    const handleApplyStep1 = () => {
+        setAppliedPropertyAddress(propertyAddressInput.trim());
+        setAppliedPropertySuite(propertySuiteInput.trim());
+        setAppliedPropertySize(propertySizeInput.trim());
+    };
+
+    const handleSelectPackages = () => {
+        handleApplyStep1();
+        setOpenAccordion('packages');
+        setTimeout(() => {
+            packagesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    };
+
+    const handleEditPropertyDetails = () => {
+        setOpenAccordion(null);
+        setTimeout(() => {
+            step1SectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
     };
 
     const handleAddOnToggle = (addOnId: string) => {
@@ -141,15 +249,19 @@ export default function BookClient() {
             setFormErrors(['Please select a package first.']);
             return;
         }
+        if (selectedCategory === 'listing' && !appliedPropertyAddress.trim()) {
+            setFormErrors(['Please enter the property address in Step 1.']);
+            return;
+        }
         const pkg = selectedCategory === 'personal'
             ? personalPackages.find(p => p.id === selectedPackageId)
             : realEstatePackages.find(p => p.id === selectedPackageId);
         const pkgPrice = pkg ? calculatePrice(pkg.basePrice, pkg.id) : null;
-        const addonsTotal = selectedAddOns.reduce((sum, id) => sum + (ADD_ONS.find(a => a.id === id)?.price ?? 0), 0);
+        const addonsTotal = selectedAddOns.reduce((sum, id) => sum + getAddonPrice(id), 0);
         const subtotal = (pkgPrice ?? 0) + addonsTotal;
         const totalPrice = (subtotal * 1.13).toFixed(2);
 
-        const propertyAddress = selectedCategory === 'personal' ? (formData.message ? 'See message' : 'To be confirmed') : 'Address to be provided';
+        const propertyAddress = selectedCategory === 'personal' ? (formData.message ? 'See message' : 'To be confirmed') : (appliedPropertyAddress || 'Address to be provided');
         const serviceType = selectedCategory === 'personal' ? 'Personal Branding' : 'Real Estate Media';
         const payloadForValidation = {
             name: formData.name,
@@ -189,9 +301,10 @@ export default function BookClient() {
             phone: formData.phone,
             serviceType,
             propertyAddress,
+            unitNumber: selectedCategory === 'listing' && appliedPropertySuite ? appliedPropertySuite : undefined,
             propertySize: selectedCategory === 'listing' ? appliedPropertySize : undefined,
             serviceTier: selectedPackageId,
-            selectedAddOns,
+            selectedAddOns: resolvedSelectedAddOns,
             preferredPartnerCode: appliedPartnerCode || undefined,
             preferredDate: formData.preferredDate || undefined,
             preferredTime: formData.preferredTime || undefined,
@@ -203,12 +316,12 @@ export default function BookClient() {
         await handleBookingSubmission(payload, setIsSubmitting, setIsSubmitted, setFormErrors);
     };
 
-    const handleCategoryClick = (category: ServiceCategory) => {
-        setSelectedCategory(category);
+    const handleCategoryClick = (category: 'personal' | 'listing') => {
+        router.push(category === 'personal' ? '/book/personal' : '/book/listing');
     };
 
     const handleBack = () => {
-        setSelectedCategory(null);
+        router.push('/book');
     };
 
     const formatPrice = (price: number) => {
@@ -364,41 +477,120 @@ export default function BookClient() {
                             <p className="book-subtitle">Choose a package that fits your needs</p>
                         </div>
 
-                        {/* Property Size - Only for Real Estate */}
+                        {/* Step 1: Property details - Only for Real Estate Listing */}
                         {selectedCategory === 'listing' && (
-                            <div className="book-property-size-row">
-                                <input
-                                    type="number"
-                                    className="book-property-size-input"
-                                    placeholder="Enter Property Size(Sq.Ft)"
-                                    min={1}
-                                    value={propertySizeInput}
-                                    onChange={(e) => {
-                                        setPropertySizeInput(e.target.value);
-                                        setAppliedPropertySize('');
-                                    }}
-                                />
+                            <div ref={step1SectionRef} className="book-step1-wrap">
+                                <h2 className="book-step1-title">Step 1: Property details</h2>
+                                <div className="book-step1-fields">
+                                    <div className="book-form-group">
+                                        <label htmlFor="book-property-address">Property address *</label>
+                                        <input
+                                            id="book-property-address"
+                                            type="text"
+                                            className="book-step1-input"
+                                            placeholder="Enter full property address"
+                                            value={propertyAddressInput}
+                                            onChange={(e) => setPropertyAddressInput(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="book-step1-row">
+                                        <div className="book-form-group">
+                                            <label htmlFor="book-property-suite">Suite / Unit (optional)</label>
+                                            <input
+                                                id="book-property-suite"
+                                                type="text"
+                                                className="book-step1-input"
+                                                placeholder="e.g. 101"
+                                                value={propertySuiteInput}
+                                                onChange={(e) => setPropertySuiteInput(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="book-form-group">
+                                            <label htmlFor="book-property-size">Property size (Sq.Ft)</label>
+                                            <input
+                                                id="book-property-size"
+                                                type="number"
+                                                className="book-step1-input"
+                                                placeholder="Enter property size"
+                                                min={1}
+                                                value={propertySizeInput}
+                                                onChange={(e) => {
+                                                    setPropertySizeInput(e.target.value);
+                                                    setAppliedPropertySize('');
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                                 <button
                                     type="button"
-                                    className="book-property-size-apply-btn"
-                                    onClick={handleApplyPropertySize}
+                                    className="book-select-packages-btn"
+                                    onClick={handleSelectPackages}
                                 >
-                                    Apply
+                                    Select Packages
                                 </button>
                             </div>
                         )}
 
                         {/* Accordion 1: Packages */}
-                        <div className="book-accordion">
-                            <button
-                                onClick={() => toggleAccordion('packages')}
-                                className={`book-accordion-header ${openAccordion === 'packages' ? 'open' : ''}`}
-                            >
-                                <span className="book-accordion-title">1. Packages</span>
-                                <i className={`fa-solid fa-chevron-${openAccordion === 'packages' ? 'up' : 'down'}`}></i>
-                            </button>
+                        <div ref={packagesSectionRef} className="book-accordion">
+                            <div className={`book-accordion-header book-accordion-header-packages ${openAccordion === 'packages' ? 'open' : ''}`}>
+                                <button
+                                    type="button"
+                                    onClick={() => toggleAccordion('packages')}
+                                    className="book-accordion-header-toggle"
+                                >
+                                    <span className="book-accordion-title">1. Packages</span>
+                                    {appliedPartnerCode && (
+                                        <span className="book-accordion-partner-badge">
+                                            PartnerID: {appliedPartnerCode}
+                                            <button
+                                                type="button"
+                                                className="book-accordion-partner-remove"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setAppliedPartnerCode('');
+                                                    setPreferredPartnerCodeInput('');
+                                                }}
+                                                aria-label="Remove partner code"
+                                            >
+                                                <i className="fa-solid fa-times"></i>
+                                            </button>
+                                        </span>
+                                    )}
+                                </button>
+                                {(selectedCategory === 'listing' || selectedCategory === 'personal') && !appliedPartnerCode && (
+                                    <button
+                                        type="button"
+                                        className="book-accordion-partner-btn"
+                                        onClick={openPartnerCodePopup}
+                                    >
+                                        Add Partner Code
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => toggleAccordion('packages')}
+                                    className="book-accordion-chevron-btn"
+                                    aria-expanded={openAccordion === 'packages'}
+                                >
+                                    <i className={`fa-solid fa-chevron-${openAccordion === 'packages' ? 'up' : 'down'}`}></i>
+                                </button>
+                            </div>
                             {openAccordion === 'packages' && (
                                 <div className="book-accordion-content">
+                                    {selectedCategory === 'listing' && (appliedPropertyAddress || appliedPropertySize) && (
+                                        <div className="book-packages-property-summary">
+                                            <div className="book-packages-property-details">
+                                                {appliedPropertyAddress && <p className="book-packages-property-address">{appliedPropertyAddress}</p>}
+                                                {appliedPropertySuite && <p className="book-packages-property-suite">Suite / Unit: {appliedPropertySuite}</p>}
+                                                {appliedPropertySize && <p className="book-packages-property-size">Property size: {appliedPropertySize} Sq.Ft</p>}
+                                            </div>
+                                            <button type="button" className="book-packages-edit-property-btn" onClick={handleEditPropertyDetails}>
+                                                <i className="fa-solid fa-pen"></i> Edit
+                                            </button>
+                                        </div>
+                                    )}
                                     <div className="book-packages">
                                         {(selectedCategory === 'personal' ? personalPackages : realEstatePackages).map((pkg) => {
                                             const calculatedPrice = calculatePrice(pkg.basePrice, pkg.id);
@@ -409,8 +601,7 @@ export default function BookClient() {
                                             return (
                                                 <div 
                                                     key={pkg.id} 
-                                                    onClick={() => (selectedCategory === 'listing' || selectedCategory === 'personal') && handlePackageClick(pkg.id)}
-                                                    className={`book-package-card ${pkg.popular ? 'book-package-popular' : ''} ${isSelected ? 'book-package-selected' : ''} ${(selectedCategory === 'listing' || selectedCategory === 'personal') ? 'book-package-clickable' : ''}`}
+                                                    className={`book-package-card ${pkg.popular ? 'book-package-popular' : ''} ${isSelected ? 'book-package-selected' : ''}`}
                                                 >
                                                     {pkg.popular && (
                                                         <div className="book-package-badge">Most Popular</div>
@@ -434,9 +625,21 @@ export default function BookClient() {
                                                             <li key={idx}>{service}</li>
                                                         ))}
                                                     </ul>
-                                                    <div className="book-package-btn-placeholder">
-                                                        {isSelected ? 'Package Selected' : 'Click to Select'}
-                                                    </div>
+                                                    {(selectedCategory === 'listing' || selectedCategory === 'personal') ? (
+                                                        isSelected ? (
+                                                            <div className="book-package-btn-placeholder">Package Selected</div>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                className="book-package-btn-placeholder book-package-select-btn"
+                                                                onClick={() => handleSelectPackageAndGoToAddons(pkg.id)}
+                                                            >
+                                                                Select and choose Add Ons
+                                                            </button>
+                                                        )
+                                                    ) : (
+                                                        <div className="book-package-btn-placeholder">—</div>
+                                                    )}
                                                 </div>
                                             );
                                         })}
@@ -492,7 +695,7 @@ export default function BookClient() {
 
                         {/* Accordion 2: Standalone Services or Add-ons */}
                         {selectedCategory === 'listing' && (
-                            <div className="book-accordion">
+                            <div ref={addonsSectionRef} className="book-accordion">
                                 <button
                                     onClick={() => toggleAccordion('addons')}
                                     className={`book-accordion-header ${openAccordion === 'addons' ? 'open' : ''}`}
@@ -504,7 +707,7 @@ export default function BookClient() {
                                     <div className="book-accordion-content">
                                         <p className="book-addons-subtitle">Enhance your package with additional services</p>
                                         <div className="book-addons-grid">
-                                            {ADD_ONS.map((addon) => {
+                                            {availableAddOns.map((addon) => {
                                                 const isSelected = selectedAddOns.includes(addon.id);
                                                 return (
                                                     <div
@@ -598,7 +801,7 @@ export default function BookClient() {
                                         {(() => {
                                             const pkg = (selectedCategory === 'personal' ? personalPackages : realEstatePackages).find(p => p.id === selectedPackageId);
                                             const pkgPrice = pkg ? calculatePrice(pkg.basePrice, pkg.id) : null;
-                                            const addonsTotal = selectedAddOns.reduce((sum, id) => sum + (ADD_ONS.find(a => a.id === id)?.price ?? 0), 0);
+                                            const addonsTotal = selectedAddOns.reduce((sum, id) => sum + getAddonPrice(id), 0);
                                             const packageTotal = pkgPrice != null ? pkgPrice : 0;
                                             const subtotal = packageTotal + addonsTotal;
                                             const taxRate = 0.13;
@@ -613,6 +816,14 @@ export default function BookClient() {
                                                         </div>
                                                     )}
                                                     {selectedAddOns.map((id) => {
+                                                        if (id === 'virtual_staging') {
+                                                            return (
+                                                                <div key={id} className="book-form-breakup-item">
+                                                                    <span>Virtual Staging ({virtualStagingPhotoCount} photos)</span>
+                                                                    <span>{formatPrice(getAddonPrice(id))}</span>
+                                                                </div>
+                                                            );
+                                                        }
                                                         const addon = ADD_ONS.find(a => a.id === id);
                                                         return addon ? (
                                                             <div key={id} className="book-form-breakup-item">
@@ -621,6 +832,30 @@ export default function BookClient() {
                                                             </div>
                                                         ) : null;
                                                     })}
+                                                    {selectedAddOns.includes('virtual_staging') && (
+                                                        <div className="book-virtual-staging-count book-virtual-staging-count-inline">
+                                                            <div className="book-virtual-staging-controls">
+                                                                <button
+                                                                    type="button"
+                                                                    className="book-virtual-staging-btn"
+                                                                    onClick={() => setVirtualStagingPhotoCount((c) => Math.max(1, c - 1))}
+                                                                    aria-label="Decrease photo count"
+                                                                >
+                                                                    <i className="fa-solid fa-minus"></i>
+                                                                </button>
+                                                                <span className="book-virtual-staging-number">{virtualStagingPhotoCount}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    className="book-virtual-staging-btn"
+                                                                    onClick={() => setVirtualStagingPhotoCount((c) => Math.min(99, c + 1))}
+                                                                    aria-label="Increase photo count"
+                                                                >
+                                                                    <i className="fa-solid fa-plus"></i>
+                                                                </button>
+                                                            </div>
+                                                            <span className="book-virtual-staging-hint">$12 per photo</span>
+                                                        </div>
+                                                    )}
                                                     {pkgPrice != null && (
                                                         <div className="book-form-breakup-item book-form-breakup-tax">
                                                             <span>Tax (13%)</span>
@@ -760,6 +995,36 @@ export default function BookClient() {
                     </>
                 )}
             </div>
+
+            {showPartnerCodePopup && (
+                <div className="book-partner-popup-overlay" onClick={closePartnerCodePopup}>
+                    <div className="book-partner-popup" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="book-partner-popup-title">Partner Code</h3>
+                        <input
+                            type="text"
+                            className="book-partner-popup-input"
+                            placeholder="Enter partner code"
+                            value={partnerCodePopupInput}
+                            onChange={(e) => {
+                                setPartnerCodePopupInput(e.target.value);
+                                setPartnerCodePopupError('');
+                            }}
+                            autoComplete="off"
+                        />
+                        {partnerCodePopupError && (
+                            <p className="book-partner-popup-error" role="alert">{partnerCodePopupError}</p>
+                        )}
+                        <div className="book-partner-popup-actions">
+                            <button type="button" className="book-partner-popup-apply" onClick={applyPartnerCodeFromPopup}>
+                                Apply
+                            </button>
+                            <button type="button" className="book-partner-popup-close" onClick={closePartnerCodePopup}>
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style jsx>{`
                 .book-mobile-page {
@@ -925,6 +1190,130 @@ export default function BookClient() {
                     background: rgba(255, 255, 255, 0.15);
                 }
 
+                .book-step1-wrap {
+                    margin-bottom: 28px;
+                    padding: 24px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 16px;
+                }
+
+                .book-step1-title {
+                    color: #fff;
+                    font-size: 18px;
+                    font-weight: 600;
+                    margin-bottom: 20px;
+                }
+
+                .book-step1-fields {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                    margin-bottom: 20px;
+                }
+
+                .book-step1-row {
+                    display: flex;
+                    flex-direction: row;
+                    gap: 16px;
+                }
+
+                .book-step1-row .book-form-group {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .book-step1-fields .book-form-group label {
+                    display: block;
+                    color: rgba(255, 255, 255, 0.9);
+                    font-size: 14px;
+                    margin-bottom: 6px;
+                }
+
+                .book-step1-input {
+                    width: 100%;
+                    padding: 12px 14px;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    border-radius: 8px;
+                    background: rgba(0, 0, 0, 0.2);
+                    color: #fff;
+                    font-size: 15px;
+                }
+
+                .book-step1-input::placeholder {
+                    color: rgba(255, 255, 255, 0.4);
+                }
+
+                .book-select-packages-btn {
+                    width: 100%;
+                    padding: 14px 20px;
+                    background: #fff;
+                    color: #000;
+                    border: none;
+                    border-radius: 10px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                }
+
+                .book-select-packages-btn:hover {
+                    background: rgba(255, 255, 255, 0.9);
+                    transform: translateY(-1px);
+                }
+
+                .book-packages-property-summary {
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: flex-start;
+                    justify-content: space-between;
+                    gap: 12px;
+                    padding: 16px 18px;
+                    margin-bottom: 20px;
+                    background: rgba(255, 255, 255, 0.06);
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                    border-radius: 12px;
+                }
+
+                .book-packages-property-details {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .book-packages-property-details p {
+                    margin: 0;
+                    color: rgba(255, 255, 255, 0.9);
+                    font-size: 14px;
+                    line-height: 1.5;
+                }
+
+                .book-packages-property-details p + p {
+                    margin-top: 6px;
+                }
+
+                .book-packages-property-address {
+                    font-weight: 500;
+                }
+
+                .book-packages-edit-property-btn {
+                    flex-shrink: 0;
+                    padding: 8px 14px;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.25);
+                    color: #fff;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    cursor: pointer;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    transition: all 0.3s ease;
+                }
+
+                .book-packages-edit-property-btn:hover {
+                    background: rgba(255, 255, 255, 0.18);
+                }
+
                 .book-packages {
                     display: flex;
                     flex-direction: column;
@@ -945,15 +1334,6 @@ export default function BookClient() {
                 .book-package-card:hover {
                     background: rgba(255, 255, 255, 0.08);
                     border-color: rgba(255, 255, 255, 0.2);
-                }
-
-                .book-package-clickable {
-                    cursor: pointer;
-                }
-
-                .book-package-clickable:hover {
-                    transform: translateY(-4px);
-                    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
                 }
 
                 .book-package-selected {
@@ -1095,6 +1475,17 @@ export default function BookClient() {
                     font-size: 16px;
                     font-weight: 600;
                     pointer-events: none;
+                }
+
+                .book-package-select-btn {
+                    pointer-events: auto;
+                    cursor: pointer;
+                    border: none;
+                    font: inherit;
+                }
+
+                .book-package-select-btn:hover {
+                    background: rgba(255, 255, 255, 0.2);
                 }
 
                 .book-package-selected .book-package-btn-placeholder {
@@ -1250,6 +1641,86 @@ export default function BookClient() {
                     text-align: left;
                 }
 
+                .book-accordion-header-packages {
+                    cursor: default;
+                    gap: 12px;
+                }
+
+                .book-accordion-header-toggle {
+                    flex: 1;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 0;
+                    background: none;
+                    border: none;
+                    color: inherit;
+                    cursor: pointer;
+                    text-align: left;
+                }
+
+                .book-accordion-partner-badge {
+                    font-size: 12px;
+                    font-weight: 500;
+                    color: rgba(255, 255, 255, 0.85);
+                    margin-left: 10px;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 6px 12px;
+                    border: 1px solid rgba(255, 255, 255, 0.35);
+                    border-radius: 999px;
+                }
+
+                .book-accordion-partner-remove {
+                    padding: 2px 4px;
+                    background: none;
+                    border: none;
+                    color: rgba(255, 255, 255, 0.7);
+                    cursor: pointer;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 11px;
+                }
+
+                .book-accordion-partner-remove:hover {
+                    color: #fff;
+                }
+
+                .book-accordion-partner-btn {
+                    flex-shrink: 0;
+                    padding: 8px 14px;
+                    background: rgba(255, 255, 255, 0.12);
+                    border: 1px solid rgba(255, 255, 255, 0.25);
+                    color: #fff;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                }
+
+                .book-accordion-partner-btn:hover {
+                    background: rgba(255, 255, 255, 0.2);
+                }
+
+                .book-accordion-chevron-btn {
+                    flex-shrink: 0;
+                    padding: 8px;
+                    background: none;
+                    border: none;
+                    color: inherit;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .book-accordion-chevron-btn:hover {
+                    background: rgba(255, 255, 255, 0.08);
+                    border-radius: 6px;
+                }
+
                 .book-accordion-header:hover:not(.disabled) {
                     background: rgba(255, 255, 255, 0.08);
                 }
@@ -1274,6 +1745,90 @@ export default function BookClient() {
                     font-weight: 400;
                     color: rgba(255, 255, 255, 0.5);
                     margin-left: 8px;
+                }
+
+                .book-partner-popup-overlay {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(0, 0, 0, 0.6);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1000;
+                    padding: 20px;
+                }
+
+                .book-partner-popup {
+                    background: #1a1a1a;
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                    border-radius: 16px;
+                    padding: 24px;
+                    max-width: 360px;
+                    width: 100%;
+                }
+
+                .book-partner-popup-title {
+                    margin: 0 0 16px;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #fff;
+                }
+
+                .book-partner-popup-input {
+                    width: 100%;
+                    padding: 12px 14px;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    border-radius: 8px;
+                    background: rgba(255, 255, 255, 0.06);
+                    color: #fff;
+                    font-size: 15px;
+                    margin-bottom: 12px;
+                }
+
+                .book-partner-popup-input::placeholder {
+                    color: rgba(255, 255, 255, 0.4);
+                }
+
+                .book-partner-popup-error {
+                    margin: 0 0 12px;
+                    font-size: 13px;
+                    color: #f87171;
+                }
+
+                .book-partner-popup-actions {
+                    display: flex;
+                    gap: 10px;
+                    margin-top: 16px;
+                }
+
+                .book-partner-popup-apply {
+                    flex: 1;
+                    padding: 12px 16px;
+                    background: #fff;
+                    color: #000;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 15px;
+                    font-weight: 600;
+                    cursor: pointer;
+                }
+
+                .book-partner-popup-apply:hover {
+                    background: rgba(255, 255, 255, 0.9);
+                }
+
+                .book-partner-popup-close {
+                    padding: 12px 16px;
+                    background: rgba(255, 255, 255, 0.1);
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    border-radius: 8px;
+                    font-size: 15px;
+                    cursor: pointer;
+                }
+
+                .book-partner-popup-close:hover {
+                    background: rgba(255, 255, 255, 0.15);
                 }
 
                 .book-accordion-content {
@@ -1421,6 +1976,66 @@ export default function BookClient() {
                     outline: none;
                     border-color: rgba(255, 255, 255, 0.4);
                     background: rgba(255, 255, 255, 0.15);
+                }
+
+                .book-virtual-staging-count {
+                    margin-bottom: 20px;
+                    padding: 16px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border-radius: 10px;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                }
+
+                .book-virtual-staging-label {
+                    display: block;
+                    font-size: 14px;
+                    font-weight: 500;
+                    color: rgba(255, 255, 255, 0.9);
+                    margin-bottom: 12px;
+                }
+
+                .book-virtual-staging-controls {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+
+                .book-virtual-staging-btn {
+                    width: 36px;
+                    height: 36px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.25);
+                    color: #fff;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                }
+
+                .book-virtual-staging-btn:hover {
+                    background: rgba(255, 255, 255, 0.18);
+                }
+
+                .book-virtual-staging-number {
+                    min-width: 28px;
+                    text-align: center;
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: #fff;
+                }
+
+                .book-virtual-staging-hint {
+                    display: block;
+                    font-size: 12px;
+                    color: rgba(255, 255, 255, 0.5);
+                    margin-top: 8px;
+                }
+
+                .book-virtual-staging-count-inline {
+                    margin-top: 12px;
+                    margin-bottom: 12px;
                 }
 
                 .book-form-breakup {
