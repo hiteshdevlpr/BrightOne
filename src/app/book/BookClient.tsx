@@ -7,7 +7,7 @@ import { getPackages, getPackagePriceWithPartner, isValidPreferredPartnerCode, A
 import { getPersonalPackages } from "@/data/personal-branding-data";
 import { handleBookingSubmission } from "@/components/booking/booking-form-handler";
 import { getRecaptchaToken } from "@/lib/recaptcha-client";
-import { HONEYPOT_FIELD, validateBookingForm } from "@/lib/validation";
+import { HONEYPOT_FIELD, validateBookingForm, validateEmail, validatePhone } from "@/lib/validation";
 
 type ServiceCategory = 'personal' | 'listing' | null;
 
@@ -33,6 +33,7 @@ export default function BookClient() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [formErrors, setFormErrors] = useState<string[]>([]);
+    const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
     const toggleAccordion = (accordionId: string) => {
         setOpenAccordion(prev => prev === accordionId ? null : accordionId);
@@ -97,9 +98,41 @@ export default function BookClient() {
     };
 
 
+    const formatPhoneNumber = (value: string): string => {
+        const digits = value.replace(/\D/g, '');
+        if (digits.length === 0) return '';
+        if (digits.length <= 3) return `(${digits}`;
+        if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+        const ten = digits.length >= 10 ? digits.slice(-10) : digits.slice(0, 10);
+        return `(${ten.slice(0, 3)}) ${ten.slice(3, 6)}-${ten.slice(6, 10)}`;
+    };
+
+    const handleEmailBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+        const err = validateEmail(e.target.value);
+        setFieldErrors(prev => (err ? { ...prev, email: err } : { ...prev, email: '' }));
+    };
+
+    const handlePhoneBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+        const trimmed = e.target.value?.trim() ?? '';
+        if (!trimmed) {
+            setFieldErrors(prev => ({ ...prev, phone: '' }));
+            return;
+        }
+        const digits = trimmed.replace(/\D/g, '');
+        const formatted = digits.length >= 10 && digits.length <= 11 ? formatPhoneNumber(trimmed) : trimmed;
+        if (formatted !== trimmed) {
+            setFormData(prev => ({ ...prev, phone: formatted }));
+        }
+        const err = validatePhone(formatted);
+        setFieldErrors(prev => (err ? { ...prev, phone: err } : { ...prev, phone: '' }));
+    };
+
     const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        if (fieldErrors[name]) {
+            setFieldErrors(prev => ({ ...prev, [name]: '' }));
+        }
     };
 
     const handleFormSubmit = async (e: React.FormEvent) => {
@@ -129,9 +162,15 @@ export default function BookClient() {
         const validationErrors = validateBookingForm(payloadForValidation);
         if (validationErrors.length > 0) {
             setFormErrors(validationErrors.map((err) => err.message));
+            const byField = validationErrors.reduce<{ [key: string]: string }>((acc, err) => {
+                acc[err.field] = err.message;
+                return acc;
+            }, {});
+            setFieldErrors(byField);
             return;
         }
         setFormErrors([]);
+        setFieldErrors({});
 
         let recaptchaToken = '';
         try {
@@ -639,9 +678,11 @@ export default function BookClient() {
                                                 name="email"
                                                 value={formData.email}
                                                 onChange={handleFormChange}
+                                                onBlur={handleEmailBlur}
                                                 required
                                                 placeholder="your.email@example.com"
                                             />
+                                            {fieldErrors.email && <ErrorMsg msg={fieldErrors.email} />}
                                         </div>
 
                                         <div className="book-form-group">
@@ -652,9 +693,11 @@ export default function BookClient() {
                                                 name="phone"
                                                 value={formData.phone}
                                                 onChange={handleFormChange}
+                                                onBlur={handlePhoneBlur}
                                                 required
                                                 placeholder="(416) 123-4567"
                                             />
+                                            {fieldErrors.phone && <ErrorMsg msg={fieldErrors.phone} />}
                                         </div>
 
                                         <div className="book-form-row-two">

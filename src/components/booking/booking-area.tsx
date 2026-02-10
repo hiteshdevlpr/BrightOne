@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { getPackages, ADD_ONS, getPackagePriceWithPartner, isValidPreferredPartnerCode } from '@/data/booking-data';
 import { handleBookingSubmission, type BookingFormData } from './booking-form-handler';
 import { getRecaptchaToken } from '@/lib/recaptcha-client';
-import { HONEYPOT_FIELD, validateBookingForm } from '@/lib/validation';
+import { HONEYPOT_FIELD, validateBookingForm, validateEmail, validatePhone } from '@/lib/validation';
 import {
     trackBookingStart,
     trackBookingStepChange,
@@ -214,6 +214,35 @@ export default function BookingArea() {
             setAppliedPartnerCode('');
             setFieldErrors(prev => ({ ...prev, preferredPartnerCode: 'Invalid partner code' }));
         }
+    };
+
+    const formatPhoneNumber = (value: string): string => {
+        const digits = value.replace(/\D/g, '');
+        if (digits.length === 0) return '';
+        if (digits.length <= 3) return `(${digits}`;
+        if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+        const ten = digits.length >= 10 ? digits.slice(-10) : digits.slice(0, 10);
+        return `(${ten.slice(0, 3)}) ${ten.slice(3, 6)}-${ten.slice(6, 10)}`;
+    };
+
+    const handleEmailBlur = () => {
+        const err = validateEmail(formData.email);
+        setFieldErrors(prev => (err ? { ...prev, email: err } : { ...prev, email: '' }));
+    };
+
+    const handlePhoneBlur = () => {
+        const trimmed = formData.phone?.trim() ?? '';
+        if (!trimmed) {
+            setFieldErrors(prev => ({ ...prev, phone: '' }));
+            return;
+        }
+        const digits = trimmed.replace(/\D/g, '');
+        const formatted = digits.length >= 10 && digits.length <= 11 ? formatPhoneNumber(trimmed) : trimmed;
+        if (formatted !== trimmed) {
+            setFormData(prev => ({ ...prev, phone: formatted }));
+        }
+        const err = validatePhone(formatted);
+        setFieldErrors(prev => (err ? { ...prev, phone: err } : { ...prev, phone: '' }));
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -748,6 +777,7 @@ export default function BookingArea() {
                                                                 placeholder="john@example.com"
                                                                 value={formData.email}
                                                                 onChange={handleInputChange}
+                                                                onBlur={handleEmailBlur}
                                                                 required
                                                             />
                                                             {fieldErrors.email && <ErrorMsg msg={fieldErrors.email} />}
@@ -762,6 +792,7 @@ export default function BookingArea() {
                                                                 placeholder="(123) 456-7890"
                                                                 value={formData.phone}
                                                                 onChange={handleInputChange}
+                                                                onBlur={handlePhoneBlur}
                                                             />
                                                             {fieldErrors.phone && <ErrorMsg msg={fieldErrors.phone} />}
                                                         </div>
