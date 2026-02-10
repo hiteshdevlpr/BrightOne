@@ -90,11 +90,13 @@ export function getAdjustedPackagePrice(basePrice: number, propertySize?: Proper
 /** Preferred partner codes (case-insensitive match). First code: RLPFRANK2026 */
 export const PREFERRED_PARTNER_CODES: string[] = ['RLPFRANK2026'];
 
-/** Discount % by package id when a valid preferred partner code is used. */
+/** Discount % by package id when a valid preferred partner code is used. RLPFRANK2026: 7.5% across all plans. */
 export const PREFERRED_PARTNER_DISCOUNTS: Record<string, number> = {
-    essential: 4,
-    premium: 6,
-    luxury: 8,
+    essential: 7.5,
+    premium: 7.5,
+    luxury: 7.5,
+    growth: 7.5,
+    accelerator: 7.5,
 };
 
 export function isValidPreferredPartnerCode(code: string | undefined): boolean {

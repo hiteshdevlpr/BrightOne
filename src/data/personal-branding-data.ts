@@ -35,10 +35,12 @@ export const getPersonalPackages = (): PersonalPackage[] => {
             services: [
                 '5 Videos per Month',
                 'Vertical Short Form Videos for Instagram, Facebook, TikTok, etc.',
+                'Horizontal videos for YouTube, Facebook, etc.',
                 'Highly Engaging Content with Fast Paced Edits and Trending Audio',
-                '2-3 Hour Shoot',
+                '2-3 Hour Shoot per month',
                 'Up to 1 Outdoor Shoot (Listing, Neighbourhood, Lifestyle)',
                 'No Contract to Start',
+                'Add On: Outdoor shoots for open house, neighbourhood, lifestyle',
             ],
             images: [
                 'https://picsum.photos/seed/pb-growth1/800/400',
@@ -56,10 +58,12 @@ export const getPersonalPackages = (): PersonalPackage[] => {
             services: [
                 '10 Videos per Month',
                 'Vertical Short Form Videos for Instagram, Facebook, TikTok, etc.',
+                'Horizontal videos for YouTube, Facebook, etc.',
                 'Video Duration 45 - 90 Seconds',
                 'Highly Engaging Content with Fast Paced Edits and Trending Audio',
                 'Up to 1 Outdoor Shoot (Listing, Neighbourhood, Lifestyle)',
                 '3 - 4 Hours per Month',
+                'Add On: Outdoor shoots for open house, neighbourhood, lifestyle',
                 'No Contract to Start',
             ],
             images: [

@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { getPersonalPackages, PERSONAL_ADD_ONS, PersonalPackage, PersonalAddOn } from '@/data/personal-branding-data';
+import { getPackagePriceWithPartner, isValidPreferredPartnerCode } from '@/data/booking-data';
 import { handleBookingSubmission } from './booking-form-handler';
 import {
     trackBookingStart,
@@ -65,6 +67,7 @@ function PkgCarousel({ images, packageId }: { images: string[]; packageId: strin
 }
 
 export default function PersonalBrandingArea() {
+    const searchParams = useSearchParams();
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState({
         name: '',
@@ -74,11 +77,13 @@ export default function PersonalBrandingArea() {
         sessionLocation: '',
         selectedPackage: '',
         selectedAddOns: [] as string[],
+        preferredPartnerCode: '',
         preferredDate: '',
         preferredTime: '',
         message: '',
     });
 
+    const [appliedPartnerCode, setAppliedPartnerCode] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [formErrors, setFormErrors] = useState<string[]>([]);
@@ -86,9 +91,42 @@ export default function PersonalBrandingArea() {
 
     useEffect(() => { trackBookingStart(); }, []);
 
+    useEffect(() => {
+        const partnerCode = searchParams.get('partnerCode');
+        if (partnerCode && isValidPreferredPartnerCode(partnerCode)) {
+            setAppliedPartnerCode(partnerCode.trim());
+            setFormData(prev => ({ ...prev, preferredPartnerCode: partnerCode.trim() }));
+        }
+    }, [searchParams]);
+
+    const getDisplayPackagePrice = (basePrice: number, packageId: string) => {
+        const { price } = getPackagePriceWithPartner(basePrice, undefined, packageId, appliedPartnerCode || null);
+        return price;
+    };
+
+    const handleApplyPartnerCode = () => {
+        const code = formData.preferredPartnerCode?.trim() || '';
+        if (!code) {
+            setAppliedPartnerCode('');
+            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: '' }));
+            return;
+        }
+        if (isValidPreferredPartnerCode(code)) {
+            setAppliedPartnerCode(code);
+            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: '' }));
+        } else {
+            setAppliedPartnerCode('');
+            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: 'Invalid partner code' }));
+        }
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        if (name === 'preferredPartnerCode') {
+            setAppliedPartnerCode('');
+            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: '' }));
+        }
     };
 
     const handlePackageSelect = (packageId: string) => {
@@ -121,7 +159,7 @@ export default function PersonalBrandingArea() {
 
     const calculateTotal = () => {
         const pkg = getPersonalPackages().find(p => p.id === formData.selectedPackage);
-        const packagePrice = pkg?.basePrice || 0;
+        const packagePrice = pkg ? getDisplayPackagePrice(pkg.basePrice, pkg.id) : 0;
         const addOnsPrice = formData.selectedAddOns.reduce((total, id) => {
             const addOn = PERSONAL_ADD_ONS.find(a => a.id === id);
             return total + (addOn?.price || 0);
@@ -155,6 +193,7 @@ export default function PersonalBrandingArea() {
                 propertyAddress: formData.sessionLocation || '',
                 serviceType: 'Personal Branding',
                 serviceTier: formData.selectedPackage,
+                preferredPartnerCode: appliedPartnerCode || undefined,
                 totalPrice: (calculateTotal() * 1.13).toFixed(2),
             },
             setIsSubmitting,
@@ -247,7 +286,7 @@ export default function PersonalBrandingArea() {
                                                                         {item.popular && <span className="pkg-popular-tag">Popular</span>}
                                                                     </div>
                                                                     <div className="pkg-card-price">
-                                                                        <span className="pkg-price-amount">${item.basePrice}</span>
+                                                                        <span className="pkg-price-amount">${getDisplayPackagePrice(item.basePrice, item.id)}</span>
                                                                     </div>
                                                                 </div>
                                                                 <div className="pkg-card-features">
@@ -309,6 +348,55 @@ export default function PersonalBrandingArea() {
                                                         </p>
                                                     </div>
 
+                                                    <div className="sidebar-partner-code mb-20">
+                                                        <label className="sidebar-label d-block mb-10">Preferred partner code (optional)</label>
+                                                        {appliedPartnerCode ? (
+                                                            <div className="sidebar-partner-chip">
+                                                                <span className="sidebar-partner-chip-text">{appliedPartnerCode}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    className="sidebar-partner-chip-remove"
+                                                                    onClick={() => {
+                                                                        setAppliedPartnerCode('');
+                                                                        setFormData(prev => ({ ...prev, preferredPartnerCode: '' }));
+                                                                    }}
+                                                                    aria-label="Remove partner code"
+                                                                >
+                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <div className="sidebar-partner-row d-flex gap-2 align-items-flex-start">
+                                                                    <input
+                                                                        type="text"
+                                                                        name="preferredPartnerCode"
+                                                                        className="sidebar-partner-input"
+                                                                        placeholder="Enter code"
+                                                                        value={formData.preferredPartnerCode}
+                                                                        onChange={handleInputChange}
+                                                                        autoComplete="off"
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        className="sidebar-partner-apply-btn"
+                                                                        onClick={handleApplyPartnerCode}
+                                                                    >
+                                                                        Apply
+                                                                    </button>
+                                                                </div>
+                                                                {fieldErrors.preferredPartnerCode && (
+                                                                    <div className="sidebar-partner-error mt-2">
+                                                                        <ErrorMsg msg={fieldErrors.preferredPartnerCode} />
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </div>
+
                                                     <div className="sidebar-pricing">
                                                         <h6 className="sidebar-label">Estimate</h6>
                                                         {formData.selectedPackage ? (
@@ -316,7 +404,7 @@ export default function PersonalBrandingArea() {
                                                                 <div className="sidebar-line-item sidebar-package-item">
                                                                     <span>{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
                                                                     <div className="d-flex align-items-center gap-2">
-                                                                        <span>${packages.find(p => p.id === formData.selectedPackage)?.basePrice}</span>
+                                                                        <span>${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
                                                                         <button
                                                                             type="button"
                                                                             className="sidebar-remove-btn"
@@ -422,8 +510,8 @@ export default function PersonalBrandingArea() {
                                                             <span className="text-white font-weight-bold">{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
                                                         </div>
                                                         <div className="d-flex justify-content-between mb-15">
-                                                            <span className="text-white-50">Base Price:</span>
-                                                            <span className="text-white">${packages.find(p => p.id === formData.selectedPackage)?.basePrice}</span>
+                                                            <span className="text-white-50">Package Price:</span>
+                                                            <span className="text-white">${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
                                                         </div>
 
                                                         {formData.selectedAddOns.length > 0 && (
@@ -542,6 +630,18 @@ export default function PersonalBrandingArea() {
                 .sidebar-remove-btn { background: transparent; border: none; color: rgba(255,255,255,0.5); cursor: pointer; padding: 2px; display: flex; align-items: center; justify-content: center; transition: color 0.2s; opacity: 0.6; }
                 .sidebar-remove-btn:hover { color: rgba(255,255,255,0.9); opacity: 1; }
                 .gap-2 { gap: 8px; }
+
+                /* Preferred partner code (sidebar) */
+                .sidebar-partner-row { flex-wrap: wrap; }
+                .sidebar-partner-code .sidebar-partner-input { flex: 1; min-width: 0; padding: 10px 14px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: #fff; border-radius: 6px; font-size: 14px; }
+                .sidebar-partner-code .sidebar-partner-input::placeholder { color: rgba(255,255,255,0.4); }
+                .sidebar-partner-apply-btn { padding: 10px 18px; border: 1px solid rgba(255,255,255,0.3); background: transparent; color: #fff; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background 0.2s, border-color 0.2s; }
+                .sidebar-partner-apply-btn:hover { background: rgba(255,255,255,0.25); }
+                .sidebar-partner-error { margin-top: 8px; }
+                .sidebar-partner-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; }
+                .sidebar-partner-chip-text { color: #fff; font-size: 14px; font-weight: 500; }
+                .sidebar-partner-chip-remove { padding: 4px; border: none; background: transparent; color: rgba(255,255,255,0.6); cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: background 0.2s, color 0.2s; }
+                .sidebar-partner-chip-remove:hover { background: rgba(255,255,255,0.35); color: #fff; }
 
                 /* Package cards - stacked vertically */
                 .pkg-card { border: 1px solid rgba(255,255,255,0.1); background: #111; margin-bottom: 16px; cursor: pointer; transition: all 0.3s; }

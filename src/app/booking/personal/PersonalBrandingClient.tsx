@@ -1,6 +1,6 @@
 'use client';
 
-import React from "react";
+import React, { Suspense } from "react";
 import PersonalBrandingArea from "@/components/booking/personal-branding-area";
 import Wrapper from "@/layouts/wrapper";
 import FooterFour from "@/layouts/footers/footer-four";
@@ -47,7 +47,9 @@ const PersonalBrandingClient = () => {
                             </div>
                         </div>
 
-                        <PersonalBrandingArea />
+                        <Suspense fallback={<div className="text-center text-white py-5">Loading...</div>}>
+                            <PersonalBrandingArea />
+                        </Suspense>
                     </main>
 
                     <FooterFour />

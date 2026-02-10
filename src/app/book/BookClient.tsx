@@ -37,9 +37,11 @@ export default function BookClient() {
     const personalPackages = getPersonalPackages();
 
     const calculatePrice = (basePrice: number, packageId: string): number | null => {
-        if (selectedCategory !== 'listing') {
-            return basePrice;
+        if (selectedCategory === 'personal') {
+            const { price } = getPackagePriceWithPartner(basePrice, undefined, packageId, appliedPartnerCode || null);
+            return price;
         }
+        if (selectedCategory !== 'listing') return basePrice;
         const sqft = appliedPropertySize.trim() ? parseInt(appliedPropertySize, 10) : NaN;
         if (!isNaN(sqft) && sqft >= 5000) {
             return null; // Show "Contact for Price"
@@ -288,8 +290,8 @@ export default function BookClient() {
                                             return (
                                                 <div 
                                                     key={pkg.id} 
-                                                    onClick={() => selectedCategory === 'listing' && handlePackageClick(pkg.id)}
-                                                    className={`book-package-card ${pkg.popular ? 'book-package-popular' : ''} ${isSelected ? 'book-package-selected' : ''} ${selectedCategory === 'listing' ? 'book-package-clickable' : ''}`}
+                                                    onClick={() => (selectedCategory === 'listing' || selectedCategory === 'personal') && handlePackageClick(pkg.id)}
+                                                    className={`book-package-card ${pkg.popular ? 'book-package-popular' : ''} ${isSelected ? 'book-package-selected' : ''} ${(selectedCategory === 'listing' || selectedCategory === 'personal') ? 'book-package-clickable' : ''}`}
                                                 >
                                                     {pkg.popular && (
                                                         <div className="book-package-badge">Most Popular</div>
@@ -304,7 +306,7 @@ export default function BookClient() {
                                                         {showContactPrice ? (
                                                             <span className="book-package-contact-price">Contact for Price</span>
                                                         ) : (
-                                                            formatPrice(calculatedPrice || pkg.basePrice)
+                                                            formatPrice(calculatedPrice ?? pkg.basePrice)
                                                         )}
                                                     </div>
                                                     <p className="book-package-desc">{pkg.description}</p>
@@ -313,23 +315,58 @@ export default function BookClient() {
                                                             <li key={idx}>{service}</li>
                                                         ))}
                                                     </ul>
-                                                    {selectedCategory === 'listing' ? (
-                                                        <div className="book-package-btn-placeholder">
-                                                            {isSelected ? 'Package Selected' : 'Click to Select'}
-                                                        </div>
-                                                    ) : (
-                                                        <Link
-                                                            href={`/booking/personal?package=${pkg.id}`}
-                                                            className="book-package-btn"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                        >
-                                                            Select Package
-                                                        </Link>
-                                                    )}
+                                                    <div className="book-package-btn-placeholder">
+                                                        {isSelected ? 'Package Selected' : 'Click to Select'}
+                                                    </div>
                                                 </div>
                                             );
                                         })}
                                     </div>
+                                    {/* Preferred partner code for Personal Branding - apply before selecting package */}
+                                    {selectedCategory === 'personal' && (
+                                        <div className="book-partner-code-wrap" style={{ marginTop: '20px' }}>
+                                            <div className="book-partner-code-row">
+                                                {appliedPartnerCode ? (
+                                                    <>
+                                                        <span className="book-partner-applied-code">{appliedPartnerCode}</span>
+                                                        <button
+                                                            type="button"
+                                                            className="book-partner-remove-btn"
+                                                            onClick={() => {
+                                                                setAppliedPartnerCode('');
+                                                                setPreferredPartnerCodeInput('');
+                                                            }}
+                                                            aria-label="Remove partner code"
+                                                        >
+                                                            <i className="fa-solid fa-times"></i>
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <input
+                                                            type="text"
+                                                            className="book-partner-input"
+                                                            placeholder="Preferred partner code (optional)"
+                                                            value={preferredPartnerCodeInput}
+                                                            onChange={(e) => {
+                                                                setPreferredPartnerCodeInput(e.target.value);
+                                                                setPartnerCodeError('');
+                                                            }}
+                                                            autoComplete="off"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            className="book-partner-apply-btn"
+                                                            onClick={handleApplyPartnerCode}
+                                                        >
+                                                            Apply
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                            {partnerCodeError && <div className="book-partner-error-wrap"><ErrorMsg msg={partnerCodeError} /></div>}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -390,7 +427,7 @@ export default function BookClient() {
                             </button>
                             {openAccordion === 'booking' && canCompleteBooking && (
                                 <div className="book-accordion-content">
-                                    {/* Preferred Partner Code - Only for Real Estate (same design as property size) */}
+                                    {/* Preferred Partner Code - Real Estate (same design as property size) */}
                                     {selectedCategory === 'listing' && (
                                         <div className="book-partner-code-wrap">
                                             <div className="book-partner-code-row">
@@ -752,6 +789,8 @@ export default function BookClient() {
                 }
 
                 .book-package-card {
+                    display: flex;
+                    flex-direction: column;
                     background: rgba(255, 255, 255, 0.05);
                     border: 1px solid rgba(255, 255, 255, 0.1);
                     border-radius: 16px;
@@ -904,6 +943,7 @@ export default function BookClient() {
                 .book-package-btn-placeholder {
                     display: block;
                     width: 100%;
+                    margin-top: auto;
                     background: rgba(255, 255, 255, 0.1);
                     color: rgba(255, 255, 255, 0.7);
                     text-align: center;

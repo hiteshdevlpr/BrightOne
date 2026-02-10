@@ -2,6 +2,8 @@
 import { db } from './database';
 import { validateContactForm, validateBookingForm } from './validation';
 import { EmailService, ContactEmailData, BookingEmailData } from './email-service';
+import { getPackages, getPackagePriceWithPartner, ADD_ONS } from '@/data/booking-data';
+import { getPersonalPackages, PERSONAL_ADD_ONS } from '@/data/personal-branding-data';
 
 export interface ContactFormData {
   name: string;
@@ -63,112 +65,81 @@ export interface ContactRecord {
 }
 
 /**
- * Calculate price breakdown for booking
+ * Calculate price breakdown for booking (synced with booking-data.ts packages and add-ons)
  */
 function calculatePriceBreakdown(formData: BookingFormData): PriceBreakdown {
   const TAX_RATE = 13.00; // 13% tax rate for Ontario
-  
-  // Package pricing based on service tier (original prices before discount)
-  const packagePrices: Record<string, number> = {
-    'essentials': 199,
-    'enhanced': 319,
-    'showcase': 429,
-    'premium': 549,
-    'ultimate': 699,
-    'airbnb': 149,
-  };
+  const packages = getPackages();
+  const personalPackages = getPersonalPackages();
+  const serviceTier = formData.serviceTier || '';
+  const isPersonalBranding = formData.serviceType === 'Personal Branding';
+  const pkg = packages.find(p => p.id === serviceTier);
+  const personalPkg = personalPackages.find(p => p.id === serviceTier);
 
-  // Discount configuration
-  const PACKAGE_DISCOUNTS = {
-    'essentials': 15,
-    'enhanced': 15,
-    'showcase': 15,
-    'premium': 10,
-    'ultimate': 10,
-    'airbnb': 15
-  };
+  let packagePrice = 0;
+  let packageName = 'Standard Package';
 
-  // Add-on pricing
-  const addonPrices: Record<string, number> = {
-    'drone_photos': 149,
-    'twilight_photos': 49,
-    'extra_photos': 49,
-    'cinematic_video': 199,
-    'agent_walkthrough': 149,
-    'social_reel': 99,
-    'virtual_tour': 199,
-    'floor_plan': 99,
-    'listing_website': 99,
-    'virtual_staging': 99,
-  };
+  if (pkg) {
+    const { price } = getPackagePriceWithPartner(
+      pkg.basePrice,
+      formData.propertySize || undefined,
+      pkg.id,
+      formData.preferredPartnerCode || null
+    );
+    packagePrice = price;
+    packageName = pkg.name;
+  } else if (personalPkg) {
+    const { price } = getPackagePriceWithPartner(
+      personalPkg.basePrice,
+      undefined,
+      personalPkg.id,
+      formData.preferredPartnerCode || null
+    );
+    packagePrice = price;
+    packageName = personalPkg.name;
+  }
 
-  // Add-on names
-  const addonNames: Record<string, string> = {
-    'drone_photos': 'Drone Photos (Exterior Aerials)',
-    'twilight_photos': 'Twilight Photos',
-    'extra_photos': 'Extra Photos (per 10 images)',
-    'cinematic_video': 'Cinematic Video Tour',
-    'agent_walkthrough': 'Agent Walkthrough Video',
-    'social_reel': 'Social Media Reel',
-    'virtual_tour': '3D Virtual Tour (iGUIDE)',
-    'floor_plan': '2D Floor Plan',
-    'listing_website': 'Listing Website',
-    'virtual_staging': 'Virtual Staging',
-  };
-
-  // Package names
-  const packageNames: Record<string, string> = {
-    'essentials': 'Essentials Package',
-    'enhanced': 'Enhanced Package',
-    'showcase': 'Showcase Package',
-    'premium': 'Premium Marketing Package',
-    'ultimate': 'Ultimate Property Experience',
-    'airbnb': 'Airbnb / Short-Term Rental Package',
-  };
-
-  // Calculate package price with discount
-  const serviceTier = (formData.serviceTier || 'essentials') as keyof typeof packagePrices;
-  const originalPackagePrice = packagePrices[serviceTier] || 0;
-  const discountPercent = (PACKAGE_DISCOUNTS as Record<string, number>)[serviceTier] || 0;
-  const packagePrice = Math.round(originalPackagePrice * (1 - discountPercent / 100));
-  const packageName = packageNames[serviceTier] || 'Standard Package';
-
-  // Calculate add-ons price
+  // Add-ons: PERSONAL_ADD_ONS for Personal Branding, else ADD_ONS (booking-data.ts)
   let addonsPrice = 0;
   const addonsBreakdown: Array<{ name: string; price: number }> = [];
 
   if (formData.selectedAddOns && formData.selectedAddOns.length > 0) {
-    formData.selectedAddOns.forEach(addonId => {
-      if (addonId.startsWith('virtual_staging_')) {
-        // Handle virtual staging with photo count
-        const photoCount = parseInt(addonId.split('_')[2]) || 3;
-        const basePrice = 99;
-        const additionalPhotos = Math.max(0, photoCount - 3);
-        const additionalPrice = additionalPhotos * 20;
-        const totalPrice = basePrice + additionalPrice;
-        
-        addonsPrice += totalPrice;
-        addonsBreakdown.push({
-          name: `Virtual Staging (${photoCount} photos)`,
-          price: totalPrice
-        });
-      } else {
-        // Handle regular add-ons
-        const price = addonPrices[addonId] || 0;
-        if (price > 0) {
-          addonsPrice += price;
-          addonsBreakdown.push({
-            name: addonNames[addonId] || addonId,
-            price: price
-          });
+    if (isPersonalBranding) {
+      formData.selectedAddOns.forEach(addonId => {
+        const addon = PERSONAL_ADD_ONS.find(a => a.id === addonId);
+        if (addon) {
+          addonsPrice += addon.price;
+          addonsBreakdown.push({ name: addon.name, price: addon.price });
         }
-      }
-    });
+      });
+    } else {
+      formData.selectedAddOns.forEach(addonId => {
+        if (addonId.startsWith('virtual_staging_')) {
+          const photoCount = parseInt(addonId.split('_')[2], 10) || 1;
+          const addon = ADD_ONS.find(a => a.id === 'virtual_staging');
+          const pricePerPhoto = addon?.price ?? 12;
+          const totalPrice = pricePerPhoto * photoCount;
+          addonsPrice += totalPrice;
+          addonsBreakdown.push({
+            name: `Virtual Staging (${photoCount} photos)`,
+            price: totalPrice
+          });
+        } else {
+          const addon = ADD_ONS.find(a => a.id === addonId);
+          if (addon) {
+            addonsPrice += addon.price;
+            addonsBreakdown.push({
+              name: addon.name,
+              price: addon.price
+            });
+          }
+        }
+      });
+    }
   }
 
-  // Calculate totals
   const subtotal = packagePrice + addonsPrice;
-  const taxAmount = subtotal * (TAX_RATE / 100);
+  const taxAmount = Math.round(subtotal * (TAX_RATE / 100));
   const finalTotal = subtotal + taxAmount;
 
   return {
