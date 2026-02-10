@@ -10,6 +10,42 @@ import { handleBookingSubmission } from "@/components/booking/booking-form-handl
 import { getRecaptchaToken } from "@/lib/recaptcha-client";
 import { HONEYPOT_FIELD, validateBookingForm, validateEmail, validatePhone } from "@/lib/validation";
 
+const GOOGLE_MAPS_SCRIPT_ID = 'google-maps-places-script-book';
+
+function loadGoogleMapsPlaces(apiKey: string): Promise<void> {
+    if (typeof window === 'undefined') return Promise.resolve();
+    const existing = document.getElementById(GOOGLE_MAPS_SCRIPT_ID);
+    if (existing) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.id = GOOGLE_MAPS_SCRIPT_ID;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Google Maps script failed to load'));
+        document.head.appendChild(script);
+    });
+}
+
+declare global {
+    interface Window {
+        google?: {
+            maps: {
+                places: {
+                    Autocomplete: new (
+                        input: HTMLInputElement,
+                        opts?: { types?: string[]; componentRestrictions?: { country: string | string[] }; fields?: string[] }
+                    ) => {
+                        addListener: (event: string, fn: () => void) => { remove: () => void };
+                        getPlace: () => { formatted_address?: string };
+                    };
+                };
+            };
+        };
+    }
+}
+
 type ServiceCategory = 'personal' | 'listing' | null;
 
 type BookClientProps = {
@@ -28,6 +64,11 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
     const step1SectionRef = useRef<HTMLDivElement>(null);
     const packagesSectionRef = useRef<HTMLDivElement>(null);
     const addonsSectionRef = useRef<HTMLDivElement>(null);
+    const bookingSectionRef = useRef<HTMLDivElement>(null);
+    const propertyAddressInputRef = useRef<HTMLInputElement>(null);
+    const autocompleteListenerRef = useRef<{ remove: () => void } | null>(null);
+    const [enterManuallyListing, setEnterManuallyListing] = useState(false);
+    const [placesReadyListing, setPlacesReadyListing] = useState(false);
     const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
     const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
     const [virtualStagingPhotoCount, setVirtualStagingPhotoCount] = useState(1);
@@ -92,6 +133,36 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
         if (included.length === 0) return;
         setSelectedAddOns((prev) => prev.filter((id) => !included.includes(id)));
     }, [selectedCategory, selectedPackageId]);
+
+    const googleMapsApiKey = typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY : '';
+    useEffect(() => {
+        if (selectedCategory !== 'listing' || !googleMapsApiKey || typeof window === 'undefined') return;
+        loadGoogleMapsPlaces(googleMapsApiKey).then(() => setPlacesReadyListing(true)).catch(() => {});
+    }, [selectedCategory, googleMapsApiKey]);
+
+    useEffect(() => {
+        if (selectedCategory !== 'listing' || !placesReadyListing || enterManuallyListing || !propertyAddressInputRef.current || !window.google?.maps?.places) return;
+        const input = propertyAddressInputRef.current;
+        const Autocomplete = window.google.maps.places.Autocomplete;
+        const autocomplete = new Autocomplete(input, {
+            types: ['address'],
+            componentRestrictions: { country: 'ca' },
+            fields: ['formatted_address'],
+        });
+        const listener = autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (place.formatted_address) {
+                setPropertyAddressInput(place.formatted_address);
+            }
+        });
+        autocompleteListenerRef.current = listener;
+        return () => {
+            if (autocompleteListenerRef.current) {
+                autocompleteListenerRef.current.remove();
+                autocompleteListenerRef.current = null;
+            }
+        };
+    }, [selectedCategory, placesReadyListing, enterManuallyListing]);
 
     const calculatePrice = (basePrice: number, packageId: string): number | null => {
         if (selectedCategory === 'personal') {
@@ -189,9 +260,16 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
     };
 
     const handleEditPropertyDetails = () => {
-        setOpenAccordion(null);
+        setOpenAccordion(selectedCategory === 'listing' ? 'property' : null);
         setTimeout(() => {
             step1SectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    };
+
+    const handleContinueFromAddons = () => {
+        setOpenAccordion('booking');
+        setTimeout(() => {
+            bookingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
     };
 
@@ -477,22 +555,43 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                             <p className="book-subtitle">Choose a package that fits your needs</p>
                         </div>
 
-                        {/* Step 1: Property details - Only for Real Estate Listing */}
+                        {/* Accordion 1: Property Details - Only for Listing */}
                         {selectedCategory === 'listing' && (
-                            <div ref={step1SectionRef} className="book-step1-wrap">
-                                <h2 className="book-step1-title">Step 1: Property details</h2>
-                                <div className="book-step1-fields">
-                                    <div className="book-form-group">
-                                        <label htmlFor="book-property-address">Property address *</label>
-                                        <input
-                                            id="book-property-address"
-                                            type="text"
-                                            className="book-step1-input"
-                                            placeholder="Enter full property address"
-                                            value={propertyAddressInput}
-                                            onChange={(e) => setPropertyAddressInput(e.target.value)}
-                                        />
-                                    </div>
+                            <div ref={step1SectionRef} className="book-accordion">
+                                <button
+                                    onClick={() => toggleAccordion('property')}
+                                    className={`book-accordion-header ${openAccordion === 'property' ? 'open' : ''}`}
+                                >
+                                    <span className="book-accordion-title">1. Property Details</span>
+                                    <i className={`fa-solid fa-chevron-${openAccordion === 'property' ? 'up' : 'down'}`}></i>
+                                </button>
+                                {openAccordion === 'property' && (
+                                    <div className="book-accordion-content">
+                                        <div className="book-step1-wrap" style={{ margin: 0, padding: 0, background: 'none', border: 'none' }}>
+                                            <h2 className="book-step1-title">Property details</h2>
+                                            <div className="book-step1-fields">
+                                                <div className="book-form-group">
+                                                    <label htmlFor="book-property-address">Property address *</label>
+                                                    <input
+                                                        ref={propertyAddressInputRef}
+                                                        id="book-property-address"
+                                                        type="text"
+                                                        className="book-step1-input"
+                                                        placeholder="Start typing address..."
+                                                        value={propertyAddressInput}
+                                                        onChange={(e) => setPropertyAddressInput(e.target.value)}
+                                                        autoComplete="off"
+                                                    />
+                                                    {!enterManuallyListing ? (
+                                                        <button
+                                                            type="button"
+                                                            className="book-enter-manually-link"
+                                                            onClick={() => setEnterManuallyListing(true)}
+                                                        >
+                                                            Enter address manually
+                                                        </button>
+                                                    ) : null}
+                                                </div>
                                     <div className="book-step1-row">
                                         <div className="book-form-group">
                                             <label htmlFor="book-property-suite">Suite / Unit (optional)</label>
@@ -520,19 +619,22 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                                 }}
                                             />
                                         </div>
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className="book-select-packages-btn"
+                                                onClick={handleSelectPackages}
+                                            >
+                                                Continue to Packages
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                                <button
-                                    type="button"
-                                    className="book-select-packages-btn"
-                                    onClick={handleSelectPackages}
-                                >
-                                    Select Packages
-                                </button>
+                                )}
                             </div>
                         )}
 
-                        {/* Accordion 1: Packages */}
+                        {/* Accordion 2: Packages (listing) / 1. Packages (personal) */}
                         <div ref={packagesSectionRef} className="book-accordion">
                             <div className={`book-accordion-header book-accordion-header-packages ${openAccordion === 'packages' ? 'open' : ''}`}>
                                 <button
@@ -540,7 +642,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                     onClick={() => toggleAccordion('packages')}
                                     className="book-accordion-header-toggle"
                                 >
-                                    <span className="book-accordion-title">1. Packages</span>
+                                    <span className="book-accordion-title">{selectedCategory === 'listing' ? '2. Packages' : '1. Packages'}</span>
                                     {appliedPartnerCode && (
                                         <span className="book-accordion-partner-badge">
                                             PartnerID: {appliedPartnerCode}
@@ -700,7 +802,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                     onClick={() => toggleAccordion('addons')}
                                     className={`book-accordion-header ${openAccordion === 'addons' ? 'open' : ''}`}
                                 >
-                                    <span className="book-accordion-title">2. Standalone Services or Add-ons</span>
+                                    <span className="book-accordion-title">3. Services and Add-ons</span>
                                     <i className={`fa-solid fa-chevron-${openAccordion === 'addons' ? 'up' : 'down'}`}></i>
                                 </button>
                                 {openAccordion === 'addons' && (
@@ -727,20 +829,27 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                                 );
                                             })}
                                         </div>
+                                        <button
+                                            type="button"
+                                            className="book-addons-continue-btn"
+                                            onClick={handleContinueFromAddons}
+                                        >
+                                            {selectedAddOns.length > 0 ? 'Continue' : 'Continue without Add-ons'}
+                                        </button>
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        {/* Accordion 3: Complete your Booking */}
-                        <div className="book-accordion">
+                        {/* Accordion 4 (listing) / 2 (personal): Complete Your Booking */}
+                        <div ref={bookingSectionRef} className="book-accordion">
                             <button
                                 onClick={() => canCompleteBooking && toggleAccordion('booking')}
                                 disabled={!canCompleteBooking}
                                 className={`book-accordion-header ${openAccordion === 'booking' ? 'open' : ''} ${!canCompleteBooking ? 'disabled' : ''}`}
                             >
                                 <span className="book-accordion-title">
-                                    3. Complete your Booking
+                                    {selectedCategory === 'listing' ? '4. Complete Your Booking' : '2. Complete your Booking'}
                                     {!canCompleteBooking && <span className="book-accordion-disabled-text"> (Select a package or add-on first)</span>}
                                 </span>
                                 {canCompleteBooking && (
@@ -811,7 +920,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                                 <>
                                                     {pkg && (
                                                         <div className="book-form-breakup-item">
-                                                            <span>{pkg.name}</span>
+                                                            <span>{pkg.name}{appliedPartnerCode ? ' (Preferred Partner)' : ''}</span>
                                                             <span>{pkgPrice != null ? formatPrice(pkgPrice) : 'Contact for Price'}</span>
                                                         </div>
                                                     )}
@@ -1242,6 +1351,22 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
 
                 .book-step1-input::placeholder {
                     color: rgba(255, 255, 255, 0.4);
+                }
+
+                .book-enter-manually-link {
+                    display: inline-block;
+                    margin-top: 8px;
+                    padding: 0;
+                    background: none;
+                    border: none;
+                    color: rgba(255, 255, 255, 0.7);
+                    font-size: 13px;
+                    text-decoration: underline;
+                    cursor: pointer;
+                }
+
+                .book-enter-manually-link:hover {
+                    color: #fff;
                 }
 
                 .book-select-packages-btn {
@@ -1858,6 +1983,24 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                     display: grid;
                     grid-template-columns: repeat(2, 1fr);
                     gap: 10px;
+                }
+
+                .book-addons-continue-btn {
+                    width: 100%;
+                    margin-top: 24px;
+                    padding: 14px 20px;
+                    background: #fff;
+                    color: #000;
+                    border: none;
+                    border-radius: 10px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                }
+
+                .book-addons-continue-btn:hover {
+                    background: rgba(255, 255, 255, 0.9);
                 }
 
                 .book-addon-card {
