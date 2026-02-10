@@ -6,10 +6,16 @@ import { Pool } from 'pg';
 //   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 // });
 
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString?.trim()) {
+  console.warn(
+    'DATABASE_URL is not set. Create .env.local with DATABASE_URL=postgresql://user:pass@host:5432/dbname'
+  );
+}
+
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: false, // Disable SSL for Docker development
-    // Add connection timeout
+    connectionString: connectionString || 'postgresql://localhost:5432/local',
+    ssl: false,
     connectionTimeoutMillis: 5000,
     idleTimeoutMillis: 30000,
   });
@@ -46,6 +52,12 @@ export async function query(text: string, params?: (string | number | boolean | 
     console.log('Executed query', { text, duration, rows: res.rowCount });
     return res;
   } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err?.code === 'ECONNREFUSED') {
+      console.error(
+        'Database connection refused. Check: (1) DATABASE_URL in .env.local points to a running Postgres; (2) if using host "db", run the app inside Docker or use localhost and the mapped port; (3) start local Postgres (e.g. docker run -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:15).'
+      );
+    }
     console.error('Query error:', error);
     throw error;
   }
@@ -148,7 +160,7 @@ export const db = {
         budget ?? null,
         timeline ?? null,
         serviceTier ?? null,
-        selectedAddOns && selectedAddOns.length > 0 ? JSON.stringify(selectedAddOns) : null,
+        selectedAddOns && selectedAddOns.length > 0 ? selectedAddOns : null,
         preferredPartnerCode ?? null,
         preferredDate ?? null,
         preferredTime ?? null,
