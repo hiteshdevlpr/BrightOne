@@ -28,24 +28,6 @@ function loadGoogleMapsPlaces(apiKey: string): Promise<void> {
     });
 }
 
-declare global {
-    interface Window {
-        google?: {
-            maps: {
-                places: {
-                    Autocomplete: new (
-                        input: HTMLInputElement,
-                        opts?: { types?: string[]; componentRestrictions?: { country: string | string[] }; fields?: string[] }
-                    ) => {
-                        addListener: (event: string, fn: () => void) => { remove: () => void };
-                        getPlace: () => { formatted_address?: string };
-                    };
-                };
-            };
-        };
-    }
-}
-
 type ServiceCategory = 'personal' | 'listing' | null;
 
 type BookClientProps = {
