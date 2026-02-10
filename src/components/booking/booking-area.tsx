@@ -320,7 +320,7 @@ export default function BookingArea() {
             serviceType: 'Real Estate Media',
             serviceTier: formData.selectedPackage,
             preferredPartnerCode: appliedPartnerCode || undefined,
-            totalPrice: calculateTotal().toString(),
+            totalPrice: (calculateTotal() * 1.13).toFixed(2),
             recaptchaToken,
             website_url: websiteUrl,
         };
@@ -829,6 +829,15 @@ export default function BookingArea() {
                                                 {formErrors.map((err, i) => <ErrorMsg key={i} msg={err} />)}
                                             </div>
                                         )}
+                                    </div>
+                                )}
+
+                                {formErrors.length > 0 && (
+                                    <div className="booking-submission-errors mt-30 mb-20 text-center" role="alert" aria-live="polite">
+                                        <p className="text-white fw-bold mb-2">Submission failed</p>
+                                        {formErrors.map((err, i) => (
+                                            <ErrorMsg key={i} msg={err} />
+                                        ))}
                                     </div>
                                 )}
 

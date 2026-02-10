@@ -5,6 +5,9 @@ import Link from "next/link";
 import ErrorMsg from "@/components/error-msg";
 import { getPackages, getPackagePriceWithPartner, isValidPreferredPartnerCode, ADD_ONS, AddOn } from "@/data/booking-data";
 import { getPersonalPackages } from "@/data/personal-branding-data";
+import { handleBookingSubmission } from "@/components/booking/booking-form-handler";
+import { getRecaptchaToken } from "@/lib/recaptcha-client";
+import { HONEYPOT_FIELD } from "@/lib/validation";
 
 type ServiceCategory = 'personal' | 'listing' | null;
 
@@ -24,8 +27,12 @@ export default function BookClient() {
         phone: '',
         preferredDate: '',
         preferredTime: '',
-        message: ''
+        message: '',
+        [HONEYPOT_FIELD]: '',
     });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [formErrors, setFormErrors] = useState<string[]>([]);
 
     const toggleAccordion = (accordionId: string) => {
         setOpenAccordion(prev => prev === accordionId ? null : accordionId);
@@ -95,22 +102,49 @@ export default function BookClient() {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleFormSubmit = (e: React.FormEvent) => {
+    const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle form submission - redirect to booking page with all data
-        const params = new URLSearchParams({
-            package: selectedPackageId || '',
-            ...(appliedPropertySize && { size: appliedPropertySize }),
-            ...(selectedAddOns.length > 0 && { addons: selectedAddOns.join(',') }),
-            ...(appliedPartnerCode && { partnerCode: appliedPartnerCode }),
+        if (!selectedPackageId) {
+            setFormErrors(['Please select a package first.']);
+            return;
+        }
+        const pkg = selectedCategory === 'personal'
+            ? personalPackages.find(p => p.id === selectedPackageId)
+            : realEstatePackages.find(p => p.id === selectedPackageId);
+        const pkgPrice = pkg ? calculatePrice(pkg.basePrice, pkg.id) : null;
+        const addonsTotal = selectedAddOns.reduce((sum, id) => sum + (ADD_ONS.find(a => a.id === id)?.price ?? 0), 0);
+        const subtotal = (pkgPrice ?? 0) + addonsTotal;
+        const totalPrice = (subtotal * 1.13).toFixed(2);
+
+        let recaptchaToken = '';
+        try {
+            recaptchaToken = await getRecaptchaToken('booking');
+        } catch (err) {
+            console.error('reCAPTCHA error:', err);
+            setFormErrors(['Security check failed. Please refresh and try again.']);
+            return;
+        }
+        const honeypotValue = formData[HONEYPOT_FIELD as keyof typeof formData];
+        const websiteUrl = typeof honeypotValue === 'string' ? honeypotValue : '';
+
+        const payload = {
             name: formData.name,
             email: formData.email,
             phone: formData.phone,
-            ...(formData.preferredDate && { preferredDate: formData.preferredDate }),
-            ...(formData.preferredTime && { preferredTime: formData.preferredTime }),
-            ...(formData.message && { message: formData.message })
-        });
-        window.location.href = `/booking/${selectedCategory === 'personal' ? 'personal' : 'real-estate'}?${params.toString()}`;
+            serviceType: selectedCategory === 'personal' ? 'Personal Branding' : 'Real Estate Media',
+            propertyAddress: selectedCategory === 'personal' ? (formData.message ? 'See message' : 'To be confirmed') : 'Address to be provided',
+            propertySize: selectedCategory === 'listing' ? appliedPropertySize : undefined,
+            serviceTier: selectedPackageId,
+            selectedAddOns,
+            preferredPartnerCode: appliedPartnerCode || undefined,
+            preferredDate: formData.preferredDate || undefined,
+            preferredTime: formData.preferredTime || undefined,
+            message: formData.message || undefined,
+            totalPrice,
+            recaptchaToken,
+            website_url: websiteUrl,
+        };
+        await handleBookingSubmission(payload, setIsSubmitting, setIsSubmitted, setFormErrors);
     };
 
     const handleCategoryClick = (category: ServiceCategory) => {
@@ -128,6 +162,35 @@ export default function BookClient() {
             minimumFractionDigits: 0,
         }).format(price);
     };
+
+    if (isSubmitted) {
+        return (
+            <div className="book-mobile-page">
+                <div className="book-logo-container">
+                    <Link href="/">
+                        <img src="/logo-wo-shadow.png" alt="BrightOne Creative" className="book-logo-img" />
+                    </Link>
+                </div>
+                <div className="book-success-wrap">
+                    <div className="book-success-box">
+                        <h2 className="book-success-title">Booking Submitted Successfully!</h2>
+                        <p className="book-success-text">
+                            Thank you for your interest. Our team will review your request and get back to you with confirmation within 24 hours.
+                        </p>
+                        <Link href="/" className="book-form-submit-btn" style={{ display: 'inline-block', textAlign: 'center', textDecoration: 'none' }}>
+                            Back to Home
+                        </Link>
+                    </div>
+                </div>
+                <style jsx>{`
+                    .book-success-wrap { padding: 40px 20px; min-height: 60vh; display: flex; align-items: center; justify-content: center; }
+                    .book-success-box { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; padding: 32px 24px; max-width: 420px; width: 100%; text-align: center; }
+                    .book-success-title { color: #fff; font-size: 22px; font-weight: 700; margin-bottom: 12px; }
+                    .book-success-text { color: rgba(255,255,255,0.8); font-size: 15px; line-height: 1.5; margin-bottom: 24px; }
+                `}</style>
+            </div>
+        );
+    }
 
     return (
         <div className="book-mobile-page">
@@ -518,7 +581,26 @@ export default function BookClient() {
                                     </div>
                                     )}
 
+                                    {formErrors.length > 0 && (
+                                        <div className="book-form-errors mb-20" role="alert">
+                                            {formErrors.map((err, i) => (
+                                                <ErrorMsg key={i} msg={err} />
+                                            ))}
+                                        </div>
+                                    )}
                                     <form onSubmit={handleFormSubmit} className="book-contact-form">
+                                        <div className="visually-hidden" aria-hidden="true">
+                                            <label htmlFor="book-page-website_url">Leave this blank</label>
+                                            <input
+                                                id="book-page-website_url"
+                                                name={HONEYPOT_FIELD}
+                                                type="text"
+                                                tabIndex={-1}
+                                                autoComplete="off"
+                                                value={formData[HONEYPOT_FIELD as keyof typeof formData] ?? ''}
+                                                onChange={handleFormChange}
+                                            />
+                                        </div>
                                         <div className="book-form-group">
                                             <label htmlFor="name">Name *</label>
                                             <input
@@ -606,8 +688,9 @@ export default function BookClient() {
                                             <button
                                                 type="submit"
                                                 className="book-form-submit-btn"
+                                                disabled={isSubmitting}
                                             >
-                                                Submit Booking Request
+                                                {isSubmitting ? 'Submitting...' : 'Submit Booking Request'}
                                             </button>
                                         </div>
                                     </form>

@@ -9,6 +9,7 @@
 -- Add new columns to bookings table
 ALTER TABLE bookings 
 ADD COLUMN IF NOT EXISTS selected_addons TEXT[],
+ADD COLUMN IF NOT EXISTS preferred_partner_code VARCHAR(50),
 ADD COLUMN IF NOT EXISTS preferred_date VARCHAR(50),
 ADD COLUMN IF NOT EXISTS preferred_time VARCHAR(50),
 ADD COLUMN IF NOT EXISTS total_price VARCHAR(50);

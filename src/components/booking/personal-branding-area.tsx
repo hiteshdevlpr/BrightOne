@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { getPersonalPackages, PERSONAL_ADD_ONS, PersonalPackage, PersonalAddOn } from '@/data/personal-branding-data';
 import { getPackagePriceWithPartner, isValidPreferredPartnerCode } from '@/data/booking-data';
 import { handleBookingSubmission } from './booking-form-handler';
+import { getRecaptchaToken } from '@/lib/recaptcha-client';
+import { HONEYPOT_FIELD } from '@/lib/validation';
 import {
     trackBookingStart,
     trackBookingStepChange,
@@ -81,6 +83,7 @@ export default function PersonalBrandingArea() {
         preferredDate: '',
         preferredTime: '',
         message: '',
+        [HONEYPOT_FIELD]: '',
     });
 
     const [appliedPartnerCode, setAppliedPartnerCode] = useState('');
@@ -187,6 +190,16 @@ export default function PersonalBrandingArea() {
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        let recaptchaToken = '';
+        try {
+            recaptchaToken = await getRecaptchaToken('booking');
+        } catch (err) {
+            console.error('reCAPTCHA error:', err);
+            setFormErrors(['Security check failed. Please refresh and try again.']);
+            return;
+        }
+        const honeypotValue = formData[HONEYPOT_FIELD as keyof typeof formData];
+        const websiteUrl = typeof honeypotValue === 'string' ? honeypotValue : '';
         await handleBookingSubmission(
             {
                 ...formData,
@@ -195,6 +208,8 @@ export default function PersonalBrandingArea() {
                 serviceTier: formData.selectedPackage,
                 preferredPartnerCode: appliedPartnerCode || undefined,
                 totalPrice: (calculateTotal() * 1.13).toFixed(2),
+                recaptchaToken,
+                website_url: websiteUrl,
             },
             setIsSubmitting,
             setIsSubmitted,
@@ -458,6 +473,18 @@ export default function PersonalBrandingArea() {
                                     <div className="step-content fadeIn">
                                         <div className="row justify-content-center">
                                             <div className="col-lg-10">
+                                                <div className="visually-hidden" aria-hidden="true">
+                                                    <label htmlFor="personal-booking-website_url">Leave this blank</label>
+                                                    <input
+                                                        id="personal-booking-website_url"
+                                                        name={HONEYPOT_FIELD}
+                                                        type="text"
+                                                        tabIndex={-1}
+                                                        autoComplete="off"
+                                                        value={formData[HONEYPOT_FIELD as keyof typeof formData] ?? ''}
+                                                        onChange={handleInputChange}
+                                                    />
+                                                </div>
                                                 <div className="row">
                                                     <div className="col-md-6">
                                                         <div className="cn-contactform-input mb-25">
@@ -556,6 +583,15 @@ export default function PersonalBrandingArea() {
                                                 {formErrors.map((err, i) => <ErrorMsg key={i} msg={err} />)}
                                             </div>
                                         )}
+                                    </div>
+                                )}
+
+                                {formErrors.length > 0 && (
+                                    <div className="booking-submission-errors mt-30 mb-20 text-center" role="alert" aria-live="polite">
+                                        <p className="text-white fw-bold mb-2">Submission failed</p>
+                                        {formErrors.map((err, i) => (
+                                            <ErrorMsg key={i} msg={err} />
+                                        ))}
                                     </div>
                                 )}
 

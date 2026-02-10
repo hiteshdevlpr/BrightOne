@@ -146,8 +146,11 @@ export function validateBookingForm(formData: {
   const serviceTypeError = validateRequired(formData.serviceType, 'Service Type');
   if (serviceTypeError) errors.push({ field: 'serviceType', message: serviceTypeError });
 
-  const addressError = validateRequired(formData.propertyAddress, 'Property Address');
-  if (addressError) errors.push({ field: 'propertyAddress', message: addressError });
+  // Property/session address required for Real Estate; optional for Personal Branding
+  if (formData.serviceType !== 'Personal Branding') {
+    const addressError = validateRequired(formData.propertyAddress, 'Property Address');
+    if (addressError) errors.push({ field: 'propertyAddress', message: addressError });
+  }
 
   const serviceTierError = validateRequired(formData.serviceTier || '', 'Service Package');
   if (serviceTierError) errors.push({ field: 'serviceTier', message: serviceTierError });
