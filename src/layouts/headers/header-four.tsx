@@ -52,7 +52,6 @@ export default function HeaderFour() {
                                     <Link className="logo-2" href="/">
                                         <Image src={logo_2} alt="BrightOne Creative" width={200} height={52} style={{ height: 52, width: 'auto' }} />
                                     </Link>
-                                    <span className="tp-header-tagline">Real Estate Media & Personal Branding</span>
                                 </div>
                             </div>
                             <div className="col-xl-6 col-lg-6 d-none d-xl-block">

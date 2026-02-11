@@ -382,7 +382,7 @@ export default function BookingArea() {
 
     if (isSubmitted) {
         return (
-            <div className="cn-contactform-area pt-100 pb-100 text-center">
+            <div className="cn-contactform-area text-center">
                 <div className="container">
                     <div className="row justify-content-center">
                         <div className="col-lg-8">
@@ -412,11 +412,11 @@ export default function BookingArea() {
     const packages = getPackages();
 
     return (
-        <div className="cn-contactform-area pt-100 pb-100" style={{ fontFamily: 'var(--font-inter)' }}>
+        <div className="cn-contactform-area " style={{ fontFamily: 'var(--font-inter)' }}>
             <div className="container">
                 <div className="row">
                     <div className="col-12">
-                        <div className="ab-about-category-title-box mb-60 text-center p-relative">
+                        <div className="ab-about-category-title-box text-center p-relative">
                             <span className="tp-section-subtitle mb-15 justify-content-center d-flex align-items-center">
                                 <HandIcon /> Book Your Session
                             </span>
@@ -455,8 +455,6 @@ export default function BookingArea() {
                                     <div className="step-content fadeIn">
                                         <div className="row justify-content-center">
                                             <div className="col-lg-8">
-                                                <h5 className="text-white mb-2">Property Details</h5>
-                                                <p className="text-white-50 mb-25">Enter your property address and details to get started</p>
                                                 {/* Honeypot - leave blank */}
                                                 <div className="visually-hidden" aria-hidden="true">
                                                     <label htmlFor="booking-website_url">Leave this blank</label>

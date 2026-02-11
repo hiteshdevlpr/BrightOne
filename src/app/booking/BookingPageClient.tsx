@@ -44,7 +44,7 @@ const BookPageClient = () => {
                                                 <span></span>
                                             </div>
                                             <h4 className="tp-hero-3-title tp-char-animation text-white">
-                                                Book Your Session
+                                                Book Your Shoot
                                             </h4>
                                             <span className="tp-hero-3-category text-white-50 d-block mb-4">
                                                 Get a personalized quote and book your professional real estate photography session
