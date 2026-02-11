@@ -2,7 +2,7 @@
 import { db } from './database';
 import { validateContactForm, validateBookingForm } from './validation';
 import { EmailService, ContactEmailData, BookingEmailData } from './email-service';
-import { getPackages, getPackagePriceWithPartner, ADD_ONS } from '@/data/booking-data';
+import { getPackages, getPackagePriceWithPartner, getAddonPriceWithPartner, ADD_ONS } from '@/data/booking-data';
 import { getPersonalPackages, PERSONAL_ADD_ONS } from '@/data/personal-branding-data';
 
 export interface ContactFormData {
@@ -104,12 +104,14 @@ function calculatePriceBreakdown(formData: BookingFormData): PriceBreakdown {
   const addonsBreakdown: Array<{ name: string; price: number }> = [];
 
   if (formData.selectedAddOns && formData.selectedAddOns.length > 0) {
+    const partnerCode = formData.preferredPartnerCode || null;
     if (isPersonalBranding) {
       formData.selectedAddOns.forEach(addonId => {
         const addon = PERSONAL_ADD_ONS.find(a => a.id === addonId);
         if (addon) {
-          addonsPrice += addon.price;
-          addonsBreakdown.push({ name: addon.name, price: addon.price });
+          const price = getAddonPriceWithPartner(addon.price, partnerCode);
+          addonsPrice += price;
+          addonsBreakdown.push({ name: addon.name, price });
         }
       });
     } else {
@@ -118,7 +120,7 @@ function calculatePriceBreakdown(formData: BookingFormData): PriceBreakdown {
           const photoCount = parseInt(addonId.split('_')[2], 10) || 1;
           const addon = ADD_ONS.find(a => a.id === 'virtual_staging');
           const pricePerPhoto = addon?.price ?? 12;
-          const totalPrice = pricePerPhoto * photoCount;
+          const totalPrice = getAddonPriceWithPartner(pricePerPhoto * photoCount, partnerCode);
           addonsPrice += totalPrice;
           addonsBreakdown.push({
             name: `Virtual Staging (${photoCount} photos)`,
@@ -127,10 +129,11 @@ function calculatePriceBreakdown(formData: BookingFormData): PriceBreakdown {
         } else {
           const addon = ADD_ONS.find(a => a.id === addonId);
           if (addon) {
-            addonsPrice += addon.price;
+            const price = getAddonPriceWithPartner(addon.price, partnerCode);
+            addonsPrice += price;
             addonsBreakdown.push({
               name: addon.name,
-              price: addon.price
+              price
             });
           }
         }

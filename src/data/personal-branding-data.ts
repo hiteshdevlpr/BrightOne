@@ -38,7 +38,6 @@ export const getPersonalPackages = (): PersonalPackage[] => {
                 'Horizontal videos for YouTube, Facebook, etc.',
                 'Highly Engaging Content with Fast Paced Edits and Trending Audio',
                 '2-3 Hour Shoot per month',
-                'Up to 1 Outdoor Shoot (Listing, Neighbourhood, Lifestyle)',
                 'No Contract to Start',
                 'Add On: Outdoor shoots for open house, neighbourhood, lifestyle',
             ],
@@ -71,6 +70,21 @@ export const getPersonalPackages = (): PersonalPackage[] => {
                 'https://picsum.photos/seed/pb-accelerator2/800/400',
                 'https://picsum.photos/seed/pb-accelerator3/800/400',
                 'https://picsum.photos/seed/pb-accelerator4/800/400',
+            ],
+        },
+        {
+            id: 'tailored',
+            name: 'Tailored',
+            description: 'Get in touch and we\'ll modify the package as per your needs and targets.',
+            basePrice: 0,
+            services: [
+                'Custom package built for you',
+                'Flexible deliverables and timeline',
+                'Consultation to align with your goals',
+            ],
+            images: [
+                'https://picsum.photos/seed/pb-tailored1/800/400',
+                'https://picsum.photos/seed/pb-tailored2/800/400',
             ],
         },
     ];

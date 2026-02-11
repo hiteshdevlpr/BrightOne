@@ -125,6 +125,21 @@ export function getPackagePriceWithPartner(
     return { price, isPartnerDiscount: true };
 }
 
+/** Add-on discount % when a valid preferred partner code is used. RLPFRANK2026: 10%. */
+const PREFERRED_PARTNER_ADDON_DISCOUNT_PERCENT = 10;
+
+/**
+ * Get add-on price with optional preferred partner discount (e.g. RLPFRANK2026: 10% off add-ons).
+ */
+export function getAddonPriceWithPartner(
+    price: number,
+    preferredPartnerCode?: string | null
+): number {
+    if (!isValidPreferredPartnerCode(preferredPartnerCode ?? undefined)) return price;
+    const discount = PREFERRED_PARTNER_ADDON_DISCOUNT_PERCENT;
+    return Math.round(price * (1 - discount / 100));
+}
+
 /**
  * Add-on IDs that are already included in each real estate package (from package.services).
  * Used to filter add-ons so we only show options not already in the selected package.

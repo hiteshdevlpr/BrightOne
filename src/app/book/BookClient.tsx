@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ErrorMsg from "@/components/error-msg";
-import { getPackages, getPackagePriceWithPartner, isValidPreferredPartnerCode, ADD_ONS, AddOn, PACKAGE_INCLUDED_ADDON_IDS } from "@/data/booking-data";
+import { getPackages, getPackagePriceWithPartner, getAddonPriceWithPartner, isValidPreferredPartnerCode, ADD_ONS, AddOn, PACKAGE_INCLUDED_ADDON_IDS } from "@/data/booking-data";
 import { getPersonalPackages } from "@/data/personal-branding-data";
 import { handleBookingSubmission } from "@/components/booking/booking-form-handler";
 import { getRecaptchaToken } from "@/lib/recaptcha-client";
@@ -99,15 +99,17 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
     const virtualStagingPricePerPhoto = ADD_ONS.find((a) => a.id === 'virtual_staging')?.price ?? 12;
 
     const getAddonPrice = (addonId: string): number => {
+        let base = 0;
         if (addonId === 'virtual_staging') {
-            return virtualStagingPricePerPhoto * virtualStagingPhotoCount;
-        }
-        if (addonId.startsWith('virtual_staging_')) {
+            base = virtualStagingPricePerPhoto * virtualStagingPhotoCount;
+        } else if (addonId.startsWith('virtual_staging_')) {
             const n = parseInt(addonId.split('_')[2], 10) || 1;
-            return virtualStagingPricePerPhoto * n;
+            base = virtualStagingPricePerPhoto * n;
+        } else {
+            const addon = ADD_ONS.find((a) => a.id === addonId);
+            base = addon?.price ?? 0;
         }
-        const addon = ADD_ONS.find((a) => a.id === addonId);
-        return addon?.price ?? 0;
+        return getAddonPriceWithPartner(base, appliedPartnerCode || null);
     };
 
     const resolvedSelectedAddOns = selectedAddOns.map((id) =>
@@ -128,7 +130,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
     }, [selectedCategory, googleMapsApiKey]);
 
     useEffect(() => {
-        if (selectedCategory !== 'listing' || !placesReadyListing || enterManuallyListing || !propertyAddressInputRef.current || !window.google?.maps?.places) return;
+        if (selectedCategory !== 'listing' || !placesReadyListing || enterManuallyListing || openAccordion !== 'property' || !propertyAddressInputRef.current || !window.google?.maps?.places) return;
         const input = propertyAddressInputRef.current;
         const Autocomplete = window.google.maps.places.Autocomplete;
         const autocomplete = new Autocomplete(input, {
@@ -150,10 +152,11 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                 autocompleteListenerRef.current = null;
             }
         };
-    }, [selectedCategory, placesReadyListing, enterManuallyListing]);
+    }, [selectedCategory, placesReadyListing, enterManuallyListing, openAccordion]);
 
     const calculatePrice = (basePrice: number, packageId: string): number | null => {
         if (selectedCategory === 'personal') {
+            if (packageId === 'tailored') return null;
             const { price } = getPackagePriceWithPartner(basePrice, undefined, packageId, appliedPartnerCode || null);
             return price;
         }
@@ -729,6 +732,8 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                                     <div className="book-package-price">
                                                         {showContactPrice ? (
                                                             <span className="book-package-contact-price">Contact for Price</span>
+                                                        ) : selectedCategory === 'personal' && pkg.id === 'tailored' ? (
+                                                            <span className="book-package-contact-price">Book a Call</span>
                                                         ) : (
                                                             formatPrice(calculatedPrice ?? pkg.basePrice)
                                                         )}
@@ -748,7 +753,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                                                 className="book-package-btn-placeholder book-package-select-btn"
                                                                 onClick={() => handleSelectPackageAndGoToAddons(pkg.id)}
                                                             >
-                                                                Select and choose Add Ons
+                                                                {selectedCategory === 'personal' ? 'Select Package' : 'Select and choose Add Ons'}
                                                             </button>
                                                         )
                                                     ) : (
@@ -832,7 +837,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                                         <div className="book-addon-content">
                                                             <h4 className="book-addon-name">{addon.name}</h4>
                                                             <p className="book-addon-desc">{addon.description}</p>
-                                                            <div className="book-addon-price">{formatPrice(addon.price)}</div>
+                                                            <div className="book-addon-price">{formatPrice(getAddonPrice(addon.id))}</div>
                                                             {addon.comments && (
                                                                 <p className="book-addon-comment">{addon.comments}</p>
                                                             )}
@@ -1555,7 +1560,6 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                     font-size: 24px;
                     font-weight: 600;
                     color: rgba(255, 255, 255, 0.9);
-                    font-style: italic;
                 }
 
                 .book-package-desc {

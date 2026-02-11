@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { getPackages, ADD_ONS, getPackagePriceWithPartner, isValidPreferredPartnerCode } from '@/data/booking-data';
+import { getPackages, ADD_ONS, getPackagePriceWithPartner, getAddonPriceWithPartner, isValidPreferredPartnerCode } from '@/data/booking-data';
 import { handleBookingSubmission, type BookingFormData } from './booking-form-handler';
 import { getRecaptchaToken } from '@/lib/recaptcha-client';
 import { HONEYPOT_FIELD, validateBookingForm, validateEmail, validatePhone } from '@/lib/validation';
@@ -295,7 +295,8 @@ export default function BookingArea() {
 
         const addOnsPrice = formData.selectedAddOns.reduce((total, id) => {
             const addOn = ADD_ONS.find(a => a.id === id);
-            return total + (addOn?.price || 0);
+            const price = getAddonPriceWithPartner(addOn?.price || 0, appliedPartnerCode || null);
+            return total + price;
         }, 0);
 
         return packagePrice + addOnsPrice;
@@ -602,7 +603,7 @@ export default function BookingArea() {
                                                                 </div>
                                                                 <div className="addon-thumb-info">
                                                                     <span className="addon-thumb-name">{addon.name}</span>
-                                                                    <span className="addon-thumb-price">+${addon.price}</span>
+                                                                    <span className="addon-thumb-price">+${getAddonPriceWithPartner(addon.price, appliedPartnerCode || null)}</span>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -719,7 +720,7 @@ export default function BookingArea() {
                                                                             return (
                                                                                 <div key={id} className="sidebar-line-item sidebar-addon-line">
                                                                                     <span>{addon?.name}</span>
-                                                                                    <span>${addon?.price}</span>
+                                                                                    <span>${getAddonPriceWithPartner(addon?.price ?? 0, appliedPartnerCode || null)}</span>
                                                                                 </div>
                                                                             );
                                                                         })}
@@ -852,7 +853,7 @@ export default function BookingArea() {
                                                                     return (
                                                                         <div key={id} className="d-flex justify-content-between mb-5 pl-20">
                                                                             <span className="text-white-50 small">- {addon?.name}</span>
-                                                                            <span className="text-white-50 small">${addon?.price}</span>
+                                                                            <span className="text-white-50 small">${getAddonPriceWithPartner(addon?.price ?? 0, appliedPartnerCode || null)}</span>
                                                                         </div>
                                                                     );
                                                                 })}
