@@ -51,6 +51,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
     const autocompleteListenerRef = useRef<{ remove: () => void } | null>(null);
     const [enterManuallyListing, setEnterManuallyListing] = useState(false);
     const [placesReadyListing, setPlacesReadyListing] = useState(false);
+    const [propertyAddressBuffer, setPropertyAddressBuffer] = useState('');
     const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
     const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
     const [virtualStagingPhotoCount, setVirtualStagingPhotoCount] = useState(1);
@@ -80,6 +81,10 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
     };
 
     const canCompleteBooking = selectedPackageId !== null || selectedAddOns.length > 0;
+
+    const step1Filled = selectedCategory !== 'listing'
+        ? true
+        : (propertyAddressInput.trim() !== '' && propertySizeInput.trim() !== '');
     
     const realEstatePackages = getPackages();
     const personalPackages = getPersonalPackages();
@@ -135,6 +140,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
             const place = autocomplete.getPlace();
             if (place.formatted_address) {
                 setPropertyAddressInput(place.formatted_address);
+                setPropertyAddressBuffer(place.formatted_address);
             }
         });
         autocompleteListenerRef.current = listener;
@@ -434,6 +440,10 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                 </Link>
             </div>
 
+            <p className="book-contact-line">
+                <a href="tel:4164199689">Call Now to Book!</a>
+            </p>
+
             {/* Social Media Links */}
             <div className="book-social-container">
                 <Link 
@@ -550,7 +560,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                 {openAccordion === 'property' && (
                                     <div className="book-accordion-content">
                                         <div className="book-step1-wrap" style={{ margin: 0, padding: 0, background: 'none', border: 'none' }}>
-                                            <h2 className="book-step1-title">Property details</h2>
+
                                             <div className="book-step1-fields">
                                                 <div className="book-form-group">
                                                     <label htmlFor="book-property-address">Property address *</label>
@@ -560,19 +570,38 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                                         type="text"
                                                         className="book-step1-input"
                                                         placeholder="Start typing address..."
-                                                        value={propertyAddressInput}
-                                                        onChange={(e) => setPropertyAddressInput(e.target.value)}
+                                                        value={enterManuallyListing ? propertyAddressInput : propertyAddressBuffer}
+                                                        onChange={(e) =>
+                                                            enterManuallyListing
+                                                                ? setPropertyAddressInput(e.target.value)
+                                                                : setPropertyAddressBuffer(e.target.value)
+                                                        }
                                                         autoComplete="off"
                                                     />
                                                     {!enterManuallyListing ? (
                                                         <button
                                                             type="button"
                                                             className="book-enter-manually-link"
-                                                            onClick={() => setEnterManuallyListing(true)}
+                                                            onClick={() => {
+                                                                setPropertyAddressInput(propertyAddressBuffer);
+                                                                setEnterManuallyListing(true);
+                                                            }}
                                                         >
                                                             Enter address manually
                                                         </button>
-                                                    ) : null}
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            className="book-enter-manually-link"
+                                                            onClick={() => {
+                                                                setPropertyAddressInput('');
+                                                                setPropertyAddressBuffer('');
+                                                                setEnterManuallyListing(false);
+                                                            }}
+                                                        >
+                                                            Use address suggestions
+                                                        </button>
+                                                    )}
                                                 </div>
                                     <div className="book-step1-row">
                                         <div className="book-form-group">
@@ -607,6 +636,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                                 type="button"
                                                 className="book-select-packages-btn"
                                                 onClick={handleSelectPackages}
+                                                disabled={!step1Filled}
                                             >
                                                 Continue to Packages
                                             </button>
@@ -618,10 +648,10 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
 
                         {/* Accordion 2: Packages (listing) / 1. Packages (personal) */}
                         <div ref={packagesSectionRef} className="book-accordion">
-                            <div className={`book-accordion-header book-accordion-header-packages ${openAccordion === 'packages' ? 'open' : ''}`}>
+                            <div className={`book-accordion-header book-accordion-header-packages ${openAccordion === 'packages' ? 'open' : ''} ${selectedCategory === 'listing' && !step1Filled ? 'disabled' : ''}`}>
                                 <button
                                     type="button"
-                                    onClick={() => toggleAccordion('packages')}
+                                    onClick={() => (selectedCategory !== 'listing' || step1Filled) && toggleAccordion('packages')}
                                     className="book-accordion-header-toggle"
                                 >
                                     <span className="book-accordion-title">{selectedCategory === 'listing' ? '2. Packages' : '1. Packages'}</span>
@@ -654,7 +684,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                 )}
                                 <button
                                     type="button"
-                                    onClick={() => toggleAccordion('packages')}
+                                    onClick={() => (selectedCategory !== 'listing' || step1Filled) && toggleAccordion('packages')}
                                     className="book-accordion-chevron-btn"
                                     aria-expanded={openAccordion === 'packages'}
                                 >
@@ -781,8 +811,8 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                         {selectedCategory === 'listing' && (
                             <div ref={addonsSectionRef} className="book-accordion">
                                 <button
-                                    onClick={() => toggleAccordion('addons')}
-                                    className={`book-accordion-header ${openAccordion === 'addons' ? 'open' : ''}`}
+                                    onClick={() => step1Filled && toggleAccordion('addons')}
+                                    className={`book-accordion-header ${openAccordion === 'addons' ? 'open' : ''} ${!step1Filled ? 'disabled' : ''}`}
                                 >
                                     <span className="book-accordion-title">3. Services and Add-ons</span>
                                     <i className={`fa-solid fa-chevron-${openAccordion === 'addons' ? 'up' : 'down'}`}></i>
@@ -1120,7 +1150,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
             <style jsx>{`
                 .book-mobile-page {
                     min-height: 100vh;
-                    background: #000;
+                    background: #272C30;
                     color: #fff;
                     padding: 20px;
                     padding-bottom: 40px;
@@ -1131,7 +1161,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                     display: flex;
                     justify-content: center;
                     align-items: center;
-                    padding: 30px 0 20px;
+                    padding: 0;
                 }
 
                 .book-logo-img {
@@ -1141,12 +1171,31 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                     display: block;
                 }
 
+                .book-contact-line {
+                    text-align: center;
+                    font-size: 14px;
+                    color: rgba(255, 255, 255, 0.85);
+                }
+
+                .book-contact-line a {
+                    color: rgba(255, 255, 255, 0.9);
+                    text-decoration: none;
+                }
+
+                .book-contact-line a:hover {
+                    text-decoration: underline;
+                }
+
+                .book-contact-sep {
+                    color: rgba(255, 255, 255, 0.5);
+                }
+
                 .book-social-container {
                     display: flex;
                     justify-content: center;
                     align-items: center;
                     gap: 20px;
-                    padding: 20px 0 30px;
+                    padding: 10px 0 10px;
                     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
                     margin-bottom: 30px;
                 }
@@ -1364,9 +1413,14 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                     transition: all 0.3s ease;
                 }
 
-                .book-select-packages-btn:hover {
+                .book-select-packages-btn:hover:not(:disabled) {
                     background: rgba(255, 255, 255, 0.9);
                     transform: translateY(-1px);
+                }
+
+                .book-select-packages-btn:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
                 }
 
                 .book-packages-property-summary {
@@ -2249,7 +2303,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                     }
 
                     .book-logo-container {
-                        padding: 40px 0 30px;
+                        padding: 20px 0 16px;
                     }
 
                     .book-title {
