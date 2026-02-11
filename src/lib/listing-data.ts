@@ -50,22 +50,13 @@ const lakeridgeImagesOrdered = [
   ][idx] || img.caption,
 }));
 
-// 385 The East Mall Unit 23 - images from public/assets/img/portfolio/385-the-east-mall/
+// 385 The East Mall Unit 23 - images from public/assets/img/portfolio/385-the-east-mall/ (385_THE_EAST_MALL-N.jpg)
 const EAST_MALL_IMG_BASE = '/assets/img/portfolio/385-the-east-mall';
-const eastMallImageFilenames = [
-  '005A3645-HDR-Edit.jpg', // primary/hero image
-  '005A3529-HDR-Edit.jpg', '005A3535-HDR-Edit.jpg', '005A3554-HDR-Edit.jpg', '005A3569-HDR.jpg', '005A3580-HDR.jpg',
-  '005A3585-HDR-Edit.jpg', '005A3590-HDR.jpg', '005A3620-HDR-Edit.jpg', '005A3625-HDR.jpg',
-  '005A3655-HDR.jpg', '005A3660-HDR-Edit.jpg', '005A3665-HDR-Edit.jpg', '005A3670-HDR-Edit.jpg',
-  '005A3679-HDR.jpg', '005A3685-HDR-Edit.jpg', '005A3689-HDR-Edit.jpg', '005A3696-HDR.jpg', '005A3705-HDR.jpg',
-  '005A3710-HDR-Edit.jpg', '005A3720-HDR.jpg', '005A3725-HDR.jpg', '005A3730-HDR.jpg', '005A3735-HDR.jpg',
-  '005A3740-HDR-Edit.jpg', '005A3745-HDR-Edit-Edit.jpg', '005A3749-HDR.jpg', '005A3759-HDR.jpg', '005A3776-HDR.jpg',
-  '005A3791-HDR-Edit.jpg', '005A3796-HDR-Edit.jpg', '005A3801-HDR.jpg', '005A3806-HDR.jpg', '005A3825-HDR.jpg',
-  '005A4026-HDR.jpg', '005A4031-HDR-Edit.jpg', '005A4036-HDR.jpg', '005A4046-HDR-Edit.jpg',
-  'DJI_20260124163946_0243_D-HDR.jpg', 'DJI_20260124164633_0251_D-HDR.jpg'
+const eastMallImageOrder = [
+  13, 14, 15, 31, 32, 38, 30, 29, 25, 26, 28, 27, 22, 20, 19, 23, 24, 21, 37, 33, 34, 35, 36, 41, 5, 42, 6, 7, 8, 9, 39, 3, 40, 4, 1, 2, 11, 12,
 ];
-const eastMallImages: { src: string; alt: string; caption?: string }[] = eastMallImageFilenames.map((name, i) => ({
-  src: `${EAST_MALL_IMG_BASE}/${name}`,
+const eastMallImages: { src: string; alt: string; caption?: string }[] = eastMallImageOrder.map((n, i) => ({
+  src: `${EAST_MALL_IMG_BASE}/385_THE_EAST_MALL-${n}.jpg`,
   alt: `385 The East Mall Unit 23 - View ${i + 1}`,
   caption: i === 0 ? 'Stunning view of the property' : `385 The East Mall Unit 23 - View ${i + 1}`,
 }));
