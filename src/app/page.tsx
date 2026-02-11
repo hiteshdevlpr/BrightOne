@@ -9,7 +9,7 @@ import useScrollSmooth from "@/hooks/use-scroll-smooth";
 import Wrapper from "@/layouts/wrapper";
 import HeroBannerFour from "@/components/hero-banner/hero-banner-four";
 import AboutFiveArea from "@/components/about/about-five-area";
-import CounterOne from "@/components/counter/counter-one";
+// import CounterOne from "@/components/counter/counter-one"; // hidden for now
 import FooterFour from "@/layouts/footers/footer-four";
 
 import { textInvert } from "@/utils/text-invert";
@@ -53,8 +53,8 @@ const HomeFourMain = () => {
             <AboutFiveArea />
             {/* about 5 area end */}
 
-            {/* counter area start */}
-            <CounterOne />
+            {/* counter area start - hidden for now */}
+            {/* <CounterOne /> */}
             {/* counter area end */}
 
           </main>
