@@ -44,7 +44,7 @@ services:
         condition: service_started
     networks:
       - brightone-network
-    restart: "no"
+    restart: unless-stopped
 
   app_green:
     image: website-app:latest
@@ -87,7 +87,7 @@ services:
         condition: service_started
     networks:
       - brightone-network
-    restart: "no"
+    restart: unless-stopped
 
   db:
     image: postgres:15-alpine

@@ -83,7 +83,13 @@ else
   echo "  .env: MISSING (app will not start correctly)"
 fi
 
-# 8. Suggested recovery
+# 8. Which port is Nginx currently pointing at?
+NGINX_PORT=""
+if [ -f /etc/nginx/conf.d/brightone-app-upstream.conf ]; then
+  NGINX_PORT=$(grep -oE '127\.0\.0\.1:[0-9]+' /etc/nginx/conf.d/brightone-app-upstream.conf | head -1 | cut -d: -f2)
+fi
+
+# 9. Suggested recovery
 echo ""
 echo "=============================================="
 echo "  Suggested recovery"
@@ -93,11 +99,28 @@ GREEN_OK=0
 curl -sf --connect-timeout 2 http://127.0.0.1:3000/api/health >/dev/null 2>&1 && BLUE_OK=1
 curl -sf --connect-timeout 2 http://127.0.0.1:3001/api/health >/dev/null 2>&1 && GREEN_OK=1
 
+# Nginx points to a port that is down (common after failed deploy or crash)
+if [ -n "$NGINX_PORT" ]; then
+  CURRENT_OK=0
+  [ "$NGINX_PORT" = "3000" ] && [ "$BLUE_OK" -eq 1 ] && CURRENT_OK=1
+  [ "$NGINX_PORT" = "3001" ] && [ "$GREEN_OK" -eq 1 ] && CURRENT_OK=1
+  if [ "$CURRENT_OK" -eq 0 ] && { [ "$BLUE_OK" -eq 1 ] || [ "$GREEN_OK" -eq 1 ]; }; then
+    echo "Nginx points to port $NGINX_PORT but that port is not responding."
+    if [ "$BLUE_OK" -eq 1 ]; then
+      echo "  → Switch to healthy port 3000: sudo $SCRIPT_DIR/nginx-switch-upstream.sh 3000"
+    fi
+    if [ "$GREEN_OK" -eq 1 ]; then
+      echo "  → Switch to healthy port 3001: sudo $SCRIPT_DIR/nginx-switch-upstream.sh 3001"
+    fi
+    echo ""
+  fi
+fi
+
 if [ "$BLUE_OK" -eq 1 ] || [ "$GREEN_OK" -eq 1 ]; then
   echo "At least one app slot is healthy. If the site is still down:"
   echo "  1. Check Nginx: sudo nginx -t && sudo systemctl status nginx"
   echo "  2. Ensure upstream points to the healthy port: cat /etc/nginx/conf.d/brightone-app-upstream.conf"
-  echo "  3. If wrong port: sudo scripts/nginx-switch-upstream.sh 3000  (or 3001)"
+  echo "  3. If wrong port: sudo $SCRIPT_DIR/nginx-switch-upstream.sh 3000  (or 3001)"
   echo "  4. Reload: sudo systemctl reload nginx"
 else
   echo "No app slot is healthy. Try:"
@@ -106,7 +129,8 @@ else
   echo "     sleep 10"
   echo "  2. Run blue-green deploy (starts one app slot and switches Nginx):"
   echo "     ./scripts/bluegreen-deploy.sh"
-  echo "  3. If deploy fails, inspect: docker compose -f $COMPOSE_FILE logs app_blue"
+  echo "  3. If deploy fails, inspect: docker compose -f $COMPOSE_FILE logs app_blue app_green"
   echo "  4. If .env was missing, add it and re-run step 2."
+  echo "  5. Containers use restart: unless-stopped; if one crashed it may have restarted - check 'docker compose -f $COMPOSE_FILE ps -a'"
 fi
 echo ""

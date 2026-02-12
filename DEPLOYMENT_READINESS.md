@@ -44,9 +44,28 @@ There is no branch named **origin/old-database**. Comparison is with **origin/ol
 
 - **Slots**: `app_blue` (port 3000) and `app_green` (port 3001). Only one runs at a time; the other is started for the next deploy, then traffic is switched and the old slot is stopped.
 - **Nginx**: The app is reached via upstream `app_backend`. The file `/etc/nginx/conf.d/brightone-app-upstream.conf` defines `upstream app_backend { server 127.0.0.1:<port>; }`. `scripts/setup-server-full.sh` creates this file and configures the brightone site to use `proxy_pass http://app_backend`.
-- **Switch script**: `scripts/nginx-switch-upstream.sh <3000|3001>` writes the upstream file and runs `nginx -t` and `systemctl reload nginx`. The deploy user can run it via sudo (sudoers drop-in from setup-server-full.sh).
-- **Deploy script**: `scripts/bluegreen-deploy.sh` (run from repo root) picks the inactive slot, starts it, waits for health, runs the Nginx switch, then stops the other slot. Assumes images are already loaded (CI does that).
+- **Switch script**: `scripts/nginx-switch-upstream.sh <3000|3001> [--force]` writes the upstream file and runs `nginx -t` and `systemctl reload nginx`. By default it checks that the target port responds to `/api/health` first; use `--force` to skip (e.g. during deploy). The deploy user can run it via sudo (sudoers drop-in from setup-server-full.sh).
+- **Deploy script**: `scripts/bluegreen-deploy.sh` (run from repo root) picks the inactive slot, starts it, waits for health (up to ~3 min), runs the Nginx switch, verifies the new slot still responds, then stops the other slot. App containers use `restart: unless-stopped` so a crash after deploy will restart automatically.
 - **First deploy / existing server**: Re-run `scripts/setup-server-full.sh` once so the upstream file and sudoers are in place; then the first blue-green deploy will start blue and switch Nginx to 3000.
+
+### If the app doesn’t start after a deploy
+
+1. **Connect and run the diagnostic** (from your machine or from the droplet):
+   ```bash
+   ssh $DROPLET_USER@$DROPLET_IP 'cd /home/brightone/website && bash scripts/diagnose-droplet.sh'
+   ```
+   This prints container status, which port (3000/3001) is healthy, the current Nginx upstream, and **suggested recovery** (e.g. “Nginx points to 3001 but that port is down → run `sudo scripts/nginx-switch-upstream.sh 3000`”).
+
+2. **Quick fix when Nginx points at a dead port**: If one slot is healthy but Nginx is pointing at the other port, switch upstream to the healthy port:
+   ```bash
+   ssh $DROPLET_USER@$DROPLET_IP 'cd /home/brightone/website && sudo scripts/nginx-switch-upstream.sh 3000'
+   ```
+   (Use `3001` if the healthy slot is green.)
+
+3. **Both slots down**: Ensure db and redis are up, then run blue-green deploy again:
+   ```bash
+   ssh $DROPLET_USER@$DROPLET_IP 'cd /home/brightone/website && docker compose -f docker-compose.prod.from-image.yml up -d db redis && sleep 10 && ./scripts/bluegreen-deploy.sh'
+   ```
 
 ---
 
