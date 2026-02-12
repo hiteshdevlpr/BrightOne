@@ -55,7 +55,9 @@ export default function StructuredData({ listing }: StructuredDataProps) {
     "dateModified": listing.lastUpdated
   };
 
-  const cleanData = JSON.stringify(structuredData);
+  // Escape </script> and U+2028/U+2029 to prevent XSS when injecting JSON into script tag
+  const json = JSON.stringify(structuredData);
+  const cleanData = json.replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029').replace(/<\/script/gi, '<\\/script');
 
   return (
     <script

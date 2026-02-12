@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { getPackages, ADD_ONS, getPackagePriceWithPartner, getAddonPriceWithPartner, isValidPreferredPartnerCode } from '@/data/booking-data';
+import { useBookingLogic } from '@/hooks/use-booking-logic';
 import { handleBookingSubmission, type BookingFormData } from './booking-form-handler';
-import { getRecaptchaToken } from '@/lib/recaptcha-client';
-import { HONEYPOT_FIELD, validateBookingForm, validateEmail, validatePhone } from '@/lib/validation';
+import { HONEYPOT_FIELD } from '@/lib/validation';
 import {
     trackBookingStart,
     trackBookingStepChange,
@@ -15,24 +14,6 @@ import {
 } from '@/lib/analytics';
 import ErrorMsg from '../error-msg';
 import { RightArrowTwo, ArrowBg, UpArrow } from '../svg';
-
-const GOOGLE_MAPS_SCRIPT_ID = 'google-maps-places-script';
-
-function loadGoogleMapsPlaces(apiKey: string): Promise<void> {
-    if (typeof window === 'undefined') return Promise.resolve();
-    const existing = document.getElementById(GOOGLE_MAPS_SCRIPT_ID);
-    if (existing) return Promise.resolve();
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.id = GOOGLE_MAPS_SCRIPT_ID;
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places`;
-        script.async = true;
-        script.defer = true;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Google Maps script failed to load'));
-        document.head.appendChild(script);
-    });
-}
 
 declare global {
     interface Window {
@@ -116,35 +97,120 @@ function PkgCarousel({ images, packageId }: { images: string[]; packageId: strin
 export default function BookingArea() {
     const searchParams = useSearchParams();
     const [currentStep, setCurrentStep] = useState(1);
-    const [placesReady, setPlacesReady] = useState(false);
-    const [enterManually, setEnterManually] = useState(false);
     const [addressGiven, setAddressGiven] = useState(false);
-    const addressInputRef = useRef<HTMLInputElement>(null);
-    const autocompleteListenerRef = useRef<{ remove: () => void } | null>(null);
-
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        propertyAddress: '',
-        unitNumber: '',
-        propertySize: '',
-        selectedPackage: '',
-        selectedAddOns: [] as string[],
-        preferredPartnerCode: '',
-        preferredDate: '',
-        preferredTime: '',
-        message: '',
-        [HONEYPOT_FIELD]: '',
-    });
-
-    const [appliedPartnerCode, setAppliedPartnerCode] = useState<string>('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isSubmitted, setIsSubmitted] = useState(false);
-    const [formErrors, setFormErrors] = useState<string[]>([]);
-    const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
-
-    const apiKey = typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY : '';
+    
+    // Use centralized booking logic hook (for listing category only)
+    const bookingLogic = useBookingLogic({ defaultCategory: 'listing' });
+    
+    // Destructure hook state and functions
+    const {
+        propertyAddressInput,
+        appliedPropertyAddress,
+        propertySuiteInput,
+        appliedPropertySuite,
+        propertySizeInput,
+        appliedPropertySize,
+        selectedPackageId,
+        selectedAddOns,
+        preferredPartnerCodeInput,
+        appliedPartnerCode,
+        partnerCodeError,
+        formData: hookFormData,
+        isSubmitting,
+        isSubmitted,
+        formErrors,
+        fieldErrors,
+        enterManuallyListing,
+        placesReadyListing,
+        packages,
+        addons,
+        availableAddOns,
+        propertyAddressInputRef,
+        autocompleteListenerRef,
+        setPropertyAddressInput,
+        setAppliedPropertyAddress,
+        setPropertySuiteInput,
+        setAppliedPropertySuite,
+        setPropertySizeInput,
+        setAppliedPropertySize,
+        setSelectedPackageId,
+        setSelectedAddOns,
+        setPreferredPartnerCodeInput,
+        setAppliedPartnerCode,
+        setPartnerCodeError,
+        setFormData: setHookFormData,
+        setIsSubmitting,
+        setIsSubmitted,
+        setFormErrors,
+        setFieldErrors,
+        setEnterManuallyListing,
+        getPackagePrice,
+        getAddonPrice,
+        calculateTotal,
+        handlePackageClick,
+        handleAddOnToggle,
+        handleApplyPartnerCode,
+        handleFormChange,
+        handleEmailBlur,
+        handlePhoneBlur,
+        handleFormSubmit,
+        formatPrice,
+    } = bookingLogic;
+    
+    // Map hook state to BookingArea's formData structure for compatibility
+    const formData = {
+        name: hookFormData.name,
+        email: hookFormData.email,
+        phone: hookFormData.phone,
+        propertyAddress: appliedPropertyAddress || propertyAddressInput,
+        unitNumber: appliedPropertySuite || propertySuiteInput,
+        propertySize: appliedPropertySize || propertySizeInput,
+        selectedPackage: selectedPackageId || '',
+        selectedAddOns: selectedAddOns,
+        preferredPartnerCode: preferredPartnerCodeInput,
+        preferredDate: hookFormData.preferredDate,
+        preferredTime: hookFormData.preferredTime,
+        message: hookFormData.message,
+        [HONEYPOT_FIELD]: hookFormData[HONEYPOT_FIELD],
+    };
+    
+    // Sync formData changes back to hook
+    const setFormData = (updater: typeof formData | ((prev: typeof formData) => typeof formData)) => {
+        const newData = typeof updater === 'function' ? updater(formData) : updater;
+        setHookFormData({
+            name: newData.name,
+            email: newData.email,
+            phone: newData.phone,
+            preferredDate: newData.preferredDate,
+            preferredTime: newData.preferredTime,
+            message: newData.message,
+            [HONEYPOT_FIELD]: newData[HONEYPOT_FIELD],
+        });
+        if (newData.propertyAddress !== formData.propertyAddress) {
+            setPropertyAddressInput(newData.propertyAddress);
+        }
+        if (newData.unitNumber !== formData.unitNumber) {
+            setPropertySuiteInput(newData.unitNumber);
+        }
+        if (newData.propertySize !== formData.propertySize) {
+            setPropertySizeInput(newData.propertySize);
+        }
+        if (newData.selectedPackage !== formData.selectedPackage) {
+            setSelectedPackageId(newData.selectedPackage || null);
+        }
+        if (JSON.stringify(newData.selectedAddOns) !== JSON.stringify(formData.selectedAddOns)) {
+            setSelectedAddOns(newData.selectedAddOns);
+        }
+        if (newData.preferredPartnerCode !== formData.preferredPartnerCode) {
+            setPreferredPartnerCodeInput(newData.preferredPartnerCode);
+        }
+    };
+    
+    const addressInputRef = propertyAddressInputRef;
+    const placesReady = placesReadyListing;
+    const enterManually = enterManuallyListing;
+    const setPlacesReady = () => {}; // Managed by hook
+    const setEnterManually = setEnterManuallyListing;
 
     useEffect(() => {
         trackBookingStart();
@@ -152,16 +218,11 @@ export default function BookingArea() {
 
     useEffect(() => {
         const partnerCode = searchParams.get('partnerCode');
-        if (partnerCode && isValidPreferredPartnerCode(partnerCode)) {
-            setAppliedPartnerCode(partnerCode.trim());
-            setFormData(prev => ({ ...prev, preferredPartnerCode: partnerCode.trim() }));
+        if (partnerCode) {
+            setPreferredPartnerCodeInput(partnerCode.trim());
+            handleApplyPartnerCode();
         }
     }, [searchParams]);
-
-    useEffect(() => {
-        if (!apiKey || typeof window === 'undefined') return;
-        loadGoogleMapsPlaces(apiKey).then(() => setPlacesReady(true)).catch(() => {});
-    }, [apiKey]);
 
     useEffect(() => {
         if (currentStep !== 1 || !placesReady || enterManually || !addressInputRef.current || !window.google?.maps?.places) return;
@@ -175,7 +236,8 @@ export default function BookingArea() {
         const listener = autocomplete.addListener('place_changed', () => {
             const place = autocomplete.getPlace();
             if (place.formatted_address) {
-                setFormData(prev => ({ ...prev, propertyAddress: place.formatted_address! }));
+                setPropertyAddressInput(place.formatted_address);
+                setAppliedPropertyAddress(place.formatted_address);
                 setAddressGiven(true);
                 trackAddressAutosuggestSelection(place.formatted_address);
             }
@@ -187,119 +249,50 @@ export default function BookingArea() {
                 autocompleteListenerRef.current = null;
             }
         };
-    }, [currentStep, placesReady, enterManually]);
+    }, [currentStep, placesReady, enterManually, addressInputRef, setPropertyAddressInput, setAppliedPropertyAddress]);
 
-    // Package price after size + optional preferred partner discount (only when code applied via Apply button)
+    // Package price after size + optional preferred partner discount
     const getDisplayPackagePrice = (basePrice: number, packageId: string) => {
-        const { price } = getPackagePriceWithPartner(
-            basePrice,
-            formData.propertySize,
-            packageId,
-            appliedPartnerCode || null
-        );
-        return price;
-    };
-
-    const handleApplyPartnerCode = () => {
-        const code = formData.preferredPartnerCode?.trim() || '';
-        if (!code) {
-            setAppliedPartnerCode('');
-            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: '' }));
-            return;
-        }
-        if (isValidPreferredPartnerCode(code)) {
-            setAppliedPartnerCode(code);
-            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: '' }));
-        } else {
-            setAppliedPartnerCode('');
-            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: 'Invalid partner code' }));
-        }
-    };
-
-    const formatPhoneNumber = (value: string): string => {
-        const digits = value.replace(/\D/g, '');
-        if (digits.length === 0) return '';
-        if (digits.length <= 3) return `(${digits}`;
-        if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-        const ten = digits.length >= 10 ? digits.slice(-10) : digits.slice(0, 10);
-        return `(${ten.slice(0, 3)}) ${ten.slice(3, 6)}-${ten.slice(6, 10)}`;
-    };
-
-    const handleEmailBlur = () => {
-        const err = validateEmail(formData.email);
-        setFieldErrors(prev => (err ? { ...prev, email: err } : { ...prev, email: '' }));
-    };
-
-    const handlePhoneBlur = () => {
-        const trimmed = formData.phone?.trim() ?? '';
-        if (!trimmed) {
-            setFieldErrors(prev => ({ ...prev, phone: '' }));
-            return;
-        }
-        const digits = trimmed.replace(/\D/g, '');
-        const formatted = digits.length >= 10 && digits.length <= 11 ? formatPhoneNumber(trimmed) : trimmed;
-        if (formatted !== trimmed) {
-            setFormData(prev => ({ ...prev, phone: formatted }));
-        }
-        const err = validatePhone(formatted);
-        setFieldErrors(prev => (err ? { ...prev, phone: err } : { ...prev, phone: '' }));
+        return getPackagePrice(basePrice, packageId) ?? basePrice;
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        if (name === 'preferredPartnerCode') {
+        if (name === 'propertyAddress') {
+            setPropertyAddressInput(value);
+        } else if (name === 'unitNumber') {
+            setPropertySuiteInput(value);
+        } else if (name === 'propertySize') {
+            setPropertySizeInput(value);
+        } else if (name === 'preferredPartnerCode') {
+            setPreferredPartnerCodeInput(value);
             setAppliedPartnerCode('');
-            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: '' }));
-        } else if (fieldErrors[name]) {
-            setFieldErrors(prev => ({ ...prev, [name]: '' }));
+            setPartnerCodeError('');
+            setFieldErrors((prev: any) => ({ ...prev, preferredPartnerCode: '' }));
+        } else {
+            handleFormChange(e as React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>);
         }
     };
 
     const handlePackageSelect = (packageId: string) => {
-        setFormData(prev => {
-            // Toggle: if already selected, deselect it
-            const newPackage = prev.selectedPackage === packageId ? '' : packageId;
-            return { ...prev, selectedPackage: newPackage };
-        });
-        const pkg = getPackages().find(p => p.id === packageId);
-        if (pkg && formData.selectedPackage !== packageId) {
+        handlePackageClick(packageId);
+        const pkg = packages.find(p => p.id === packageId);
+        if (pkg && selectedPackageId !== packageId) {
             trackPackageSelection(packageId, pkg.name, pkg.basePrice);
         }
     };
 
     const handlePackageRemove = () => {
-        setFormData(prev => ({ ...prev, selectedPackage: '' }));
+        setSelectedPackageId(null);
     };
 
-    const handleAddOnToggle = (addOnId: string) => {
-        setFormData(prev => {
-            const isSelected = prev.selectedAddOns.includes(addOnId);
-            const updatedAddOns = isSelected
-                ? prev.selectedAddOns.filter(id => id !== addOnId)
-                : [...prev.selectedAddOns, addOnId];
-
-            const addOn = ADD_ONS.find(a => a.id === addOnId);
-            if (addOn) {
-                trackAddOnToggle(addOnId, addOn.name, !isSelected, addOn.price);
-            }
-
-            return { ...prev, selectedAddOns: updatedAddOns };
-        });
-    };
-
-    const calculateTotal = () => {
-        const pkg = getPackages().find(p => p.id === formData.selectedPackage);
-        const basePrice = pkg?.basePrice || 0;
-        const packagePrice = pkg ? getDisplayPackagePrice(basePrice, pkg.id) : 0;
-
-        const addOnsPrice = formData.selectedAddOns.reduce((total, id) => {
-            const addOn = ADD_ONS.find(a => a.id === id);
-            const price = getAddonPriceWithPartner(id, !!formData.selectedPackage, appliedPartnerCode || null);
-            return total + price;
-        }, 0);
-
-        return packagePrice + addOnsPrice;
+    const handleAddOnToggleWithTracking = (addOnId: string) => {
+        const isSelected = selectedAddOns.includes(addOnId);
+        handleAddOnToggle(addOnId);
+        const addOn = addons.find(a => a.id === addOnId);
+        if (addOn) {
+            trackAddOnToggle(addOnId, addOn.name, !isSelected, addOn.price);
+        }
     };
 
     const handleNext = () => {
@@ -376,59 +369,24 @@ export default function BookingArea() {
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        // Check if either a package or at least one addon is selected
-        if (!formData.selectedPackage && formData.selectedAddOns.length === 0) {
-            setFormErrors(['Please select a package or at least one add-on to continue']);
-            return;
-        }
-        
-        const payloadForValidation = {
+        // Sync BookingArea's formData to hook's state before submission
+        setHookFormData({
             name: formData.name,
             email: formData.email,
             phone: formData.phone,
-            serviceType: 'Real Estate Media',
-            propertyAddress: formData.propertyAddress,
-            serviceTier: formData.selectedPackage || undefined, // Make optional if addons are selected
-        };
-        const validationErrors = validateBookingForm(payloadForValidation);
-        if (validationErrors.length > 0) {
-            // Filter out serviceTier error if addons are selected
-            const filteredErrors = validationErrors.filter(err => 
-                !(err.field === 'serviceTier' && formData.selectedAddOns.length > 0)
-            );
-            if (filteredErrors.length > 0) {
-                setFormErrors(filteredErrors.map((err) => err.message));
-                const byField = filteredErrors.reduce<{ [key: string]: string }>((acc, err) => {
-                    acc[err.field] = err.message;
-                    return acc;
-                }, {});
-                setFieldErrors((prev) => ({ ...prev, ...byField }));
-                return;
-            }
-        }
-        setFormErrors([]);
-        setFieldErrors({});
-
-        let recaptchaToken = '';
-        try {
-            recaptchaToken = await getRecaptchaToken('booking');
-        } catch (err) {
-            console.error('reCAPTCHA error:', err);
-            setFormErrors(['Security check failed. Please refresh and try again.']);
-            return;
-        }
-        const honeypotValue = formData[HONEYPOT_FIELD as keyof typeof formData];
-        const websiteUrl = typeof honeypotValue === 'string' ? honeypotValue : '';
-        const payload: BookingFormData = {
-            ...formData,
-            serviceType: 'Real Estate Media',
-            serviceTier: formData.selectedPackage,
-            preferredPartnerCode: appliedPartnerCode || undefined,
-            totalPrice: (calculateTotal() * 1.13).toFixed(2),
-            recaptchaToken,
-            website_url: websiteUrl,
-        };
-        await handleBookingSubmission(payload, setIsSubmitting, setIsSubmitted, setFormErrors);
+            preferredDate: formData.preferredDate,
+            preferredTime: formData.preferredTime,
+            message: formData.message,
+            [HONEYPOT_FIELD]: formData[HONEYPOT_FIELD],
+        });
+        
+        // Apply property details before submission
+        setAppliedPropertyAddress(formData.propertyAddress);
+        setAppliedPropertySuite(formData.unitNumber);
+        setAppliedPropertySize(formData.propertySize);
+        
+        // Use hook's form submit handler
+        await handleFormSubmit(e);
     };
 
     if (isSubmitted) {
@@ -460,7 +418,7 @@ export default function BookingArea() {
         );
     }
 
-    const packages = getPackages();
+    // packages already available from hook
 
     const steps = [
         { id: 1, name: 'Property Details' },
@@ -748,9 +706,9 @@ export default function BookingArea() {
                                                                         Apply
                                                                     </button>
                                                                 </div>
-                                                                {fieldErrors.preferredPartnerCode && (
+                                                                {partnerCodeError && (
                                                                     <div className="sidebar-partner-error mt-2">
-                                                                        <ErrorMsg msg={fieldErrors.preferredPartnerCode} />
+                                                                        <ErrorMsg msg={partnerCodeError} />
                                                                     </div>
                                                                 )}
                                                             </>
@@ -784,11 +742,11 @@ export default function BookingArea() {
                                                                 {formData.selectedAddOns.length > 0 && (
                                                                     <div className="sidebar-addons-list">
                                                                         {formData.selectedAddOns.map(id => {
-                                                                            const addon = ADD_ONS.find(a => a.id === id);
+                                                                            const addon = addons.find(a => a.id === id);
                                                                             return (
                                                                                 <div key={id} className="sidebar-line-item sidebar-addon-line">
                                                                                     <span>{addon?.name}</span>
-                                                                                    <span>${getAddonPriceWithPartner(id, !!formData.selectedPackage, appliedPartnerCode || null)}</span>
+                                                                                    <span>${getAddonPrice(id)}</span>
                                                                                 </div>
                                                                             );
                                                                         })}
@@ -825,7 +783,7 @@ export default function BookingArea() {
                                                 <div className="addons-section">
                                                     <h6 className="text-white mb-20" style={{ fontSize: '18px', letterSpacing: '0.5px' }}>Enhance Your Listing</h6>
                                                     <div className="addons-grid">
-                                                        {ADD_ONS.filter(addon => {
+                                                        {availableAddOns.filter(addon => {
                                                             // Hide listing_website when a package is selected
                                                             if (formData.selectedPackage && addon.id === 'listing_website') {
                                                                 return false;
@@ -835,7 +793,7 @@ export default function BookingArea() {
                                                             <div
                                                                 key={addon.id}
                                                                 className={`addon-thumb ${formData.selectedAddOns.includes(addon.id) ? 'addon-thumb-active' : ''}`}
-                                                                onClick={() => handleAddOnToggle(addon.id)}
+                                                                onClick={() => handleAddOnToggleWithTracking(addon.id)}
                                                             >
                                                                 <div className="addon-thumb-img">
                                                                     <img src={addon.image} alt={addon.name} loading="lazy" />
@@ -845,7 +803,7 @@ export default function BookingArea() {
                                                                 </div>
                                                                 <div className="addon-thumb-info">
                                                                     <span className="addon-thumb-name">{addon.name}</span>
-                                                                    <span className="addon-thumb-price">+${getAddonPriceWithPartner(addon.id, !!formData.selectedPackage, appliedPartnerCode || null)}</span>
+                                                                    <span className="addon-thumb-price">+${getAddonPrice(addon.id)}</span>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -908,8 +866,8 @@ export default function BookingArea() {
                                                                 {formData.selectedAddOns.length > 0 && (
                                                                     <div className="sidebar-addons-list">
                                                                         {formData.selectedAddOns.map(id => {
-                                                                            const addon = ADD_ONS.find(a => a.id === id);
-                                                                            return <div key={id} className="sidebar-line-item sidebar-addon-line"><span>{addon?.name}</span><span>${getAddonPriceWithPartner(id, !!formData.selectedPackage, appliedPartnerCode || null)}</span></div>;
+                                                                            const addon = addons.find(a => a.id === id);
+                                                                            return <div key={id} className="sidebar-line-item sidebar-addon-line"><span>{addon?.name}</span><span>${getAddonPrice(id)}</span></div>;
                                                                         })}
                                                                     </div>
                                                                 )}
@@ -961,7 +919,7 @@ export default function BookingArea() {
                                                                 placeholder="john@example.com"
                                                                 value={formData.email}
                                                                 onChange={handleInputChange}
-                                                                onBlur={handleEmailBlur}
+                                                                onBlur={(e) => handleEmailBlur(e)}
                                                                 required
                                                             />
                                                             {fieldErrors.email && <ErrorMsg msg={fieldErrors.email} />}
@@ -976,7 +934,7 @@ export default function BookingArea() {
                                                                 placeholder="(123) 456-7890"
                                                                 value={formData.phone}
                                                                 onChange={handleInputChange}
-                                                                onBlur={handlePhoneBlur}
+                                                                onBlur={(e) => handlePhoneBlur(e)}
                                                             />
                                                             {fieldErrors.phone && <ErrorMsg msg={fieldErrors.phone} />}
                                                         </div>
@@ -1032,11 +990,11 @@ export default function BookingArea() {
                                                             <div className="addon-summary mb-15">
                                                                 <span className="booking-text-muted d-block mb-10">Add-ons:</span>
                                                                 {formData.selectedAddOns.map(id => {
-                                                                    const addon = ADD_ONS.find(a => a.id === id);
+                                                                    const addon = addons.find(a => a.id === id);
                                                                     return (
                                                                         <div key={id} className="d-flex justify-content-between mb-5 pl-20">
                                                                             <span className="booking-text-muted small">- {addon?.name}</span>
-                                                                            <span className="booking-text-muted small">${getAddonPriceWithPartner(id, !!formData.selectedPackage, appliedPartnerCode || null)}</span>
+                                                                            <span className="booking-text-muted small">${getAddonPrice(id)}</span>
                                                                         </div>
                                                                     );
                                                                 })}

@@ -95,7 +95,7 @@ jobs:
             ADMIN_API_KEY=${{ secrets.ADMIN_API_KEY }}
             EOF
 
-      - name: Blue-green deploy (load images and swap app)
+      - name: Blue-green deploy (load images, run DB migration, swap app)
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.DROPLET_IP }}
@@ -112,9 +112,13 @@ jobs:
             test -f docker-compose.prod.from-image.yml || (echo "❌ docker-compose.prod.from-image.yml missing"; exit 1)
             test -x scripts/bluegreen-deploy.sh || chmod +x scripts/bluegreen-deploy.sh
             test -x scripts/nginx-switch-upstream.sh || chmod +x scripts/nginx-switch-upstream.sh
+            test -x scripts/run-services-migration.sh || chmod +x scripts/run-services-migration.sh
             
             echo "📦 Loading all images (no Docker Hub needed on droplet)..."
             docker load -i images.tar
+            
+            echo "🗄️ Running services DB migration (idempotent)..."
+            ./scripts/run-services-migration.sh
             
             echo "🚀 Running blue-green deploy..."
             ./scripts/bluegreen-deploy.sh

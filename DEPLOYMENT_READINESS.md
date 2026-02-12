@@ -118,7 +118,8 @@ Set these in the repo **Settings → Secrets and variables → Actions**:
 ## First deployment / database
 
 - **New server:** The compose file mounts `./database/init.sql` into Postgres’s `docker-entrypoint-initdb.d`, so the DB is initialized on first `up`.
-- **Existing DB / schema changes:** After the app is running, call the migrate API once (with token):
+- **Services tables (packages, addons, partner_codes, etc.):** CI runs `scripts/run-services-migration.sh` on every deploy before blue-green swap. It applies `database/migrate-services.sql` and `database/seed-services.sql` (idempotent). So new servers get the schema from init.sql on first DB start, and every deploy ensures services tables and seed data exist.
+- **Existing DB / other schema changes:** After the app is running, call the migrate API once (with token) if you need the legacy migrate-complete flow:
   ```bash
   curl -X POST https://brightone.ca/api/migrate -H "Authorization: Bearer YOUR_MIGRATION_TOKEN"
   ```

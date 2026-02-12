@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { getPersonalPackages, PERSONAL_ADD_ONS, PersonalPackage, PersonalAddOn } from '@/data/personal-branding-data';
-import { getPackagePriceWithPartner, isValidPreferredPartnerCode } from '@/data/booking-data';
+import { useBookingLogic } from '@/hooks/use-booking-logic';
 import { handleBookingSubmission } from './booking-form-handler';
 import { getRecaptchaToken } from '@/lib/recaptcha-client';
-import { HONEYPOT_FIELD, validateBookingForm, validateEmail, validatePhone } from '@/lib/validation';
+import { HONEYPOT_FIELD, validateBookingForm } from '@/lib/validation';
 import {
     trackBookingStart,
     trackBookingStepChange,
@@ -71,134 +70,104 @@ function PkgCarousel({ images, packageId }: { images: string[]; packageId: strin
 export default function PersonalBrandingArea() {
     const searchParams = useSearchParams();
     const [currentStep, setCurrentStep] = useState(1);
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        sessionPurpose: '',
-        sessionLocation: '',
-        selectedPackage: '',
-        selectedAddOns: [] as string[],
-        preferredPartnerCode: '',
-        preferredDate: '',
-        preferredTime: '',
-        message: '',
-        [HONEYPOT_FIELD]: '',
-    });
+    const [sessionPurpose, setSessionPurpose] = useState('');
+    const [sessionLocation, setSessionLocation] = useState('');
 
-    const [appliedPartnerCode, setAppliedPartnerCode] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isSubmitted, setIsSubmitted] = useState(false);
-    const [formErrors, setFormErrors] = useState<string[]>([]);
-    const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+    const bookingLogic = useBookingLogic({ defaultCategory: 'personal' });
+    const {
+        packages,
+        addons,
+        selectedPackageId,
+        selectedAddOns,
+        setSelectedPackageId,
+        preferredPartnerCodeInput,
+        appliedPartnerCode,
+        partnerCodeError,
+        formData: hookFormData,
+        setFormData: setHookFormData,
+        isSubmitting,
+        isSubmitted,
+        formErrors,
+        setFormErrors,
+        fieldErrors,
+        setIsSubmitting,
+        setIsSubmitted,
+        setFieldErrors,
+        setAppliedPartnerCode,
+        setPreferredPartnerCodeInput,
+        getPackagePrice,
+        getAddonPrice,
+        calculateTotal,
+        handlePackageClick,
+        handleAddOnToggle,
+        handleApplyPartnerCode,
+        handleFormChange,
+        handleEmailBlur,
+        handlePhoneBlur,
+    } = bookingLogic;
+
+    const formData = {
+        name: hookFormData.name,
+        email: hookFormData.email,
+        phone: hookFormData.phone,
+        sessionPurpose,
+        sessionLocation,
+        selectedPackage: selectedPackageId || '',
+        selectedAddOns,
+        preferredPartnerCode: preferredPartnerCodeInput,
+        preferredDate: hookFormData.preferredDate,
+        preferredTime: hookFormData.preferredTime,
+        message: hookFormData.message,
+        [HONEYPOT_FIELD]: hookFormData[HONEYPOT_FIELD],
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        if (name === 'sessionPurpose') {
+            setSessionPurpose(value);
+        } else if (name === 'sessionLocation') {
+            setSessionLocation(value);
+        } else if (name === 'preferredPartnerCode') {
+            setPreferredPartnerCodeInput(value);
+            setAppliedPartnerCode('');
+            setFieldErrors((prev: Record<string, string>) => ({ ...prev, preferredPartnerCode: '' }));
+        } else {
+            handleFormChange(e as React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>);
+        }
+    };
 
     useEffect(() => { trackBookingStart(); }, []);
 
     useEffect(() => {
         const partnerCode = searchParams.get('partnerCode');
-        if (partnerCode && isValidPreferredPartnerCode(partnerCode)) {
-            setAppliedPartnerCode(partnerCode.trim());
-            setFormData(prev => ({ ...prev, preferredPartnerCode: partnerCode.trim() }));
+        if (partnerCode) {
+            setPreferredPartnerCodeInput(partnerCode.trim());
+            handleApplyPartnerCode();
         }
     }, [searchParams]);
 
-    const getDisplayPackagePrice = (basePrice: number, packageId: string) => {
-        const { price } = getPackagePriceWithPartner(basePrice, undefined, packageId, appliedPartnerCode || null);
-        return price;
-    };
-
-    const handleApplyPartnerCode = () => {
-        const code = formData.preferredPartnerCode?.trim() || '';
-        if (!code) {
-            setAppliedPartnerCode('');
-            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: '' }));
-            return;
-        }
-        if (isValidPreferredPartnerCode(code)) {
-            setAppliedPartnerCode(code);
-            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: '' }));
-        } else {
-            setAppliedPartnerCode('');
-            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: 'Invalid partner code' }));
-        }
-    };
-
-    const formatPhoneNumber = (value: string): string => {
-        const digits = value.replace(/\D/g, '');
-        if (digits.length === 0) return '';
-        if (digits.length <= 3) return `(${digits}`;
-        if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-        const ten = digits.length >= 10 ? digits.slice(-10) : digits.slice(0, 10);
-        return `(${ten.slice(0, 3)}) ${ten.slice(3, 6)}-${ten.slice(6, 10)}`;
-    };
-
-    const handleEmailBlur = () => {
-        const err = validateEmail(formData.email);
-        setFieldErrors(prev => (err ? { ...prev, email: err } : { ...prev, email: '' }));
-    };
-
-    const handlePhoneBlur = () => {
-        const trimmed = formData.phone?.trim() ?? '';
-        if (!trimmed) {
-            setFieldErrors(prev => ({ ...prev, phone: '' }));
-            return;
-        }
-        const digits = trimmed.replace(/\D/g, '');
-        const formatted = digits.length >= 10 && digits.length <= 11 ? formatPhoneNumber(trimmed) : trimmed;
-        if (formatted !== trimmed) {
-            setFormData(prev => ({ ...prev, phone: formatted }));
-        }
-        const err = validatePhone(formatted);
-        setFieldErrors(prev => (err ? { ...prev, phone: err } : { ...prev, phone: '' }));
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        if (name === 'preferredPartnerCode') {
-            setAppliedPartnerCode('');
-            setFieldErrors(prev => ({ ...prev, preferredPartnerCode: '' }));
-        } else if (fieldErrors[name]) {
-            setFieldErrors(prev => ({ ...prev, [name]: '' }));
-        }
-    };
+    const getDisplayPackagePrice = (basePrice: number, packageId: string) =>
+        getPackagePrice(basePrice, packageId) ?? basePrice;
 
     const handlePackageSelect = (packageId: string) => {
-        setFormData(prev => {
-            // Toggle: if already selected, deselect it
-            const newPackage = prev.selectedPackage === packageId ? '' : packageId;
-            return { ...prev, selectedPackage: newPackage };
-        });
-        const pkg = getPersonalPackages().find(p => p.id === packageId);
-        if (pkg && formData.selectedPackage !== packageId) {
+        handlePackageClick(packageId);
+        const pkg = packages.find(p => p.id === packageId);
+        if (pkg && selectedPackageId !== packageId) {
             trackPackageSelection(packageId, pkg.name, pkg.basePrice);
         }
     };
 
     const handlePackageRemove = () => {
-        setFormData(prev => ({ ...prev, selectedPackage: '' }));
+        setSelectedPackageId(null);
     };
 
-    const handleAddOnToggle = (addOnId: string) => {
-        setFormData(prev => {
-            const isSelected = prev.selectedAddOns.includes(addOnId);
-            const updatedAddOns = isSelected
-                ? prev.selectedAddOns.filter(id => id !== addOnId)
-                : [...prev.selectedAddOns, addOnId];
-            const addOn = PERSONAL_ADD_ONS.find(a => a.id === addOnId);
-            if (addOn) { trackAddOnToggle(addOnId, addOn.name, !isSelected, addOn.price); }
-            return { ...prev, selectedAddOns: updatedAddOns };
-        });
-    };
-
-    const calculateTotal = () => {
-        const pkg = getPersonalPackages().find(p => p.id === formData.selectedPackage);
-        const packagePrice = pkg ? getDisplayPackagePrice(pkg.basePrice, pkg.id) : 0;
-        const addOnsPrice = formData.selectedAddOns.reduce((total, id) => {
-            const addOn = PERSONAL_ADD_ONS.find(a => a.id === id);
-            return total + (addOn?.price || 0);
-        }, 0);
-        return packagePrice + addOnsPrice;
+    const handleAddOnToggleWithTracking = (addOnId: string) => {
+        const isSelected = selectedAddOns.includes(addOnId);
+        handleAddOnToggle(addOnId);
+        const addOn = addons.find(a => a.id === addOnId);
+        if (addOn) {
+            trackAddOnToggle(addOnId, addOn.name, !isSelected, addOn.price);
+        }
     };
 
     const handleNext = () => {
@@ -221,22 +190,24 @@ export default function PersonalBrandingArea() {
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const combinedMessage = [sessionPurpose, sessionLocation, hookFormData.message].filter(Boolean).join('\n\n');
+        const propertyAddress = sessionLocation || 'To be confirmed';
         const payloadForValidation = {
             name: formData.name,
             email: formData.email,
             phone: formData.phone,
             serviceType: 'Personal Branding',
-            propertyAddress: formData.sessionLocation || '',
-            serviceTier: formData.selectedPackage,
+            propertyAddress,
+            serviceTier: formData.selectedPackage || undefined,
         };
         const validationErrors = validateBookingForm(payloadForValidation);
         if (validationErrors.length > 0) {
             setFormErrors(validationErrors.map((err) => err.message));
-            const byField = validationErrors.reduce<{ [key: string]: string }>((acc, err) => {
+            const byField = validationErrors.reduce<Record<string, string>>((acc, err) => {
                 acc[err.field] = err.message;
                 return acc;
             }, {});
-            setFieldErrors((prev) => ({ ...prev, ...byField }));
+            setFieldErrors((prev: Record<string, string>) => ({ ...prev, ...byField }));
             return;
         }
         setFormErrors([]);
@@ -254,11 +225,17 @@ export default function PersonalBrandingArea() {
         const websiteUrl = typeof honeypotValue === 'string' ? honeypotValue : '';
         await handleBookingSubmission(
             {
-                ...formData,
-                propertyAddress: formData.sessionLocation || '',
+                name: formData.name,
+                email: formData.email,
+                phone: formData.phone,
                 serviceType: 'Personal Branding',
+                propertyAddress,
                 serviceTier: formData.selectedPackage,
+                selectedAddOns: formData.selectedAddOns,
                 preferredPartnerCode: appliedPartnerCode || undefined,
+                preferredDate: formData.preferredDate,
+                preferredTime: formData.preferredTime,
+                message: combinedMessage,
                 totalPrice: (calculateTotal() * 1.13).toFixed(2),
                 recaptchaToken,
                 website_url: websiteUrl,
@@ -291,8 +268,6 @@ export default function PersonalBrandingArea() {
             </div>
         );
     }
-
-    const packages = getPersonalPackages();
 
     return (
         <div className="cn-contactform-area pt-100 pb-100" style={{ fontFamily: 'var(--font-inter)' }}>
@@ -384,11 +359,11 @@ export default function PersonalBrandingArea() {
                                                 <div className="addons-section mt-50">
                                                     <h6 className="text-white mb-20" style={{ fontSize: '18px', letterSpacing: '0.5px' }}>Enhance Your Session</h6>
                                                     <div className="addons-grid">
-                                                        {PERSONAL_ADD_ONS.map(addon => (
+                                                        {addons.map(addon => (
                                                             <div
                                                                 key={addon.id}
                                                                 className={`addon-thumb ${formData.selectedAddOns.includes(addon.id) ? 'addon-thumb-active' : ''}`}
-                                                                onClick={() => handleAddOnToggle(addon.id)}
+                                                                onClick={() => handleAddOnToggleWithTracking(addon.id)}
                                                             >
                                                                 <div className="addon-thumb-img">
                                                                     <img src={addon.image} alt={addon.name} loading="lazy" />
@@ -398,7 +373,7 @@ export default function PersonalBrandingArea() {
                                                                 </div>
                                                                 <div className="addon-thumb-info">
                                                                     <span className="addon-thumb-name">{addon.name}</span>
-                                                                    <span className="addon-thumb-price">+${addon.price}</span>
+                                                                    <span className="addon-thumb-price">+${getAddonPrice(addon.id)}</span>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -424,8 +399,8 @@ export default function PersonalBrandingArea() {
                                                                     type="button"
                                                                     className="sidebar-partner-chip-remove"
                                                                     onClick={() => {
+                                                                        setPreferredPartnerCodeInput('');
                                                                         setAppliedPartnerCode('');
-                                                                        setFormData(prev => ({ ...prev, preferredPartnerCode: '' }));
                                                                     }}
                                                                     aria-label="Remove partner code"
                                                                 >
@@ -455,9 +430,9 @@ export default function PersonalBrandingArea() {
                                                                         Apply
                                                                     </button>
                                                                 </div>
-                                                                {fieldErrors.preferredPartnerCode && (
+                                                                {partnerCodeError && (
                                                                     <div className="sidebar-partner-error mt-2">
-                                                                        <ErrorMsg msg={fieldErrors.preferredPartnerCode} />
+                                                                        <ErrorMsg msg={partnerCodeError} />
                                                                     </div>
                                                                 )}
                                                             </>
@@ -488,11 +463,11 @@ export default function PersonalBrandingArea() {
                                                                 {formData.selectedAddOns.length > 0 && (
                                                                     <div className="sidebar-addons-list">
                                                                         {formData.selectedAddOns.map(id => {
-                                                                            const addon = PERSONAL_ADD_ONS.find(a => a.id === id);
+                                                                            const addon = addons.find(a => a.id === id);
                                                                             return (
                                                                                 <div key={id} className="sidebar-line-item sidebar-addon-line">
                                                                                     <span>{addon?.name}</span>
-                                                                                    <span>${addon?.price}</span>
+                                                                                    <span>${addon ? getAddonPrice(id) : 0}</span>
                                                                                 </div>
                                                                             );
                                                                         })}
@@ -615,11 +590,11 @@ export default function PersonalBrandingArea() {
                                                             <div className="addon-summary mb-15">
                                                                 <span className="text-white-50 d-block mb-10">Add-ons:</span>
                                                                 {formData.selectedAddOns.map(id => {
-                                                                    const addon = PERSONAL_ADD_ONS.find(a => a.id === id);
+                                                                    const addon = addons.find(a => a.id === id);
                                                                     return (
                                                                         <div key={id} className="d-flex justify-content-between mb-5 pl-20">
                                                                             <span className="text-white-50 small">- {addon?.name}</span>
-                                                                            <span className="text-white-50 small">${addon?.price}</span>
+                                                                            <span className="text-white-50 small">${addon ? getAddonPrice(id) : 0}</span>
                                                                         </div>
                                                                     );
                                                                 })}

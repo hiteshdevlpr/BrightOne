@@ -1,34 +1,11 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ErrorMsg from "@/components/error-msg";
-import { getPackages, getPackagePriceWithPartner, getAddonPriceWithPartner, isValidPreferredPartnerCode, ADD_ONS, AddOn, PACKAGE_INCLUDED_ADDON_IDS } from "@/data/booking-data";
-import { getPersonalPackages } from "@/data/personal-branding-data";
-import { handleBookingSubmission } from "@/components/booking/booking-form-handler";
-import { getRecaptchaToken } from "@/lib/recaptcha-client";
-import { HONEYPOT_FIELD, validateBookingForm, validateEmail, validatePhone } from "@/lib/validation";
-
-const GOOGLE_MAPS_SCRIPT_ID = 'google-maps-places-script-book';
-
-function loadGoogleMapsPlaces(apiKey: string): Promise<void> {
-    if (typeof window === 'undefined') return Promise.resolve();
-    const existing = document.getElementById(GOOGLE_MAPS_SCRIPT_ID);
-    if (existing) return Promise.resolve();
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.id = GOOGLE_MAPS_SCRIPT_ID;
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places`;
-        script.async = true;
-        script.defer = true;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Google Maps script failed to load'));
-        document.head.appendChild(script);
-    });
-}
-
-type ServiceCategory = 'personal' | 'listing' | null;
+import { useBookingLogic } from "@/hooks/use-booking-logic";
+import { HONEYPOT_FIELD } from "@/lib/validation";
 
 type BookClientProps = {
     defaultCategory?: 'personal' | 'listing';
@@ -36,153 +13,100 @@ type BookClientProps = {
 
 export default function BookClient({ defaultCategory }: BookClientProps) {
     const router = useRouter();
-    const [selectedCategory, setSelectedCategory] = useState<ServiceCategory>(defaultCategory ?? null);
-    const [propertyAddressInput, setPropertyAddressInput] = useState('');
-    const [appliedPropertyAddress, setAppliedPropertyAddress] = useState('');
-    const [propertySuiteInput, setPropertySuiteInput] = useState('');
-    const [appliedPropertySuite, setAppliedPropertySuite] = useState('');
-    const [propertySizeInput, setPropertySizeInput] = useState('');
-    const [appliedPropertySize, setAppliedPropertySize] = useState('');
     const step1SectionRef = useRef<HTMLDivElement>(null);
     const packagesSectionRef = useRef<HTMLDivElement>(null);
     const addonsSectionRef = useRef<HTMLDivElement>(null);
     const bookingSectionRef = useRef<HTMLDivElement>(null);
-    const propertyAddressInputRef = useRef<HTMLInputElement>(null);
-    const autocompleteListenerRef = useRef<{ remove: () => void } | null>(null);
-    const [enterManuallyListing, setEnterManuallyListing] = useState(false);
-    const [placesReadyListing, setPlacesReadyListing] = useState(false);
-    const [propertyAddressBuffer, setPropertyAddressBuffer] = useState('');
-    const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
-    const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
-    const [virtualStagingPhotoCount, setVirtualStagingPhotoCount] = useState(1);
-    const [preferredPartnerCodeInput, setPreferredPartnerCodeInput] = useState('');
-    const [appliedPartnerCode, setAppliedPartnerCode] = useState('');
-    const [partnerCodeError, setPartnerCodeError] = useState('');
-    const [showPartnerCodePopup, setShowPartnerCodePopup] = useState(false);
-    const [partnerCodePopupInput, setPartnerCodePopupInput] = useState('');
-    const [partnerCodePopupError, setPartnerCodePopupError] = useState('');
-    const [openAccordion, setOpenAccordion] = useState<string | null>(null);
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        preferredDate: '',
-        preferredTime: '',
-        message: '',
-        [HONEYPOT_FIELD]: '',
-    });
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isSubmitted, setIsSubmitted] = useState(false);
-    const [formErrors, setFormErrors] = useState<string[]>([]);
-    const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
-
-    const toggleAccordion = (accordionId: string) => {
-        setOpenAccordion(prev => prev === accordionId ? null : accordionId);
-    };
-
-    const canCompleteBooking = selectedPackageId !== null || selectedAddOns.length > 0;
-
-    const step1Filled = selectedCategory !== 'listing'
-        ? true
-        : (propertyAddressInput.trim() !== '' && propertySizeInput.trim() !== '');
     
-    const realEstatePackages = getPackages();
-    const personalPackages = getPersonalPackages();
+    // Use centralized booking logic hook
+    const bookingLogic = useBookingLogic({ defaultCategory });
+    
+    // Destructure hook state and functions
+    const {
+        selectedCategory,
+        propertyAddressInput,
+        appliedPropertyAddress,
+        propertySuiteInput,
+        appliedPropertySuite,
+        propertySizeInput,
+        appliedPropertySize,
+        selectedPackageId,
+        selectedAddOns,
+        virtualStagingPhotoCount,
+        preferredPartnerCodeInput,
+        appliedPartnerCode,
+        partnerCodeError,
+        showPartnerCodePopup,
+        partnerCodePopupInput,
+        partnerCodePopupError,
+        formData,
+        isSubmitting,
+        isSubmitted,
+        formErrors,
+        fieldErrors,
+        openAccordion,
+        enterManuallyListing,
+        placesReadyListing,
+        packages,
+        addons,
+        availableAddOns,
+        includedInSelectedPackage,
+        resolvedSelectedAddOns,
+        canCompleteBooking,
+        step1Filled,
+        setSelectedCategory,
+        setPropertyAddressInput,
+        setAppliedPropertyAddress,
+        setPropertySuiteInput,
+        setAppliedPropertySuite,
+        setPropertySizeInput,
+        setAppliedPropertySize,
+        setSelectedPackageId,
+        setSelectedAddOns,
+        setVirtualStagingPhotoCount,
+        setPreferredPartnerCodeInput,
+        setPartnerCodeError,
+        setShowPartnerCodePopup,
+        setPartnerCodePopupInput,
+        setPartnerCodePopupError,
+        setFormData,
+        setIsSubmitting,
+        setIsSubmitted,
+        setFormErrors,
+        setFieldErrors,
+        setOpenAccordion,
+        setEnterManuallyListing,
+        setPlacesReadyListing,
+        getPackagePrice,
+        getAddonPrice,
+        calculateTotal,
+        handlePackageClick,
+        handleAddOnToggle,
+        handleApplyPartnerCode,
+        handleApplyPartnerCodeFromPopup,
+        handleFormChange,
+        handleEmailBlur,
+        handlePhoneBlur,
+        handleFormSubmit,
+        formatPrice,
+        propertyAddressInputRef,
+        autocompleteListenerRef,
+        setAppliedPartnerCode,
+    } = bookingLogic;
+    
+    // Local state for property address buffer (used for Google Maps autocomplete)
+    const [propertyAddressBuffer, setPropertyAddressBuffer] = React.useState('');
 
-    const includedInSelectedPackage = selectedCategory === 'listing' && selectedPackageId
-        ? (PACKAGE_INCLUDED_ADDON_IDS[selectedPackageId] ?? [])
-        : [];
-    const availableAddOns = selectedCategory === 'listing' && selectedPackageId
-        ? ADD_ONS.filter((addon) => !includedInSelectedPackage.includes(addon.id))
-        : ADD_ONS;
-
-    const virtualStagingPricePerPhoto = ADD_ONS.find((a) => a.id === 'virtual_staging')?.price ?? 12;
-
-    const getAddonPrice = (addonId: string): number => {
-        const hasPackageSelected = !!selectedPackageId && selectedCategory === 'listing';
-        if (addonId === 'virtual_staging') {
-            const pricePerPhoto = getAddonPriceWithPartner('virtual_staging', hasPackageSelected, appliedPartnerCode || null);
-            return pricePerPhoto * virtualStagingPhotoCount;
-        } else if (addonId.startsWith('virtual_staging_')) {
-            const n = parseInt(addonId.split('_')[2], 10) || 1;
-            const pricePerPhoto = getAddonPriceWithPartner('virtual_staging', hasPackageSelected, appliedPartnerCode || null);
-            return pricePerPhoto * n;
-        } else {
-            return getAddonPriceWithPartner(addonId, hasPackageSelected, appliedPartnerCode || null);
+    // Sync buffer when Google Maps autocomplete updates the address
+    React.useEffect(() => {
+        if (propertyAddressInput && !enterManuallyListing) {
+            setPropertyAddressBuffer(propertyAddressInput);
         }
-    };
+    }, [propertyAddressInput, enterManuallyListing]);
 
-    const resolvedSelectedAddOns = selectedAddOns.map((id) =>
-        id === 'virtual_staging' ? `virtual_staging_${virtualStagingPhotoCount}` : id
-    );
-
-    useEffect(() => {
-        if (selectedCategory !== 'listing' || !selectedPackageId) return;
-        const included = PACKAGE_INCLUDED_ADDON_IDS[selectedPackageId] ?? [];
-        if (included.length === 0) return;
-        setSelectedAddOns((prev) => prev.filter((id) => !included.includes(id)));
-    }, [selectedCategory, selectedPackageId]);
-
-    const googleMapsApiKey = typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY : '';
-    useEffect(() => {
-        if (selectedCategory !== 'listing' || !googleMapsApiKey || typeof window === 'undefined') return;
-        loadGoogleMapsPlaces(googleMapsApiKey).then(() => setPlacesReadyListing(true)).catch(() => {});
-    }, [selectedCategory, googleMapsApiKey]);
-
-    useEffect(() => {
-        if (selectedCategory !== 'listing' || !placesReadyListing || enterManuallyListing || openAccordion !== 'property' || !propertyAddressInputRef.current || !window.google?.maps?.places) return;
-        const input = propertyAddressInputRef.current;
-        const Autocomplete = window.google.maps.places.Autocomplete;
-        const autocomplete = new Autocomplete(input, {
-            types: ['address'],
-            componentRestrictions: { country: 'ca' },
-            fields: ['formatted_address'],
-        });
-        const listener = autocomplete.addListener('place_changed', () => {
-            const place = autocomplete.getPlace();
-            if (place.formatted_address) {
-                setPropertyAddressInput(place.formatted_address);
-                setPropertyAddressBuffer(place.formatted_address);
-            }
-        });
-        autocompleteListenerRef.current = listener;
-        return () => {
-            if (autocompleteListenerRef.current) {
-                autocompleteListenerRef.current.remove();
-                autocompleteListenerRef.current = null;
-            }
-        };
-    }, [selectedCategory, placesReadyListing, enterManuallyListing, openAccordion]);
-
-    const calculatePrice = (basePrice: number, packageId: string): number | null => {
-        if (selectedCategory === 'personal') {
-            if (packageId === 'tailored') return null;
-            const { price } = getPackagePriceWithPartner(basePrice, undefined, packageId, appliedPartnerCode || null);
-            return price;
-        }
-        if (selectedCategory !== 'listing') return basePrice;
-        const sqft = appliedPropertySize.trim() ? parseInt(appliedPropertySize, 10) : NaN;
-        if (!isNaN(sqft) && sqft >= 5000) {
-            return null; // Show "Contact for Price"
-        }
-        const { price } = getPackagePriceWithPartner(basePrice, appliedPropertySize.trim() || undefined, packageId, appliedPartnerCode || null);
-        return price;
-    };
-
-    const handleApplyPartnerCode = () => {
-        const code = preferredPartnerCodeInput.trim();
-        if (!code) {
-            setAppliedPartnerCode('');
-            setPartnerCodeError('');
-            return;
-        }
-        if (isValidPreferredPartnerCode(code)) {
-            setAppliedPartnerCode(code);
-            setPartnerCodeError('');
-        } else {
-            setAppliedPartnerCode('');
-            setPartnerCodeError('Invalid partner code');
-        }
+    // UI-specific helper functions
+    const toggleAccordion = (accordionId: string) => {
+        setOpenAccordion(openAccordion === accordionId ? null : accordionId);
     };
 
     const openPartnerCodePopup = (e: React.MouseEvent) => {
@@ -197,32 +121,9 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
         setPartnerCodePopupError('');
     };
 
-    const applyPartnerCodeFromPopup = () => {
-        const code = partnerCodePopupInput.trim();
-        if (!code) {
-            setPartnerCodePopupError('Please enter a partner code');
-            return;
-        }
-        if (isValidPreferredPartnerCode(code)) {
-            setAppliedPartnerCode(code);
-            setPreferredPartnerCodeInput(code);
-            setPartnerCodeError('');
-            closePartnerCodePopup();
-        } else {
-            setPartnerCodePopupError('Invalid partner code');
-        }
-    };
-
-    const handlePackageClick = (pkgId: string) => {
-        if (selectedPackageId === pkgId) {
-            setSelectedPackageId(null);
-        } else {
-            setSelectedPackageId(pkgId);
-        }
-    };
-
+    // UI-specific helper functions
     const handleSelectPackageAndGoToAddons = (pkgId: string) => {
-        setSelectedPackageId(pkgId);
+        handlePackageClick(pkgId);
         if (selectedCategory === 'listing') {
             setOpenAccordion('addons');
             setTimeout(() => {
@@ -264,127 +165,6 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
         }, 100);
     };
 
-    const handleAddOnToggle = (addOnId: string) => {
-        setSelectedAddOns(prev => {
-            if (prev.includes(addOnId)) {
-                return prev.filter(id => id !== addOnId);
-            } else {
-                return [...prev, addOnId];
-            }
-        });
-    };
-
-
-    const formatPhoneNumber = (value: string): string => {
-        const digits = value.replace(/\D/g, '');
-        if (digits.length === 0) return '';
-        if (digits.length <= 3) return `(${digits}`;
-        if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-        const ten = digits.length >= 10 ? digits.slice(-10) : digits.slice(0, 10);
-        return `(${ten.slice(0, 3)}) ${ten.slice(3, 6)}-${ten.slice(6, 10)}`;
-    };
-
-    const handleEmailBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-        const err = validateEmail(e.target.value);
-        setFieldErrors(prev => (err ? { ...prev, email: err } : { ...prev, email: '' }));
-    };
-
-    const handlePhoneBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-        const trimmed = e.target.value?.trim() ?? '';
-        if (!trimmed) {
-            setFieldErrors(prev => ({ ...prev, phone: '' }));
-            return;
-        }
-        const digits = trimmed.replace(/\D/g, '');
-        const formatted = digits.length >= 10 && digits.length <= 11 ? formatPhoneNumber(trimmed) : trimmed;
-        if (formatted !== trimmed) {
-            setFormData(prev => ({ ...prev, phone: formatted }));
-        }
-        const err = validatePhone(formatted);
-        setFieldErrors(prev => (err ? { ...prev, phone: err } : { ...prev, phone: '' }));
-    };
-
-    const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        if (fieldErrors[name]) {
-            setFieldErrors(prev => ({ ...prev, [name]: '' }));
-        }
-    };
-
-    const handleFormSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedPackageId) {
-            setFormErrors(['Please select a package first.']);
-            return;
-        }
-        if (selectedCategory === 'listing' && !appliedPropertyAddress.trim()) {
-            setFormErrors(['Please enter the property address in Step 1.']);
-            return;
-        }
-        const pkg = selectedCategory === 'personal'
-            ? personalPackages.find(p => p.id === selectedPackageId)
-            : realEstatePackages.find(p => p.id === selectedPackageId);
-        const pkgPrice = pkg ? calculatePrice(pkg.basePrice, pkg.id) : null;
-        const addonsTotal = selectedAddOns.reduce((sum, id) => sum + getAddonPrice(id), 0);
-        const subtotal = (pkgPrice ?? 0) + addonsTotal;
-        const totalPrice = (subtotal * 1.13).toFixed(2);
-
-        const propertyAddress = selectedCategory === 'personal' ? (formData.message ? 'See message' : 'To be confirmed') : (appliedPropertyAddress || 'Address to be provided');
-        const serviceType = selectedCategory === 'personal' ? 'Personal Branding' : 'Real Estate Media';
-        const payloadForValidation = {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            serviceType,
-            propertyAddress,
-            serviceTier: selectedPackageId,
-        };
-        const validationErrors = validateBookingForm(payloadForValidation);
-        if (validationErrors.length > 0) {
-            setFormErrors(validationErrors.map((err) => err.message));
-            const byField = validationErrors.reduce<{ [key: string]: string }>((acc, err) => {
-                acc[err.field] = err.message;
-                return acc;
-            }, {});
-            setFieldErrors(byField);
-            return;
-        }
-        setFormErrors([]);
-        setFieldErrors({});
-
-        let recaptchaToken = '';
-        try {
-            recaptchaToken = await getRecaptchaToken('booking');
-        } catch (err) {
-            console.error('reCAPTCHA error:', err);
-            setFormErrors(['Security check failed. Please refresh and try again.']);
-            return;
-        }
-        const honeypotValue = formData[HONEYPOT_FIELD as keyof typeof formData];
-        const websiteUrl = typeof honeypotValue === 'string' ? honeypotValue : '';
-
-        const payload = {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            serviceType,
-            propertyAddress,
-            unitNumber: selectedCategory === 'listing' && appliedPropertySuite ? appliedPropertySuite : undefined,
-            propertySize: selectedCategory === 'listing' ? appliedPropertySize : undefined,
-            serviceTier: selectedPackageId,
-            selectedAddOns: resolvedSelectedAddOns,
-            preferredPartnerCode: appliedPartnerCode || undefined,
-            preferredDate: formData.preferredDate || undefined,
-            preferredTime: formData.preferredTime || undefined,
-            message: formData.message || undefined,
-            totalPrice,
-            recaptchaToken,
-            website_url: websiteUrl,
-        };
-        await handleBookingSubmission(payload, setIsSubmitting, setIsSubmitted, setFormErrors);
-    };
-
     const handleCategoryClick = (category: 'personal' | 'listing') => {
         router.push(category === 'personal' ? '/book/personal' : '/book/listing');
     };
@@ -392,14 +172,11 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
     const handleBack = () => {
         router.push('/book');
     };
-
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat('en-CA', {
-            style: 'currency',
-            currency: 'CAD',
-            minimumFractionDigits: 0,
-        }).format(price);
-    };
+    
+    // Get packages filtered by category
+    const displayPackages = selectedCategory === 'personal' 
+        ? packages.filter(p => ['growth', 'accelerator', 'tailored'].includes(p.id))
+        : packages.filter(p => ['essential', 'premium', 'luxury'].includes(p.id));
 
     if (isSubmitted) {
         return (
@@ -709,8 +486,8 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                         </div>
                                     )}
                                     <div className="book-packages">
-                                        {(selectedCategory === 'personal' ? personalPackages : realEstatePackages).map((pkg) => {
-                                            const calculatedPrice = calculatePrice(pkg.basePrice, pkg.id);
+                                        {displayPackages.map((pkg) => {
+                                            const calculatedPrice = getPackagePrice(pkg.basePrice, pkg.id);
                                             const isSelected = selectedPackageId === pkg.id;
                                             const sqftNum = appliedPropertySize ? parseInt(appliedPropertySize, 10) : NaN;
                                             const showContactPrice = selectedCategory === 'listing' && !isNaN(sqftNum) && sqftNum >= 5000;
@@ -925,14 +702,14 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                     {selectedPackageId && (
                                     <div className="book-form-breakup">
                                         {(() => {
-                                            const pkg = (selectedCategory === 'personal' ? personalPackages : realEstatePackages).find(p => p.id === selectedPackageId);
-                                            const pkgPrice = pkg ? calculatePrice(pkg.basePrice, pkg.id) : null;
+                                            const pkg = displayPackages.find(p => p.id === selectedPackageId);
+                                            const pkgPrice = pkg ? getPackagePrice(pkg.basePrice, pkg.id) : null;
                                             const addonsTotal = selectedAddOns.reduce((sum, id) => sum + getAddonPrice(id), 0);
                                             const packageTotal = pkgPrice != null ? pkgPrice : 0;
                                             const subtotal = packageTotal + addonsTotal;
                                             const taxRate = 0.13;
                                             const taxAmount = pkgPrice != null ? Math.round(subtotal * taxRate) : 0;
-                                            const totalWithTax = pkgPrice != null ? subtotal + taxAmount : 0;
+                                            const totalWithTax = calculateTotal();
                                             return (
                                                 <>
                                                     {pkg && (
@@ -950,11 +727,11 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                                                 </div>
                                                             );
                                                         }
-                                                        const addon = ADD_ONS.find(a => a.id === id);
+                                                        const addon = addons.find(a => a.id === id);
                                                         return addon ? (
                                                             <div key={id} className="book-form-breakup-item">
                                                                 <span>{addon.name}</span>
-                                                                <span>{formatPrice(addon.price)}</span>
+                                                                <span>{formatPrice(getAddonPrice(id))}</span>
                                                             </div>
                                                         ) : null;
                                                     })}
@@ -964,7 +741,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                                                 <button
                                                                     type="button"
                                                                     className="book-virtual-staging-btn"
-                                                                    onClick={() => setVirtualStagingPhotoCount((c) => Math.max(1, c - 1))}
+                                                                    onClick={() => setVirtualStagingPhotoCount(Math.max(1, virtualStagingPhotoCount - 1))}
                                                                     aria-label="Decrease photo count"
                                                                 >
                                                                     <i className="fa-solid fa-minus"></i>
@@ -973,7 +750,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                                                 <button
                                                                     type="button"
                                                                     className="book-virtual-staging-btn"
-                                                                    onClick={() => setVirtualStagingPhotoCount((c) => Math.min(99, c + 1))}
+                                                                    onClick={() => setVirtualStagingPhotoCount(Math.min(99, virtualStagingPhotoCount + 1))}
                                                                     aria-label="Increase photo count"
                                                                 >
                                                                     <i className="fa-solid fa-plus"></i>
@@ -1141,7 +918,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                             <p className="book-partner-popup-error" role="alert">{partnerCodePopupError}</p>
                         )}
                         <div className="book-partner-popup-actions">
-                            <button type="button" className="book-partner-popup-apply" onClick={applyPartnerCodeFromPopup}>
+                            <button type="button" className="book-partner-popup-apply" onClick={handleApplyPartnerCodeFromPopup}>
                                 Apply
                             </button>
                             <button type="button" className="book-partner-popup-close" onClick={closePartnerCodePopup}>

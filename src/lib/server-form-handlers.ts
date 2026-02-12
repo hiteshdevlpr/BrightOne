@@ -2,8 +2,13 @@
 import { db } from './database';
 import { validateContactForm, validateBookingForm } from './validation';
 import { EmailService, ContactEmailData, BookingEmailData } from './email-service';
-import { getPackages, getPackagePriceWithPartner, getAddonPriceWithPartner, ADD_ONS, isValidPreferredPartnerCode } from '@/data/booking-data';
-import { getPersonalPackages, PERSONAL_ADD_ONS } from '@/data/personal-branding-data';
+import * as servicesDb from './services-db';
+import {
+  getPackagePriceWithPartner,
+  getAddonPriceWithPartner,
+} from './booking-utils';
+import type { Package, Addon, PartnerCode, PropertySizeConfig } from '@/types/services';
+import type { AddOnClient } from '@/types/services';
 
 export interface ContactFormData {
   name: string;
@@ -64,87 +69,112 @@ export interface ContactRecord {
   updated_at: string;
 }
 
+/** Map DB Addon to AddOnClient with price for with/without package */
+function addonToClient(addon: Addon, hasPackageSelected: boolean): AddOnClient {
+  const price =
+    hasPackageSelected && addon.price_with_package != null
+      ? Number(addon.price_with_package)
+      : addon.price_without_package != null
+        ? Number(addon.price_without_package)
+        : Number(addon.base_price);
+  return {
+    id: addon.code,
+    name: addon.name,
+    description: addon.description || '',
+    price,
+    category: addon.category || '',
+    image: addon.image_url || '',
+    comments: addon.comments || undefined,
+  };
+}
+
 /**
- * Calculate price breakdown for booking (synced with booking-data.ts packages and add-ons)
+ * Calculate price breakdown for booking using database packages, addons, partner codes, and size configs.
  */
-function calculatePriceBreakdown(formData: BookingFormData): PriceBreakdown {
-  const TAX_RATE = 13.00; // 13% tax rate for Ontario
-  const packages = getPackages();
-  const personalPackages = getPersonalPackages();
+async function calculatePriceBreakdown(formData: BookingFormData): Promise<PriceBreakdown> {
+  const TAX_RATE = 13.0;
+
+  const [listingPackages, personalPackages, listingAddons, personalAddons, sizeConfigs, partnerCodeData] =
+    await Promise.all([
+      servicesDb.getPackages('listing', true),
+      servicesDb.getPackages('personal', true),
+      servicesDb.getAddons('listing', true),
+      servicesDb.getAddons('personal', true),
+      servicesDb.getPropertySizeConfigs(true),
+      formData.preferredPartnerCode?.trim()
+        ? servicesDb.getPartnerCodeByCode(formData.preferredPartnerCode.trim())
+        : Promise.resolve(null as PartnerCode | null),
+    ]);
+
   const serviceTier = formData.serviceTier || '';
   const isPersonalBranding = formData.serviceType === 'Personal Branding';
-  const pkg = packages.find(p => p.id === serviceTier);
-  const personalPkg = personalPackages.find(p => p.id === serviceTier);
+  const pkg = listingPackages.find((p: Package) => p.code === serviceTier);
+  const personalPkg = personalPackages.find((p: Package) => p.code === serviceTier);
 
   let packagePrice = 0;
   let packageName = 'Standard Package';
 
   if (pkg) {
     const { price } = getPackagePriceWithPartner(
-      pkg.basePrice,
+      Number(pkg.base_price),
       formData.propertySize || undefined,
-      pkg.id,
-      formData.preferredPartnerCode || null
+      pkg.code,
+      formData.preferredPartnerCode || null,
+      partnerCodeData,
+      sizeConfigs as PropertySizeConfig[]
     );
     packagePrice = price;
     packageName = pkg.name;
   } else if (personalPkg) {
     const { price } = getPackagePriceWithPartner(
-      personalPkg.basePrice,
+      Number(personalPkg.base_price),
       undefined,
-      personalPkg.id,
-      formData.preferredPartnerCode || null
+      personalPkg.code,
+      formData.preferredPartnerCode || null,
+      partnerCodeData,
+      sizeConfigs as PropertySizeConfig[]
     );
     packagePrice = price;
     packageName = personalPkg.name;
   }
 
-  // Add-ons: PERSONAL_ADD_ONS for Personal Branding, else ADD_ONS (booking-data.ts)
+  const partnerCode = formData.preferredPartnerCode || null;
+  const hasPackageSelected = !!formData.serviceTier;
+  const allAddons = [...listingAddons, ...personalAddons];
   let addonsPrice = 0;
   const addonsBreakdown: Array<{ name: string; price: number }> = [];
 
   if (formData.selectedAddOns && formData.selectedAddOns.length > 0) {
-    const partnerCode = formData.preferredPartnerCode || null;
-    if (isPersonalBranding) {
-      // Personal branding addons don't have package-based pricing, use original price with partner discount
-      formData.selectedAddOns.forEach(addonId => {
-        const addon = PERSONAL_ADD_ONS.find(a => a.id === addonId);
+    for (const addonId of formData.selectedAddOns) {
+      if (addonId.startsWith('virtual_staging_')) {
+        const photoCount = parseInt(addonId.split('_')[2], 10) || 1;
+        const vsAddon = allAddons.find((a: Addon) => a.code === 'virtual_staging');
+        if (vsAddon) {
+          const clientAddon = addonToClient(vsAddon, hasPackageSelected);
+          const pricePerPhoto = getAddonPriceWithPartner(
+            clientAddon,
+            hasPackageSelected,
+            partnerCode,
+            partnerCodeData
+          );
+          const totalPrice = pricePerPhoto * photoCount;
+          addonsPrice += totalPrice;
+          addonsBreakdown.push({ name: `Virtual Staging (${photoCount} photos)`, price: totalPrice });
+        }
+      } else {
+        const addon = allAddons.find((a: Addon) => a.code === addonId);
         if (addon) {
-          // For personal branding, use base price and apply partner discount manually
-          let price = addon.price;
-          if (isValidPreferredPartnerCode(partnerCode ?? undefined)) {
-            const discount = 10; // 10% discount for partner codes
-            price = Math.round(price * (1 - discount / 100));
-          }
+          const clientAddon = addonToClient(addon, hasPackageSelected);
+          const price = getAddonPriceWithPartner(
+            clientAddon,
+            hasPackageSelected,
+            partnerCode,
+            partnerCodeData
+          );
           addonsPrice += price;
           addonsBreakdown.push({ name: addon.name, price });
         }
-      });
-    } else {
-      const hasPackageSelected = !!formData.serviceTier; // serviceTier is the selected package
-      formData.selectedAddOns.forEach(addonId => {
-        if (addonId.startsWith('virtual_staging_')) {
-          const photoCount = parseInt(addonId.split('_')[2], 10) || 1;
-          // Virtual staging price stays the same (12 per photo)
-          const pricePerPhoto = getAddonPriceWithPartner('virtual_staging', hasPackageSelected, partnerCode);
-          const totalPrice = pricePerPhoto * photoCount;
-          addonsPrice += totalPrice;
-          addonsBreakdown.push({
-            name: `Virtual Staging (${photoCount} photos)`,
-            price: totalPrice
-          });
-        } else {
-          const addon = ADD_ONS.find(a => a.id === addonId);
-          if (addon) {
-            const price = getAddonPriceWithPartner(addonId, hasPackageSelected, partnerCode);
-            addonsPrice += price;
-            addonsBreakdown.push({
-              name: addon.name,
-              price
-            });
-          }
-        }
-      });
+      }
     }
   }
 
@@ -160,12 +190,9 @@ function calculatePriceBreakdown(formData: BookingFormData): PriceBreakdown {
     taxAmount,
     finalTotal,
     breakdown: {
-      package: {
-        name: packageName,
-        price: packagePrice
-      },
-      addons: addonsBreakdown
-    }
+      package: { name: packageName, price: packagePrice },
+      addons: addonsBreakdown,
+    },
   };
 }
 
@@ -285,9 +312,9 @@ export async function handleBookingSubmissionServer(formData: BookingFormData): 
     }
 
     console.log('APP_LOG:: Submitting booking to database');
-    
-    // Calculate price breakdown
-    const priceBreakdown = calculatePriceBreakdown(formData);
+
+    // Calculate price breakdown from database services
+    const priceBreakdown = await calculatePriceBreakdown(formData);
     console.log('APP_LOG:: Price breakdown calculated:', priceBreakdown);
     
     // Submit booking to database directly
