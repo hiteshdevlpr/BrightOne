@@ -20,13 +20,7 @@ import { ctaAnimation } from "@/utils/cta-anim";
 gsap.registerPlugin(useGSAP, ScrollTrigger, ScrollSmoother, SplitText);
 
 const HomeFourMain = () => {
-  useScrollSmooth();
-  useEffect(() => {
-    document.body.classList.add("tp-smooth-scroll");
-    return () => {
-      document.body.classList.remove("tp-smooth-scroll");
-    };
-  }, []);
+  
 
   useGSAP(() => {
     const timer = setTimeout(() => {

@@ -5,18 +5,17 @@ import Link from "next/link";
 import BookingArea from "@/components/booking/booking-area";
 import Wrapper from "@/layouts/wrapper";
 import FooterFour from "@/layouts/footers/footer-four";
-import useScrollSmooth from "@/hooks/use-scroll-smooth";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
-import { ScrollSmoother, ScrollTrigger, SplitText } from "@/plugins";
+import { ScrollTrigger, SplitText } from "@/plugins";
 import { charAnimation } from "@/utils/title-animation";
 
-gsap.registerPlugin(ScrollTrigger, ScrollSmoother, SplitText);
+gsap.registerPlugin(ScrollTrigger, SplitText);
 
 const BookPageClient = () => {
     const formSectionRef = useRef<HTMLDivElement>(null);
 
-    useScrollSmooth();
+    // Smooth scroll disabled for booking page
 
     useGSAP(() => {
         const timer = setTimeout(() => {
@@ -26,7 +25,7 @@ const BookPageClient = () => {
     });
 
     const scrollToForm = () => {
-        formSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+        formSectionRef.current?.scrollIntoView({ behavior: 'auto' });
     };
 
     return (
@@ -34,8 +33,8 @@ const BookPageClient = () => {
             <div id="smooth-wrapper">
                 <div id="smooth-content">
                     <main>
-                        {/* hero area - matches brightone.ca/booking */}
-                        <div className="tp-hero-3-area tp-hero-3-ptb border-bottom">
+                        {/* hero area - dark theme */}
+                        <div className="tp-hero-3-area tp-hero-3-ptb booking-page-hero booking-hero-dark">
                             <div className="container">
                                 <div className="row">
                                     <div className="col-xl-12">
@@ -46,29 +45,14 @@ const BookPageClient = () => {
                                             <h4 className="tp-hero-3-title tp-char-animation text-white">
                                                 Book Your Shoot
                                             </h4>
-                                            <span className="tp-hero-3-category text-white-50 d-block mb-4">
-                                                Get a personalized quote and book your professional real estate photography session
-                                            </span>
-                                            <div className="d-flex flex-wrap justify-content-center gap-3">
-                                                <button
-                                                    type="button"
-                                                    className="tp-btn-black-2"
-                                                    onClick={scrollToForm}
-                                                >
-                                                    Start Booking
-                                                </button>
-                                                <Link href="/contact" className="tp-btn-black-2 booking-hero-outline">
-                                                    Ask Questions
-                                                </Link>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div ref={formSectionRef}>
-                            <Suspense fallback={<div className="cn-contactform-area pt-100 pb-100 text-center"><p className="text-white-50">Loading...</p></div>}>
+                        <div ref={formSectionRef} className="booking-form-section-light">
+                            <Suspense fallback={<div className="cn-contactform-area booking-theme-light pt-100 pb-100 text-center"><p className="booking-text-muted">Loading...</p></div>}>
                                 <BookingArea />
                             </Suspense>
                         </div>
@@ -79,8 +63,19 @@ const BookPageClient = () => {
             </div>
 
             <style jsx global>{`
-                .booking-hero-outline { background-color: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.4); text-decoration: none; display: inline-flex; align-items: center; }
-                .booking-hero-outline:hover { background-color: #fff; color: #000; border-color: #fff; color: #000; }
+                .booking-hero-light { background: #f5f5f5; }
+                .booking-hero-title-light { color: #1a1a1a !important; }
+                .booking-hero-subtitle-light { color: #555 !important; }
+                .booking-hero-outline-light { background-color: transparent; color: #1a1a1a; border: 2px solid rgba(0,0,0,0.25); text-decoration: none; display: inline-flex; align-items: center; }
+                .booking-hero-outline-light:hover { background-color: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+                .booking-form-section-light { background: #f8f9fa; }
+                .booking-page-hero .tp-hero-3-title { font-size: 78px; }
+                @media (max-width: 1199px) { .booking-page-hero .tp-hero-3-title { font-size: 64px; } }
+                @media (max-width: 991px) { .booking-page-hero .tp-hero-3-title { font-size: 53px; } }
+                @media (max-width: 767px) { .booking-page-hero .tp-hero-3-title { font-size: 34px; } }
+                .booking-page-hero.tp-hero-3-ptb { padding-top: 147px; }
+                @media (max-width: 991px) { .booking-page-hero.tp-hero-3-ptb { padding-top: 140px; } }
+                @media (max-width: 767px) { .booking-page-hero.tp-hero-3-ptb { padding-top: 98px; } }
             `}</style>
         </Wrapper>
     );

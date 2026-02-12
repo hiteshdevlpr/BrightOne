@@ -295,7 +295,7 @@ export default function BookingArea() {
 
         const addOnsPrice = formData.selectedAddOns.reduce((total, id) => {
             const addOn = ADD_ONS.find(a => a.id === id);
-            const price = getAddonPriceWithPartner(addOn?.price || 0, appliedPartnerCode || null);
+            const price = getAddonPriceWithPartner(id, !!formData.selectedPackage, appliedPartnerCode || null);
             return total + price;
         }, 0);
 
@@ -318,13 +318,14 @@ export default function BookingArea() {
             }
             setFieldErrors({});
         }
-        if (currentStep === 2 && !formData.selectedPackage) {
-            setFormErrors(['Please select a package to continue']);
-            return;
-        }
+        // Allow proceeding to step 3 (Add Ons) even without a package
+        // if (currentStep === 2 && !formData.selectedPackage) {
+        //     setFormErrors(['Please select a package to continue']);
+        //     return;
+        // }
         setFormErrors([]);
         setFieldErrors({});
-        setCurrentStep(prev => prev + 1);
+        setCurrentStep(prev => Math.min(4, prev + 1));
         trackBookingStepChange(currentStep + 1, 'next');
         window.scrollTo(0, 300);
     };
@@ -335,25 +336,75 @@ export default function BookingArea() {
         window.scrollTo(0, 300);
     };
 
+    const handleStepClick = (stepId: number) => {
+        // Allow navigation to completed steps (can always go back)
+        if (currentStep > stepId) {
+            setCurrentStep(stepId);
+            trackBookingStepChange(stepId, 'previous');
+            window.scrollTo(0, 300);
+            return;
+        }
+        
+        // Allow navigation to current step (no-op)
+        if (currentStep === stepId) {
+            return;
+        }
+        
+        // For future steps, check prerequisites
+        if (stepId === 2) {
+            // Can go to step 2 if step 1 is completed (address and size filled)
+            if (formData.propertyAddress && formData.propertySize) {
+                setCurrentStep(stepId);
+                trackBookingStepChange(stepId, 'next');
+                window.scrollTo(0, 300);
+            }
+        } else if (stepId === 3) {
+            // Can go to step 3 (Add Ons) - no package required
+            setCurrentStep(stepId);
+            trackBookingStepChange(stepId, 'next');
+            window.scrollTo(0, 300);
+        } else if (stepId === 4) {
+            // Can go to step 4 if we've been to step 3 (no package required)
+            if (currentStep >= 3) {
+                setCurrentStep(stepId);
+                trackBookingStepChange(stepId, 'next');
+                window.scrollTo(0, 300);
+            }
+        }
+    };
+
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Check if either a package or at least one addon is selected
+        if (!formData.selectedPackage && formData.selectedAddOns.length === 0) {
+            setFormErrors(['Please select a package or at least one add-on to continue']);
+            return;
+        }
+        
         const payloadForValidation = {
             name: formData.name,
             email: formData.email,
             phone: formData.phone,
             serviceType: 'Real Estate Media',
             propertyAddress: formData.propertyAddress,
-            serviceTier: formData.selectedPackage,
+            serviceTier: formData.selectedPackage || undefined, // Make optional if addons are selected
         };
         const validationErrors = validateBookingForm(payloadForValidation);
         if (validationErrors.length > 0) {
-            setFormErrors(validationErrors.map((err) => err.message));
-            const byField = validationErrors.reduce<{ [key: string]: string }>((acc, err) => {
-                acc[err.field] = err.message;
-                return acc;
-            }, {});
-            setFieldErrors((prev) => ({ ...prev, ...byField }));
-            return;
+            // Filter out serviceTier error if addons are selected
+            const filteredErrors = validationErrors.filter(err => 
+                !(err.field === 'serviceTier' && formData.selectedAddOns.length > 0)
+            );
+            if (filteredErrors.length > 0) {
+                setFormErrors(filteredErrors.map((err) => err.message));
+                const byField = filteredErrors.reduce<{ [key: string]: string }>((acc, err) => {
+                    acc[err.field] = err.message;
+                    return acc;
+                }, {});
+                setFieldErrors((prev) => ({ ...prev, ...byField }));
+                return;
+            }
         }
         setFormErrors([]);
         setFieldErrors({});
@@ -382,13 +433,13 @@ export default function BookingArea() {
 
     if (isSubmitted) {
         return (
-            <div className="cn-contactform-area text-center">
+            <div className="pb-100 booking-theme-light text-center">
                 <div className="container">
                     <div className="row justify-content-center">
                         <div className="col-lg-8">
-                            <div className="success-box p-5 bg-dark border border-secondary rounded">
-                                <h2 className="text-white mb-4">Booking Submitted Successfully!</h2>
-                                <p className="text-white-50 mb-5">
+                            <div className="success-box p-5 border rounded booking-success-box-light">
+                                <h2 className="mb-4 booking-text-primary">Booking Submitted Successfully!</h2>
+                                <p className="text-secondary mb-5 booking-text-muted">
                                     Thank you for your interest. Our team will review your property details and get back to you with a final confirmation and timeline within 24 hours.
                                 </p>
                                 <button
@@ -411,49 +462,65 @@ export default function BookingArea() {
 
     const packages = getPackages();
 
+    const steps = [
+        { id: 1, name: 'Property Details' },
+        { id: 2, name: 'Package' },
+        { id: 3, name: 'Add Ons' },
+        { id: 4, name: 'Complete Booking' },
+    ];
+
     return (
-        <div className="cn-contactform-area " style={{ fontFamily: 'var(--font-inter)' }}>
+        <div className="cn-contactform-area booking-theme-light" style={{ fontFamily: 'var(--font-inter)', paddingTop: '50px', paddingBottom: '100px' }}>
             <div className="container">
                 <div className="row">
                     <div className="col-12">
-                        <div className="ab-about-category-title-box text-center p-relative">
-                            <span className="tp-section-subtitle mb-15 justify-content-center d-flex align-items-center">
-                                <HandIcon /> Book Your Session
-                            </span>
-                            <h4 className="ab-about-category-title text-white">
-                                {currentStep === 1 && "Property Details"}
-                                {currentStep === 2 && "Select Package"}
-                                {currentStep === 3 && "Contact Info"}
-                            </h4>
-
-                            <div className="booking-stepper d-flex justify-content-center mt-30">
-                                <div className="booking-stepper-inner d-flex align-items-center">
-                                    {[1, 2, 3].map((step, idx) => (
-                                        <React.Fragment key={step}>
-                                            <div className={`booking-step ${currentStep === step ? 'active' : ''} ${currentStep > step ? 'completed' : ''}`}>
-                                                <div className="step-num">{step}</div>
-                                                <span className="step-txt">
-                                                    {step === 1 && "Property Details"}
-                                                    {step === 2 && "Select Package"}
-                                                    {step === 3 && "Contact Info"}
-                                                </span>
+                        <div className="booking-page-layout">
+                            {/* Left: vertical progress bar */}
+                            <aside className="booking-progress-sidebar">
+                                <div className="booking-progress-vertical">
+                                    {steps.map((step, idx) => {
+                                        const isClickable = currentStep > step.id || 
+                                            (step.id === 2 && formData.propertyAddress && formData.propertySize) ||
+                                            (step.id === 3 && formData.propertyAddress && formData.propertySize) || // Can access Add Ons after step 1
+                                            (step.id === 4 && currentStep >= 3); // Can access step 4 if we've been to step 3
+                                        
+                                        return (
+                                            <div 
+                                                key={step.id} 
+                                                className={`booking-progress-step-wrap ${isClickable ? 'clickable' : ''}`}
+                                                onClick={() => isClickable && handleStepClick(step.id)}
+                                                style={{ cursor: isClickable ? 'pointer' : 'default' }}
+                                            >
+                                                <div className="booking-progress-step-row">
+                                                    <div
+                                                        className={`booking-progress-circle ${currentStep > step.id ? 'completed' : ''} ${currentStep === step.id ? 'active' : ''}`}
+                                                        aria-current={currentStep === step.id ? 'step' : undefined}
+                                                    >
+                                                        {currentStep > step.id && (
+                                                            <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg" className="booking-progress-check">
+                                                                <path d="M1 5L5 9L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                    <span className={`booking-progress-label ${currentStep >= step.id ? 'active' : ''}`}>
+                                                        {step.name}
+                                                    </span>
+                                                </div>
+                                                {idx < steps.length - 1 && (
+                                                    <div className={`booking-progress-connector ${currentStep > step.id ? 'completed' : ''}`} />
+                                                )}
                                             </div>
-                                            {idx < 2 && (
-                                                <div className={`step-connector ${currentStep > step ? 'completed' : ''}`} />
-                                            )}
-                                        </React.Fragment>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
-                            </div>
-                        </div>
-                    </div>
+                            </aside>
 
-                    <div className="col-12">
-                        <div className="cn-contactform-wrap p-relative">
-                            <form onSubmit={onSubmit}>
+                            <div className="booking-form-main">
+                                <div className="cn-contactform-wrap p-relative">
+                                    <form onSubmit={onSubmit}>
                                 {currentStep === 1 && (
                                     <div className="step-content fadeIn">
-                                        <div className="row justify-content-center">
+                                        <div className="row justify-content-start">
                                             <div className="col-lg-8">
                                                 {/* Honeypot - leave blank */}
                                                 <div className="visually-hidden" aria-hidden="true">
@@ -480,6 +547,7 @@ export default function BookingArea() {
                                                         onChange={handleInputChange}
                                                         required
                                                         autoComplete="off"
+                                                        className="property-address-input"
                                                     />
                                                     {!addressGiven && (
                                                         <button
@@ -506,6 +574,8 @@ export default function BookingArea() {
                                                                     placeholder="Apt 2B"
                                                                     value={formData.unitNumber}
                                                                     onChange={handleInputChange}
+                                                                    style={{ fontSize: '16px' }}
+                                                                    className="property-input-16px"
                                                                 />
                                                             </div>
                                                         </div>
@@ -519,6 +589,8 @@ export default function BookingArea() {
                                                                     value={formData.propertySize}
                                                                     onChange={handleInputChange}
                                                                     required
+                                                                    style={{ fontSize: '16px' }}
+                                                                    className="property-input-16px property-size-input"
                                                                 />
                                                                 {fieldErrors.propertySize && <ErrorMsg msg={fieldErrors.propertySize} />}
                                                             </div>
@@ -533,7 +605,6 @@ export default function BookingArea() {
                                 {currentStep === 2 && (
                                     <div className="step-content fadeIn">
                                         <div className="step2-layout">
-                                            {/* Left column - 70% - Packages & Add-ons */}
                                             <div className="step2-left">
                                                 <div className="tp-price-area">
                                                     {packages.map((item, index) => (
@@ -567,7 +638,7 @@ export default function BookingArea() {
                                                                 <div className="pkg-card-action">
                                                                     <button
                                                                         type="button"
-                                                                        className={`tp-btn-black-md ${formData.selectedPackage === item.id ? "pkg-btn-selected" : "pkg-btn-default"}`}
+                                                                        className={`tp-btn-black-md ${formData.selectedPackage === item.id ? "pkg-btn-default" : "pkg-btn-proceed"}`}
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             handlePackageSelect(item.id);
@@ -578,38 +649,37 @@ export default function BookingArea() {
                                                                             <UpArrow />
                                                                         </span>
                                                                     </button>
+                                                                    {formData.selectedPackage === item.id && (
+                                                                        <button
+                                                                            type="button"
+                                                                            className="tp-btn-black-md pkg-btn-proceed"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleNext();
+                                                                            }}
+                                                                        >
+                                                                            Choose Addons
+                                                                        </button>
+                                                                    )}
+                                                                    {!formData.selectedPackage && (
+                                                                        <button
+                                                                            type="button"
+                                                                            className="tp-btn-black-md pkg-btn-default"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleNext();
+                                                                            }}
+                                                                        >
+                                                                            I'll Pick & Choose
+                                                                        </button>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     ))}
                                                 </div>
-
-                                                <div className="addons-section mt-50">
-                                                    <h6 className="text-white mb-20" style={{ fontSize: '18px', letterSpacing: '0.5px' }}>Enhance Your Listing</h6>
-                                                    <div className="addons-grid">
-                                                        {ADD_ONS.map(addon => (
-                                                            <div
-                                                                key={addon.id}
-                                                                className={`addon-thumb ${formData.selectedAddOns.includes(addon.id) ? 'addon-thumb-active' : ''}`}
-                                                                onClick={() => handleAddOnToggle(addon.id)}
-                                                            >
-                                                                <div className="addon-thumb-img">
-                                                                    <img src={addon.image} alt={addon.name} loading="lazy" />
-                                                                    {formData.selectedAddOns.includes(addon.id) && (
-                                                                        <div className="addon-thumb-check">✓</div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="addon-thumb-info">
-                                                                    <span className="addon-thumb-name">{addon.name}</span>
-                                                                    <span className="addon-thumb-price">+${getAddonPriceWithPartner(addon.price, appliedPartnerCode || null)}</span>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
                                             </div>
 
-                                            {/* Right column - 30% - Address & Price Summary */}
                                             <div className="step2-right">
                                                 <div className="sidebar-sticky">
                                                     {/* Property Address */}
@@ -718,7 +788,7 @@ export default function BookingArea() {
                                                                             return (
                                                                                 <div key={id} className="sidebar-line-item sidebar-addon-line">
                                                                                     <span>{addon?.name}</span>
-                                                                                    <span>${getAddonPriceWithPartner(addon?.price ?? 0, appliedPartnerCode || null)}</span>
+                                                                                    <span>${getAddonPriceWithPartner(id, !!formData.selectedPackage, appliedPartnerCode || null)}</span>
                                                                                 </div>
                                                                             );
                                                                         })}
@@ -750,6 +820,119 @@ export default function BookingArea() {
 
                                 {currentStep === 3 && (
                                     <div className="step-content fadeIn">
+                                        <div className="step2-layout">
+                                            <div className="step2-left">
+                                                <div className="addons-section">
+                                                    <h6 className="text-white mb-20" style={{ fontSize: '18px', letterSpacing: '0.5px' }}>Enhance Your Listing</h6>
+                                                    <div className="addons-grid">
+                                                        {ADD_ONS.filter(addon => {
+                                                            // Hide listing_website when a package is selected
+                                                            if (formData.selectedPackage && addon.id === 'listing_website') {
+                                                                return false;
+                                                            }
+                                                            return true;
+                                                        }).map(addon => (
+                                                            <div
+                                                                key={addon.id}
+                                                                className={`addon-thumb ${formData.selectedAddOns.includes(addon.id) ? 'addon-thumb-active' : ''}`}
+                                                                onClick={() => handleAddOnToggle(addon.id)}
+                                                            >
+                                                                <div className="addon-thumb-img">
+                                                                    <img src={addon.image} alt={addon.name} loading="lazy" />
+                                                                    {formData.selectedAddOns.includes(addon.id) && (
+                                                                        <div className="addon-thumb-check">✓</div>
+                                                                    )}
+                                                                </div>
+                                                                <div className="addon-thumb-info">
+                                                                    <span className="addon-thumb-name">{addon.name}</span>
+                                                                    <span className="addon-thumb-price">+${getAddonPriceWithPartner(addon.id, !!formData.selectedPackage, appliedPartnerCode || null)}</span>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="step2-right">
+                                                <div className="sidebar-sticky">
+                                                    <div className="sidebar-address">
+                                                        <div className="d-flex justify-content-between align-items-center mb-14">
+                                                            <h6 className="sidebar-label mb-0">Property</h6>
+                                                            <button
+                                                                type="button"
+                                                                className="sidebar-edit-btn"
+                                                                onClick={() => setCurrentStep(1)}
+                                                                title="Edit property details"
+                                                            >
+                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                        <p className="sidebar-address-text">{formData.propertyAddress}</p>
+                                                        {formData.unitNumber && <p className="sidebar-address-unit">Unit {formData.unitNumber}</p>}
+                                                        <span className="sidebar-sqft">{formData.propertySize} sq ft</span>
+                                                    </div>
+                                                    <div className="sidebar-partner-code mb-20">
+                                                        <label className="sidebar-label d-block mb-10">Preferred partner code (optional)</label>
+                                                        {appliedPartnerCode ? (
+                                                            <div className="sidebar-partner-chip">
+                                                                <span className="sidebar-partner-chip-text">{appliedPartnerCode}</span>
+                                                                <button type="button" className="sidebar-partner-chip-remove" onClick={() => { setAppliedPartnerCode(''); setFormData(prev => ({ ...prev, preferredPartnerCode: '' })); }} aria-label="Remove partner code">
+                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <div className="sidebar-partner-row d-flex gap-2 align-items-flex-start">
+                                                                    <input type="text" name="preferredPartnerCode" className="sidebar-partner-input" placeholder="Enter code" value={formData.preferredPartnerCode} onChange={handleInputChange} autoComplete="off" />
+                                                                    <button type="button" className="sidebar-partner-apply-btn" onClick={handleApplyPartnerCode}>Apply</button>
+                                                                </div>
+                                                                {fieldErrors.preferredPartnerCode && <div className="sidebar-partner-error mt-2"><ErrorMsg msg={fieldErrors.preferredPartnerCode} /></div>}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                    <div className="sidebar-pricing">
+                                                        <h6 className="sidebar-label">Estimate</h6>
+                                                        {formData.selectedPackage ? (
+                                                            <>
+                                                                <div className="sidebar-line-item sidebar-package-item">
+                                                                    <span>{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
+                                                                    <div className="d-flex align-items-center gap-2">
+                                                                        <span>${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
+                                                                        <button type="button" className="sidebar-remove-btn" onClick={handlePackageRemove} title="Remove package">
+                                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                                {formData.selectedAddOns.length > 0 && (
+                                                                    <div className="sidebar-addons-list">
+                                                                        {formData.selectedAddOns.map(id => {
+                                                                            const addon = ADD_ONS.find(a => a.id === id);
+                                                                            return <div key={id} className="sidebar-line-item sidebar-addon-line"><span>{addon?.name}</span><span>${getAddonPriceWithPartner(id, !!formData.selectedPackage, appliedPartnerCode || null)}</span></div>;
+                                                                        })}
+                                                                    </div>
+                                                                )}
+                                                                <div className="sidebar-divider"></div>
+                                                                <div className="sidebar-total"><span>Total</span><span>${calculateTotal()}</span></div>
+                                                            </>
+                                                        ) : (
+                                                            <p className="sidebar-empty">Select a package to see pricing</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {formErrors.length > 0 && (
+                                            <div className="mt-20 text-center">
+                                                {formErrors.map((err, i) => <ErrorMsg key={i} msg={err} />)}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {currentStep === 4 && (
+                                    <div className="step-content fadeIn">
                                         <div className="row justify-content-center">
                                             <div className="col-lg-10">
                                                 <div className="row">
@@ -763,6 +946,8 @@ export default function BookingArea() {
                                                                 value={formData.name}
                                                                 onChange={handleInputChange}
                                                                 required
+                                                                style={{ fontSize: '16px' }}
+                                                                className="property-input-16px"
                                                             />
                                                             {fieldErrors.name && <ErrorMsg msg={fieldErrors.name} />}
                                                         </div>
@@ -831,49 +1016,49 @@ export default function BookingArea() {
                                                     </div>
                                                 </div>
 
-                                                <div className="booking-summary mt-50 p-5 border border-secondary rounded bg-black">
-                                                    <h3 className="text-white mb-30 text-center">Booking Summary</h3>
+                                                <div className="booking-summary booking-summary-light mt-50 p-5 border rounded">
+                                                    <h3 className="mb-30 text-center booking-text-primary">Booking Summary</h3>
                                                     <div className="summary-details">
                                                         <div className="d-flex justify-content-between mb-15">
-                                                            <span className="text-white-50">Package:</span>
-                                                            <span className="text-white font-weight-bold">{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
+                                                            <span className="booking-text-muted">Package:</span>
+                                                            <span className="font-weight-bold booking-text-primary">{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
                                                         </div>
                                                         <div className="d-flex justify-content-between mb-15">
-                                                            <span className="text-white-50">Base Price:</span>
-                                                            <span className="text-white">${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
+                                                            <span className="booking-text-muted">Base Price:</span>
+                                                            <span className="booking-text-primary">${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
                                                         </div>
 
                                                         {formData.selectedAddOns.length > 0 && (
                                                             <div className="addon-summary mb-15">
-                                                                <span className="text-white-50 d-block mb-10">Add-ons:</span>
+                                                                <span className="booking-text-muted d-block mb-10">Add-ons:</span>
                                                                 {formData.selectedAddOns.map(id => {
                                                                     const addon = ADD_ONS.find(a => a.id === id);
                                                                     return (
                                                                         <div key={id} className="d-flex justify-content-between mb-5 pl-20">
-                                                                            <span className="text-white-50 small">- {addon?.name}</span>
-                                                                            <span className="text-white-50 small">${getAddonPriceWithPartner(addon?.price ?? 0, appliedPartnerCode || null)}</span>
+                                                                            <span className="booking-text-muted small">- {addon?.name}</span>
+                                                                            <span className="booking-text-muted small">${getAddonPriceWithPartner(id, !!formData.selectedPackage, appliedPartnerCode || null)}</span>
                                                                         </div>
                                                                     );
                                                                 })}
                                                             </div>
                                                         )}
 
-                                                        <div className="border-top border-secondary my-20"></div>
+                                                        <div className="border-top my-20 booking-summary-divider"></div>
 
                                                         <div className="d-flex justify-content-between mb-10">
-                                                            <span className="text-white-50">Subtotal:</span>
-                                                            <span className="text-white">${calculateTotal().toFixed(2)}</span>
+                                                            <span className="booking-text-muted">Subtotal:</span>
+                                                            <span className="booking-text-primary">${calculateTotal().toFixed(2)}</span>
                                                         </div>
                                                         <div className="d-flex justify-content-between mb-15">
-                                                            <span className="text-white-50">HST (13%):</span>
-                                                            <span className="text-white">${(calculateTotal() * 0.13).toFixed(2)}</span>
+                                                            <span className="booking-text-muted">HST (13%):</span>
+                                                            <span className="booking-text-primary">${(calculateTotal() * 0.13).toFixed(2)}</span>
                                                         </div>
 
-                                                        <div className="border-top border-secondary my-20"></div>
+                                                        <div className="border-top my-20 booking-summary-divider"></div>
 
                                                         <div className="d-flex justify-content-between">
-                                                            <h4 className="text-white mb-0">Total</h4>
-                                                            <h4 className="text-white mb-0">${(calculateTotal() * 1.13).toFixed(2)}</h4>
+                                                            <h4 className="booking-text-primary mb-0">Total</h4>
+                                                            <h4 className="booking-text-primary mb-0">${(calculateTotal() * 1.13).toFixed(2)}</h4>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -890,14 +1075,14 @@ export default function BookingArea() {
 
                                 {formErrors.length > 0 && (
                                     <div className="booking-submission-errors mt-30 mb-20 text-center" role="alert" aria-live="polite">
-                                        <p className="text-white fw-bold mb-2">Submission failed</p>
+                                        <p className="booking-text-primary fw-bold mb-2">Submission failed</p>
                                         {formErrors.map((err, i) => (
                                             <ErrorMsg key={i} msg={err} />
                                         ))}
                                     </div>
                                 )}
 
-                                <div className="form-navigation mt-60 d-flex justify-content-center gap-4">
+                                <div className="form-navigation mt-60 d-flex justify-content-start gap-4">
                                     {currentStep > 1 && (
                                         <button
                                             type="button"
@@ -910,24 +1095,52 @@ export default function BookingArea() {
                                     )}
 
                                     {currentStep === 1 ? (
-                                        <button
-                                            type="button"
-                                            className="tp-btn-black-2 booking-btn-primary"
-                                            onClick={handleNext}
-                                        >
-                                            Next: Select Package
-                                            <span className="p-relative">
-                                                <RightArrowTwo />
-                                                <ArrowBg />
-                                            </span>
-                                        </button>
+                                        <>
+                                            <button
+                                                type="button"
+                                                className="tp-btn-black-md pkg-btn-proceed"
+                                                onClick={handleNext}
+                                                disabled={!formData.propertyAddress || !formData.propertySize}
+                                            >
+                                                Choose Package
+                                                <span className="p-relative">
+                                                    <RightArrowTwo />
+                                                </span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="tp-btn-black-md pkg-btn-default"
+                                                onClick={() => {
+                                                    if (formData.propertyAddress && formData.propertySize) {
+                                                        setCurrentStep(3);
+                                                        trackBookingStepChange(3, 'next');
+                                                        window.scrollTo(0, 300);
+                                                    }
+                                                }}
+                                                disabled={!formData.propertyAddress || !formData.propertySize}
+                                            >
+                                                Pick Services
+                                            </button>
+                                        </>
                                     ) : currentStep === 2 ? (
                                         <button
                                             type="button"
                                             className="tp-btn-black-2 booking-btn-primary"
                                             onClick={handleNext}
                                         >
-                                            Next: Contact Info
+                                            Next: AddOns
+                                            <span className="p-relative">
+                                                <RightArrowTwo />
+                                                <ArrowBg />
+                                            </span>
+                                        </button>
+                                    ) : currentStep === 3 ? (
+                                        <button
+                                            type="button"
+                                            className="tp-btn-black-2 booking-btn-primary"
+                                            onClick={handleNext}
+                                        >
+                                            Next: Complete Booking
                                             <span className="p-relative">
                                                 <RightArrowTwo />
                                                 <ArrowBg />
@@ -948,6 +1161,8 @@ export default function BookingArea() {
                                     )}
                                 </div>
                             </form>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -956,20 +1171,62 @@ export default function BookingArea() {
             <style jsx global>{`
                 .fadeIn { animation: fadeIn 0.5s ease-in-out; }
                 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-                
-                .booking-stepper { margin-bottom: 40px; width: 100%; }
-                .booking-stepper-inner { width: 50%; margin: 0 auto; justify-content: space-between; }
-                .booking-step { display: flex; flex-direction: column; align-items: center; opacity: 0.3; transition: all 0.3s; position: relative; z-index: 1; flex-shrink: 0; }
-                .booking-step.active { opacity: 1; }
-                .booking-step.completed { opacity: 0.7; }
-                .step-num { width: 44px; height: 44px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 16px; margin-bottom: 10px; transition: all 0.3s; }
-                .booking-step.active .step-num { border-color: #fff; background: #fff; color: #000; }
-                .booking-step.completed .step-num { background: #fff; color: #000; border-color: #fff; }
-                .step-txt { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: #fff; font-weight: 500; }
-                .step-connector { flex: 1; height: 1px; background: rgba(255,255,255,0.2); margin: 0 20px; margin-bottom: 30px; transition: background 0.3s; }
-                .step-connector.completed { background: rgba(255,255,255,0.6); }
-                @media (max-width: 768px) { .booking-stepper-inner { width: 90%; } .step-connector { margin: 0 10px; margin-bottom: 30px; } }
-                
+
+                /* Booking page: left progress sidebar + right form */
+                .booking-page-layout { display: flex; gap: 48px; align-items: flex-start; margin-top: 32px; }
+                .booking-progress-sidebar { flex: 0 0 220px; position: sticky; top: 120px; }
+                .booking-form-main { flex: 1; min-width: 0; }
+                .booking-form-main .cn-contactform-wrap { padding-left: 0; }
+
+                .booking-progress-vertical { display: flex; flex-direction: column; }
+                .booking-progress-step-wrap { display: flex; flex-direction: column; align-items: flex-start; flex: 0 0 auto; }
+                .booking-progress-step-wrap.clickable { transition: opacity 0.2s; }
+                .booking-progress-step-wrap.clickable:hover { opacity: 0.8; }
+                .booking-progress-step-wrap.clickable:hover .booking-progress-circle { transform: scale(1.05); }
+                .booking-progress-step-wrap.clickable:hover .booking-progress-label { opacity: 0.9; }
+                .booking-progress-step-row { display: flex; align-items: center; gap: 16px; }
+                .booking-progress-circle {
+                    width: 36px; height: 36px; border-radius: 50%;
+                    border: 2px solid rgba(255,255,255,0.35);
+                    background: transparent;
+                    flex-shrink: 0;
+                    display: flex; align-items: center; justify-content: center;
+                    transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+                    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+                }
+                .booking-progress-circle.active {
+                    border-color: #fff;
+                    background: #fff;
+                    box-shadow: 0 4px 14px rgba(0,0,0,0.35), 0 0 0 4px rgba(255,255,255,0.15);
+                }
+                .booking-progress-circle.completed {
+                    border-color: #fff;
+                    background: #fff;
+                    color: #000;
+                    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+                }
+                .booking-progress-circle.completed .booking-progress-check { color: #000; }
+                .booking-progress-label {
+                    font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
+                    color: rgba(255,255,255,0.4); font-weight: 500;
+                    transition: color 0.25s;
+                }
+                .booking-progress-label.active { color: #fff; }
+                .booking-progress-connector {
+                    width: 2px; min-height: 32px; margin-left: 17px; margin-top: 6px; margin-bottom: 6px;
+                    background: rgba(255,255,255,0.2);
+                    transition: background 0.25s;
+                }
+                .booking-progress-connector.completed { background: rgba(255,255,255,0.6); }
+
+                @media (max-width: 991px) {
+                    .booking-page-layout { flex-direction: column; gap: 28px; }
+                    .booking-progress-sidebar { flex: 0 0 auto; position: static; width: 100%; }
+                    .booking-progress-vertical { flex-direction: row; justify-content: center; flex-wrap: wrap; gap: 8px 24px; }
+                    .booking-progress-step-wrap { flex-direction: row; align-items: center; }
+                    .booking-progress-connector { width: 24px; min-width: 24px; height: 2px; min-height: 0; margin: 0 4px; }
+                }
+
                 /* Step 2 - Two-column layout */
                 .step2-layout { display: flex; gap: 40px; }
                 .step2-left { flex: 0 0 68%; max-width: 68%; }
@@ -1044,7 +1301,7 @@ export default function BookingArea() {
                 .pkg-card-features li i { color: rgba(255,255,255,0.35); font-size: 12px; }
                 .pkg-card-active .pkg-card-features li { color: rgba(255,255,255,0.85); }
                 .pkg-card-active .pkg-card-features li i { color: #fff; }
-                .pkg-card-action { display: flex; justify-content: flex-end; }
+                .pkg-card-action { display: flex; justify-content: flex-start; gap: 12px; align-items: center; }
 
                 /* Package carousel */
                 .pkg-carousel { position: relative; width: 100%; aspect-ratio: 16 / 7; overflow: hidden; background: #0a0a0a; }
@@ -1088,6 +1345,162 @@ export default function BookingArea() {
                 .pkg-btn-selected:hover { background-color: rgba(255,255,255,0.85); color: #000; }
                 .pkg-btn-default { background-color: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.3); }
                 .pkg-btn-default:hover { background-color: #fff; color: #000; border-color: #fff; }
+                .pkg-btn-proceed { background-color: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+                .pkg-btn-proceed:hover { background-color: #333; color: #fff; border-color: #333; }
+
+                /* ========== Light theme overrides (booking page only) ========== */
+                .booking-theme-light { background: #f8f9fa; }
+                .booking-theme-light .booking-text-primary { color: #1a1a1a; }
+                .booking-theme-light .booking-text-muted { color: #555; }
+                .booking-theme-light .success-box.booking-success-box-light { background: #fff; border-color: rgba(0,0,0,0.12); }
+                .booking-theme-light .booking-summary-light { background: #fff; border-color: rgba(0,0,0,0.12); }
+                .booking-theme-light .booking-summary-divider { border-color: rgba(0,0,0,0.12) !important; }
+
+                .booking-theme-light .ab-about-category-title { color: #1a1a1a; }
+                .booking-theme-light .tp-section-subtitle { color: #333; }
+                .booking-theme-light .booking-progress-circle {
+                    border-color: rgba(0,0,0,0.25);
+                    background: #fff;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+                }
+                .booking-theme-light .booking-progress-circle.active {
+                    border-color: #1a1a1a;
+                    background: #1a1a1a;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+                }
+                .booking-theme-light .booking-progress-circle.active .booking-progress-check { color: #fff; }
+                .booking-theme-light .booking-progress-circle.completed {
+                    border-color: #1a1a1a;
+                    background: #1a1a1a;
+                    color: #fff;
+                }
+                .booking-theme-light .booking-progress-circle.completed .booking-progress-check { color: #fff; }
+                .booking-theme-light .booking-progress-label { color: rgba(0,0,0,0.45); }
+                .booking-theme-light .booking-progress-label.active { color: #1a1a1a; }
+                .booking-theme-light .booking-progress-connector { background: rgba(0,0,0,0.15); }
+                .booking-theme-light .booking-progress-connector.completed { background: rgba(0,0,0,0.4); }
+
+                .booking-theme-light .cn-contactform-input label,
+                .booking-theme-light .text-white { color: #1a1a1a !important; }
+                .booking-theme-light .text-white-50,
+                .booking-theme-light .btn-link.booking-text-muted { color: #555 !important; }
+                .booking-theme-light .cn-contactform-input input,
+                .booking-theme-light .cn-contactform-input textarea {
+                    color: #1a1a1a;
+                    border-bottom-color: rgba(0,0,0,0.2);
+                    background: transparent;
+                }
+                .booking-theme-light .cn-contactform-input input::placeholder,
+                .booking-theme-light .cn-contactform-input textarea::placeholder { color: #888; }
+
+                /* Property input font sizes */
+                .property-input-16px { font-size: 16px !important; }
+                .property-input-16px::placeholder { font-size: 16px !important; }
+                
+                /* Property address input font size */
+                .property-address-input { font-size: 16px !important; }
+                .property-address-input::placeholder { font-size: 16px !important; }
+                
+                /* Hide number input spinner */
+                .property-size-input::-webkit-inner-spin-button,
+                .property-size-input::-webkit-outer-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+                }
+                .property-size-input {
+                    -moz-appearance: textfield;
+                }
+
+                .booking-theme-light .sidebar-address { border-color: rgba(0,0,0,0.12); background: #fff; }
+                .booking-theme-light .sidebar-label { color: rgba(0,0,0,0.5); }
+                .booking-theme-light .sidebar-address-text { color: #1a1a1a; }
+                .booking-theme-light .sidebar-address-unit { color: #555; }
+                .booking-theme-light .sidebar-sqft { color: rgba(0,0,0,0.5); }
+                .booking-theme-light .sidebar-partner-code .sidebar-partner-input {
+                    background: #f5f5f5; border-color: rgba(0,0,0,0.15);
+                    color: #1a1a1a;
+                }
+                .booking-theme-light .sidebar-partner-code .sidebar-partner-input::placeholder { color: #888; }
+                .booking-theme-light .sidebar-partner-apply-btn {
+                    background: rgba(0,0,0,0.08); border-color: rgba(0,0,0,0.2);
+                    color: #1a1a1a;
+                }
+                .booking-theme-light .sidebar-partner-apply-btn:hover { background: rgba(0,0,0,0.14); }
+                .booking-theme-light .sidebar-partner-chip {
+                    background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.15);
+                }
+                .booking-theme-light .sidebar-partner-chip-text { color: #1a1a1a; }
+                .booking-theme-light .sidebar-partner-chip-remove { background: rgba(0,0,0,0.15); color: #1a1a1a; }
+                .booking-theme-light .sidebar-partner-chip-remove:hover { background: rgba(0,0,0,0.25); }
+                .booking-theme-light .sidebar-pricing { border-color: rgba(0,0,0,0.12); background: #fff; }
+                .booking-theme-light .sidebar-line-item { color: #1a1a1a; }
+                .booking-theme-light .sidebar-addon-line { color: #555; }
+                .booking-theme-light .sidebar-divider { background: rgba(0,0,0,0.1); }
+                .booking-theme-light .sidebar-total { color: #1a1a1a; }
+                .booking-theme-light .sidebar-empty { color: rgba(0,0,0,0.4); }
+                .booking-theme-light .sidebar-edit-btn { color: rgba(0,0,0,0.5); }
+                .booking-theme-light .sidebar-edit-btn:hover { color: #1a1a1a; }
+                .booking-theme-light .sidebar-remove-btn { color: rgba(0,0,0,0.5); }
+                .booking-theme-light .sidebar-remove-btn:hover { color: #1a1a1a; }
+
+                .booking-theme-light .pkg-card { border-color: rgba(0,0,0,0.12); background: #fff; }
+                .booking-theme-light .pkg-card:hover { border-color: rgba(0,0,0,0.25); }
+                .booking-theme-light .pkg-card-active { border-color: #1a1a1a; background: #f8f9fa; }
+                .booking-theme-light .pkg-card-title h5 { color: #1a1a1a; }
+                .booking-theme-light .pkg-card-num { color: rgba(0,0,0,0.4); }
+                .booking-theme-light .pkg-price-amount { color: #1a1a1a; }
+                .booking-theme-light .pkg-card-features li { color: #555; }
+                .booking-theme-light .pkg-card-features li i { color: rgba(0,0,0,0.35); }
+                .booking-theme-light .pkg-card-active .pkg-card-features li { color: #333; }
+                .booking-theme-light .pkg-card-active .pkg-card-features li i { color: #1a1a1a; }
+                .booking-theme-light .pkg-popular-tag { color: #fff; background: #1a1a1a; }
+
+                .booking-theme-light .pkg-carousel { background: #e9ecef; }
+                .booking-theme-light .pkg-carousel-btn { background: rgba(0,0,0,0.5); color: #fff; }
+                .booking-theme-light .pkg-carousel-dot { background: rgba(0,0,0,0.3); }
+                .booking-theme-light .pkg-carousel-dot.active { background: #1a1a1a; }
+
+                .booking-theme-light .addon-thumb { border-color: rgba(0,0,0,0.12); }
+                .booking-theme-light .addon-thumb:hover { border-color: rgba(0,0,0,0.3); }
+                .booking-theme-light .addon-thumb-active { border-color: #1a1a1a; }
+                .booking-theme-light .addon-thumb-img { background: #e9ecef; }
+                .booking-theme-light .addon-thumb-name { color: #1a1a1a; }
+                .booking-theme-light .addon-thumb-price { color: #666; }
+                .booking-theme-light .addon-thumb-check { background: #1a1a1a; color: #fff; }
+
+                .booking-theme-light .booking-btn-primary { background-color: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+                .booking-theme-light .booking-btn-primary:hover { background-color: #333; color: #fff; border-color: #333; }
+                .booking-theme-light .booking-btn-primary:hover span .svg-icon { color: #fff; }
+                .booking-theme-light .booking-btn-primary span .svg-icon { color: #fff; }
+                .booking-theme-light .booking-btn-step1 { background-color: #fff; color: #1a1a1a; border-color: #1a1a1a; }
+                .booking-theme-light .booking-btn-step1:hover { background-color: #f5f5f5; color: #1a1a1a; border-color: #1a1a1a; }
+                .booking-theme-light .booking-btn-step1 span .svg-bg { color: #1a1a1a !important; }
+                .booking-theme-light .booking-btn-step1 span .svg-icon { color: #fff !important; }
+                .booking-theme-light .booking-btn-step1:hover span .svg-bg { color: #1a1a1a !important; }
+                .booking-theme-light .booking-btn-step1:hover span .svg-icon { color: #fff !important; }
+                .booking-theme-light .booking-btn-step1:disabled {
+                    background-color: #e9ecef !important;
+                    color: #adb5bd !important;
+                    border-color: #dee2e6 !important;
+                    cursor: not-allowed;
+                    opacity: 0.6;
+                }
+                .booking-theme-light .booking-btn-step1:disabled span .svg-bg { color: #adb5bd !important; }
+                .booking-theme-light .booking-btn-step1:disabled span .svg-icon { color: #adb5bd !important; }
+                .booking-theme-light .booking-btn-step1:disabled:hover {
+                    background-color: #e9ecef !important;
+                    color: #adb5bd !important;
+                    border-color: #dee2e6 !important;
+                }
+                .booking-theme-light .booking-btn-outline { background-color: transparent; color: #1a1a1a; border: 2px solid rgba(0,0,0,0.3); }
+                .booking-theme-light .booking-btn-outline:hover { background-color: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+
+                .booking-theme-light .pkg-btn-selected { background-color: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+                .booking-theme-light .pkg-btn-selected:hover { background-color: #333; color: #fff; }
+                .booking-theme-light .pkg-btn-default { background-color: transparent; color: #1a1a1a; border: 2px solid rgba(0,0,0,0.25); }
+                .booking-theme-light .pkg-btn-default:hover { background-color: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+                .booking-theme-light .pkg-btn-proceed { background-color: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+                .booking-theme-light .pkg-btn-proceed:hover { background-color: #333; color: #fff; border-color: #333; }
 
             `}</style>
         </div>

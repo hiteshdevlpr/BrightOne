@@ -23,6 +23,7 @@ export const ADD_ONS: AddOn[] = [
     { id: 'drone_photos', name: 'Drone Photos (Exterior Aerials)', description: 'Aerial property shots from unique perspectives', price: 199, category: 'photography', image: 'https://picsum.photos/seed/addon-drone/400/300', comments: 'This price is for properties 1 acre or less, contact us for larger properties' },
     { id: 'drone_video', name: 'Drone Video', description: 'Aerial property video from unique perspectives', price: 199, category: 'videography', image: 'https://picsum.photos/seed/addon-dronevid/400/300', comments: 'This price is for properties 1 acre or less, contact us for larger properties' },
     { id: 'twilight_photos', name: 'Twilight Photos', description: 'Dramatic evening shots with ambient lighting', price: 149, category: 'photography', image: 'https://picsum.photos/seed/addon-twilight/400/300' },
+    { id: 'standard_video', name: 'Standard Video Tour', description: 'Standard property video tour', price: 189, category: 'videography', image: 'https://picsum.photos/seed/addon-standard-video/400/300' },
     { id: 'cinematic_video', name: 'Cinematic Video Tour', description: 'Professional property video tour (1-2 min)', price: 249, category: 'videography', image: 'https://picsum.photos/seed/addon-cinematic/400/300' },
     { id: 'cinematic_video_extended', name: 'Cinematic Video Tour (Extended)', description: 'Professional property video tour (2-3 min)', price: 349, category: 'videography', image: 'https://picsum.photos/seed/addon-cinext/400/300' },
     { id: 'agent_walkthrough', name: 'Agent Walkthrough Video', description: 'Personalized agent introduction video', price: 319, category: 'videography', image: 'https://picsum.photos/seed/addon-agent/400/300' },
@@ -129,15 +130,53 @@ export function getPackagePriceWithPartner(
 const PREFERRED_PARTNER_ADDON_DISCOUNT_PERCENT = 10;
 
 /**
+ * Get add-on base price based on whether a package is selected.
+ * Returns different prices for addons when a package is selected vs when no package is selected.
+ */
+export function getAddonBasePrice(
+    addonId: string,
+    hasPackageSelected: boolean
+): number {
+    // Price mapping: [withPackage, withoutPackage]
+    const priceMap: Record<string, [number, number]> = {
+        'drone_photos': [59, 119],
+        'drone_video': [59, 149],
+        'twilight_photos': [29, 49],
+        'standard_video': [149, 189],
+        'cinematic_video': [249, 299],
+        'agent_walkthrough': [199, 249],
+        'social_reel': [199, 249], // Agent Social Media Reel
+        'floor_plan': [79, 119],
+        // Keep same price for these
+        'virtual_tour': [249, 249], // 3D tour iGuide & 2D floor Plan - Same as now
+        'cinematic_video_extended': [349, 349], // Keep same if exists
+        'virtual_staging': [12, 12], // Keep same
+        'listing_website': [149, 149], // Will be filtered out when package selected
+    };
+
+    const prices = priceMap[addonId];
+    if (prices) {
+        return hasPackageSelected ? prices[0] : prices[1];
+    }
+
+    // Fallback to original price from ADD_ONS if not in map
+    const addon = ADD_ONS.find(a => a.id === addonId);
+    return addon?.price || 0;
+}
+
+/**
  * Get add-on price with optional preferred partner discount (e.g. RLPFRANK2026: 10% off add-ons).
+ * Now also considers package selection for base price.
  */
 export function getAddonPriceWithPartner(
-    price: number,
+    addonId: string,
+    hasPackageSelected: boolean,
     preferredPartnerCode?: string | null
 ): number {
-    if (!isValidPreferredPartnerCode(preferredPartnerCode ?? undefined)) return price;
+    const basePrice = getAddonBasePrice(addonId, hasPackageSelected);
+    if (!isValidPreferredPartnerCode(preferredPartnerCode ?? undefined)) return basePrice;
     const discount = PREFERRED_PARTNER_ADDON_DISCOUNT_PERCENT;
-    return Math.round(price * (1 - discount / 100));
+    return Math.round(basePrice * (1 - discount / 100));
 }
 
 /**

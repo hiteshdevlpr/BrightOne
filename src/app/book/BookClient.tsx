@@ -99,17 +99,17 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
     const virtualStagingPricePerPhoto = ADD_ONS.find((a) => a.id === 'virtual_staging')?.price ?? 12;
 
     const getAddonPrice = (addonId: string): number => {
-        let base = 0;
+        const hasPackageSelected = !!selectedPackageId && selectedCategory === 'listing';
         if (addonId === 'virtual_staging') {
-            base = virtualStagingPricePerPhoto * virtualStagingPhotoCount;
+            const pricePerPhoto = getAddonPriceWithPartner('virtual_staging', hasPackageSelected, appliedPartnerCode || null);
+            return pricePerPhoto * virtualStagingPhotoCount;
         } else if (addonId.startsWith('virtual_staging_')) {
             const n = parseInt(addonId.split('_')[2], 10) || 1;
-            base = virtualStagingPricePerPhoto * n;
+            const pricePerPhoto = getAddonPriceWithPartner('virtual_staging', hasPackageSelected, appliedPartnerCode || null);
+            return pricePerPhoto * n;
         } else {
-            const addon = ADD_ONS.find((a) => a.id === addonId);
-            base = addon?.price ?? 0;
+            return getAddonPriceWithPartner(addonId, hasPackageSelected, appliedPartnerCode || null);
         }
-        return getAddonPriceWithPartner(base, appliedPartnerCode || null);
     };
 
     const resolvedSelectedAddOns = selectedAddOns.map((id) =>

@@ -2,7 +2,7 @@
 import { db } from './database';
 import { validateContactForm, validateBookingForm } from './validation';
 import { EmailService, ContactEmailData, BookingEmailData } from './email-service';
-import { getPackages, getPackagePriceWithPartner, getAddonPriceWithPartner, ADD_ONS } from '@/data/booking-data';
+import { getPackages, getPackagePriceWithPartner, getAddonPriceWithPartner, ADD_ONS, isValidPreferredPartnerCode } from '@/data/booking-data';
 import { getPersonalPackages, PERSONAL_ADD_ONS } from '@/data/personal-branding-data';
 
 export interface ContactFormData {
@@ -106,21 +106,28 @@ function calculatePriceBreakdown(formData: BookingFormData): PriceBreakdown {
   if (formData.selectedAddOns && formData.selectedAddOns.length > 0) {
     const partnerCode = formData.preferredPartnerCode || null;
     if (isPersonalBranding) {
+      // Personal branding addons don't have package-based pricing, use original price with partner discount
       formData.selectedAddOns.forEach(addonId => {
         const addon = PERSONAL_ADD_ONS.find(a => a.id === addonId);
         if (addon) {
-          const price = getAddonPriceWithPartner(addon.price, partnerCode);
+          // For personal branding, use base price and apply partner discount manually
+          let price = addon.price;
+          if (isValidPreferredPartnerCode(partnerCode ?? undefined)) {
+            const discount = 10; // 10% discount for partner codes
+            price = Math.round(price * (1 - discount / 100));
+          }
           addonsPrice += price;
           addonsBreakdown.push({ name: addon.name, price });
         }
       });
     } else {
+      const hasPackageSelected = !!formData.serviceTier; // serviceTier is the selected package
       formData.selectedAddOns.forEach(addonId => {
         if (addonId.startsWith('virtual_staging_')) {
           const photoCount = parseInt(addonId.split('_')[2], 10) || 1;
-          const addon = ADD_ONS.find(a => a.id === 'virtual_staging');
-          const pricePerPhoto = addon?.price ?? 12;
-          const totalPrice = getAddonPriceWithPartner(pricePerPhoto * photoCount, partnerCode);
+          // Virtual staging price stays the same (12 per photo)
+          const pricePerPhoto = getAddonPriceWithPartner('virtual_staging', hasPackageSelected, partnerCode);
+          const totalPrice = pricePerPhoto * photoCount;
           addonsPrice += totalPrice;
           addonsBreakdown.push({
             name: `Virtual Staging (${photoCount} photos)`,
@@ -129,7 +136,7 @@ function calculatePriceBreakdown(formData: BookingFormData): PriceBreakdown {
         } else {
           const addon = ADD_ONS.find(a => a.id === addonId);
           if (addon) {
-            const price = getAddonPriceWithPartner(addon.price, partnerCode);
+            const price = getAddonPriceWithPartner(addonId, hasPackageSelected, partnerCode);
             addonsPrice += price;
             addonsBreakdown.push({
               name: addon.name,
