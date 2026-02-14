@@ -1,5 +1,9 @@
 #!/bin/bash
 # Validate all security measures after deployment.
+# Covers: Docker hardening, Nginx, Fail2ban, UFW, API auth (admin, migrate),
+#         debug-env hidden in prod, booking/payment API (bookings, availability,
+#         create-payment-intent), .env secrets, SSH hardening, app port binding.
+#
 # Run on the server (as root or brightone with docker access):
 #   bash /home/brightone/website/scripts/validate-security.sh
 # Or via SSH: ssh root@DROPLET_IP 'bash -s' < scripts/validate-security.sh
@@ -141,20 +145,45 @@ DEBUG=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL/api/debug-env" 2>/dev/n
 ADMIN_NO_KEY=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL/api/admin/dashboard" 2>/dev/null || echo "000")
 [ "$ADMIN_NO_KEY" = "503" ] || [ "$ADMIN_NO_KEY" = "401" ] && ok "/api/admin/dashboard (no key) → $ADMIN_NO_KEY" || fail "/api/admin/dashboard → $ADMIN_NO_KEY (expected 503 or 401)"
 
-# --- 7. Secrets in .env (presence only) ---
+# --- 7. Booking & payment API security ---
 echo ""
-echo "7. Secrets in .env (presence only)"
+echo "7. Booking & payment API security"
+# GET /api/bookings without admin key → 401 or 503
+BOOKINGS_GET=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL/api/bookings" 2>/dev/null || echo "000")
+[ "$BOOKINGS_GET" = "401" ] || [ "$BOOKINGS_GET" = "503" ] && ok "GET /api/bookings (no key) → $BOOKINGS_GET" || fail "GET /api/bookings → $BOOKINGS_GET (expected 401 or 503)"
+
+# DELETE /api/bookings/[id] without admin key → 401 or 503 (admin-only)
+BOOKING_DELETE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$APP_URL/api/bookings/00000000-0000-0000-0000-000000000001" 2>/dev/null || echo "000")
+[ "$BOOKING_DELETE" = "401" ] || [ "$BOOKING_DELETE" = "503" ] && ok "DELETE /api/bookings/[id] (no key) → $BOOKING_DELETE" || fail "DELETE /api/bookings/[id] → $BOOKING_DELETE (expected 401 or 503)"
+
+# GET /api/availability with invalid date → 400
+AVAIL_BAD=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL/api/availability?date=not-a-date" 2>/dev/null || echo "000")
+[ "$AVAIL_BAD" = "400" ] && ok "GET /api/availability?date=invalid → 400" || fail "GET /api/availability (invalid date) → $AVAIL_BAD (expected 400)"
+
+# POST /api/bookings without body / invalid (e.g. no recaptcha) → 400
+BOOKING_POST=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{}' "$APP_URL/api/bookings" 2>/dev/null || echo "000")
+[ "$BOOKING_POST" = "400" ] && ok "POST /api/bookings (no/invalid body) → 400" || fail "POST /api/bookings (no body) → $BOOKING_POST (expected 400)"
+
+# POST /api/create-payment-intent with empty body → 400 or 500 (no client-supplied amount accepted)
+PAYMENT_POST=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{}' "$APP_URL/api/create-payment-intent" 2>/dev/null || echo "000")
+[ "$PAYMENT_POST" = "400" ] || [ "$PAYMENT_POST" = "500" ] && ok "POST /api/create-payment-intent (empty body) → $PAYMENT_POST" || fail "POST /api/create-payment-intent (empty body) → $PAYMENT_POST (expected 400 or 500)"
+
+# --- 8. Secrets in .env (presence only) ---
+echo ""
+echo "8. Secrets in .env (presence only)"
 ENV_FILE="/home/brightone/website/.env"
 if [ -f "$ENV_FILE" ]; then
   grep -q "MIGRATION_TOKEN=" "$ENV_FILE" 2>/dev/null && ok "MIGRATION_TOKEN set" || fail "MIGRATION_TOKEN missing in .env"
   grep -q "ADMIN_API_KEY=" "$ENV_FILE" 2>/dev/null && ok "ADMIN_API_KEY set" || fail "ADMIN_API_KEY missing in .env"
+  grep -q "RECAPTCHA_SECRET_KEY=" "$ENV_FILE" 2>/dev/null && ok "RECAPTCHA_SECRET_KEY set" || fail "RECAPTCHA_SECRET_KEY missing in .env (booking/contact forms)"
+  grep -q "STRIPE_SECRET_KEY=" "$ENV_FILE" 2>/dev/null && ok "STRIPE_SECRET_KEY set" || fail "STRIPE_SECRET_KEY missing in .env (payment flow)"
 else
   warn ".env not found (validation may run outside deploy context)"
 fi
 
-# --- 8. SSH hardening (optional) ---
+# --- 9. SSH hardening (optional) ---
 echo ""
-echo "8. SSH hardening"
+echo "9. SSH hardening"
 DROPIN="/etc/ssh/sshd_config.d/99-brightone-hardening.conf"
 if [ -f "$DROPIN" ]; then
   grep -q "PasswordAuthentication no" "$DROPIN" 2>/dev/null && ok "PasswordAuthentication no" || warn "PasswordAuthentication not set in drop-in"
@@ -163,9 +192,9 @@ else
   warn "SSH hardening drop-in not present (optional)"
 fi
 
-# --- 9. App ports (3000/3001) not public ---
+# --- 10. App ports (3000/3001) not public ---
 echo ""
-echo "9. App ports (3000/3001) not public"
+echo "10. App ports (3000/3001) not public"
 if command -v ss &>/dev/null; then
   LISTEN_3000=$(ss -tlnp 2>/dev/null | grep ':3000 ' || true)
   LISTEN_3001=$(ss -tlnp 2>/dev/null | grep ':3001 ' || true)
