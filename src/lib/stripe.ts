@@ -1,11 +1,22 @@
 import Stripe from 'stripe';
 
-if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error('STRIPE_SECRET_KEY is missing. Please set it in your .env.local file.');
+/** Lazy Stripe client so build can succeed without STRIPE_SECRET_KEY (required only at runtime). */
+let _stripe: Stripe | null = null;
+
+function getStripe(): Stripe {
+    if (_stripe) return _stripe;
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) {
+        throw new Error('STRIPE_SECRET_KEY is missing. Please set it in your environment.');
+    }
+    _stripe = new Stripe(key, { typescript: true });
+    return _stripe;
 }
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    typescript: true,
+export const stripe = new Proxy({} as Stripe, {
+    get(_, prop) {
+        return (getStripe() as unknown as Record<string, unknown>)[prop as string];
+    },
 });
 
 /**
@@ -19,7 +30,7 @@ export async function verifyPaymentIntent(paymentIntentId: string): Promise<{
     amount?: number;
 }> {
     try {
-        const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+        const pi = await getStripe().paymentIntents.retrieve(paymentIntentId);
         return {
             verified: true,
             status: pi.status,

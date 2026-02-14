@@ -965,10 +965,9 @@ export default function BookingArea() {
 
                                         {currentStep === 4 && (
                                             <div className="step-content fadeIn">
-                                                <div className="row justify-content-center">
-                                                    <div className="col-lg-10">
+                                                <div className="step2-layout">
+                                                    <div className="step2-left">
                                                         <h4 className="text-white mb-30 text-center">Select Date & Time</h4>
-
                                                         <BookingCalendar
                                                             selectedDate={formData.preferredDate || ''}
                                                             onDateSelect={(date) => {
@@ -976,7 +975,6 @@ export default function BookingArea() {
                                                                 setFormErrors([]);
                                                             }}
                                                         />
-
                                                         <TimeSlotGrid
                                                             selectedDate={formData.preferredDate || null}
                                                             selectedTime={formData.preferredTime || null}
@@ -985,7 +983,6 @@ export default function BookingArea() {
                                                                 setFormErrors([]);
                                                             }}
                                                         />
-
                                                         {formErrors.length > 0 && (
                                                             <div className="mt-4">
                                                                 {formErrors.map((err, i) => (
@@ -994,14 +991,62 @@ export default function BookingArea() {
                                                             </div>
                                                         )}
                                                     </div>
+                                                    <div className="step2-right">
+                                                        <div className="sidebar-sticky">
+                                                            <div className="sidebar-address">
+                                                                <div className="d-flex justify-content-between align-items-center mb-14">
+                                                                    <h6 className="sidebar-label mb-0">Property</h6>
+                                                                    <button type="button" className="sidebar-edit-btn" onClick={() => setCurrentStep(1)} title="Edit property details">
+                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                                    </button>
+                                                                </div>
+                                                                <p className="sidebar-address-text">{formData.propertyAddress}</p>
+                                                                {formData.unitNumber && <p className="sidebar-address-unit">Unit {formData.unitNumber}</p>}
+                                                                <span className="sidebar-sqft">{formData.propertySize} sq ft</span>
+                                                            </div>
+                                                            {appliedPartnerCode && (
+                                                                <div className="sidebar-partner-code mb-20">
+                                                                    <label className="sidebar-label d-block mb-10">Partner code</label>
+                                                                    <div className="sidebar-partner-chip">
+                                                                        <span className="sidebar-partner-chip-text">{appliedPartnerCode}</span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            <div className="sidebar-pricing mb-20">
+                                                                <h6 className="sidebar-label">Estimate</h6>
+                                                                {formData.selectedPackage ? (
+                                                                    <>
+                                                                        <div className="sidebar-line-item sidebar-package-item">
+                                                                            <span>{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
+                                                                            <span>${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
+                                                                        </div>
+                                                                        {formData.selectedAddOns.length > 0 && formData.selectedAddOns.map(id => {
+                                                                            const addon = addons.find(a => a.id === id);
+                                                                            return <div key={id} className="sidebar-line-item sidebar-addon-line"><span>{addon?.name}</span><span>${getAddonPrice(id)}</span></div>;
+                                                                        })}
+                                                                        <div className="sidebar-divider"></div>
+                                                                        <div className="sidebar-total"><span>Total</span><span>${calculateTotal()}</span></div>
+                                                                    </>
+                                                                ) : <p className="sidebar-empty">Select a package to see pricing</p>}
+                                                            </div>
+                                                            <div className="sidebar-block">
+                                                                <h6 className="sidebar-label">Date & Time</h6>
+                                                                <p className="sidebar-value">
+                                                                    {formData.preferredDate && formData.preferredTime
+                                                                        ? `${formData.preferredDate} at ${formData.preferredTime}`
+                                                                        : '—'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
 
                                         {currentStep === 5 && (
                                             <div className="step-content fadeIn">
-                                                <div className="row justify-content-center">
-                                                    <div className="col-lg-10">
+                                                <div className="step2-layout">
+                                                    <div className="step2-left">
                                                         <h4 className="text-white mb-30 text-center">Contact Details</h4>
                                                         <div className="row">
                                                             <div className="col-md-6">
@@ -1062,8 +1107,7 @@ export default function BookingArea() {
                                                                 </div>
                                                             </div>
                                                         </div>
-
-                                                        <div className="booking-summary booking-summary-light mt-40 p-5 border rounded">
+                                                        <div className="booking-summary booking-summary-light mt-40 p-5 border rounded d-lg-none">
                                                             <h3 className="mb-30 text-center booking-text-primary">Booking Summary</h3>
                                                             <div className="summary-details">
                                                                 <div className="d-flex justify-content-between mb-15">
@@ -1086,14 +1130,70 @@ export default function BookingArea() {
                                                             </div>
                                                         </div>
                                                     </div>
+                                                    <div className="step2-right">
+                                                        <div className="sidebar-sticky">
+                                                            <div className="sidebar-address">
+                                                                <div className="d-flex justify-content-between align-items-center mb-14">
+                                                                    <h6 className="sidebar-label mb-0">Property</h6>
+                                                                    <button type="button" className="sidebar-edit-btn" onClick={() => setCurrentStep(1)} title="Edit property details">
+                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                                    </button>
+                                                                </div>
+                                                                <p className="sidebar-address-text">{formData.propertyAddress}</p>
+                                                                {formData.unitNumber && <p className="sidebar-address-unit">Unit {formData.unitNumber}</p>}
+                                                                <span className="sidebar-sqft">{formData.propertySize} sq ft</span>
+                                                            </div>
+                                                            {appliedPartnerCode && (
+                                                                <div className="sidebar-partner-code mb-20">
+                                                                    <label className="sidebar-label d-block mb-10">Partner code</label>
+                                                                    <div className="sidebar-partner-chip">
+                                                                        <span className="sidebar-partner-chip-text">{appliedPartnerCode}</span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            <div className="sidebar-pricing mb-20">
+                                                                <h6 className="sidebar-label">Estimate</h6>
+                                                                {formData.selectedPackage ? (
+                                                                    <>
+                                                                        <div className="sidebar-line-item sidebar-package-item">
+                                                                            <span>{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
+                                                                            <span>${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
+                                                                        </div>
+                                                                        {formData.selectedAddOns.length > 0 && formData.selectedAddOns.map(id => {
+                                                                            const addon = addons.find(a => a.id === id);
+                                                                            return <div key={id} className="sidebar-line-item sidebar-addon-line"><span>{addon?.name}</span><span>${getAddonPrice(id)}</span></div>;
+                                                                        })}
+                                                                        <div className="sidebar-divider"></div>
+                                                                        <div className="sidebar-total"><span>Total</span><span>${calculateTotal()}</span></div>
+                                                                    </>
+                                                                ) : <p className="sidebar-empty">Select a package to see pricing</p>}
+                                                            </div>
+                                                            <div className="sidebar-block mb-20">
+                                                                <h6 className="sidebar-label">Date & Time</h6>
+                                                                <p className="sidebar-value">{formData.preferredDate && formData.preferredTime ? `${formData.preferredDate} at ${formData.preferredTime}` : '—'}</p>
+                                                            </div>
+                                                            <div className="sidebar-block">
+                                                                <h6 className="sidebar-label">Contact</h6>
+                                                                <p className="sidebar-value mb-1">{formData.name || '—'}</p>
+                                                                <p className="sidebar-value mb-1">{formData.email || '—'}</p>
+                                                                <p className="sidebar-value">{formData.phone || '—'}</p>
+                                                            </div>
+                                                            <div className="sidebar-pricing mt-20">
+                                                                <div className="sidebar-line-item"><span>Subtotal</span><span>${calculateTotal().toFixed(2)}</span></div>
+                                                                <div className="sidebar-line-item"><span>HST (13%)</span><span>${(calculateTotal() * 0.13).toFixed(2)}</span></div>
+                                                                <div className="sidebar-divider"></div>
+                                                                <div className="sidebar-total"><span>Total Due</span><span>${(calculateTotal() * 1.13).toFixed(2)}</span></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
 
                                         {currentStep === 6 && clientSecret && (
                                             <div className="step-content fadeIn">
-                                                <div className="row justify-content-center">
-                                                    <div className="col-lg-10">
+                                                <div className="step2-layout">
+                                                    <div className="step2-left">
                                                         <div className="booking-payment-wrapper p-4 border rounded bg-dark">
                                                             <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'night', labels: 'floating' } }}>
                                                                 <CheckoutForm
@@ -1125,6 +1225,62 @@ export default function BookingArea() {
                                                                     onCancel={() => setCurrentStep(5)}
                                                                 />
                                                             </Elements>
+                                                        </div>
+                                                    </div>
+                                                    <div className="step2-right">
+                                                        <div className="sidebar-sticky">
+                                                            <div className="sidebar-address">
+                                                                <div className="d-flex justify-content-between align-items-center mb-14">
+                                                                    <h6 className="sidebar-label mb-0">Property</h6>
+                                                                    <button type="button" className="sidebar-edit-btn" onClick={() => setCurrentStep(1)} title="Edit property details">
+                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                                    </button>
+                                                                </div>
+                                                                <p className="sidebar-address-text">{formData.propertyAddress}</p>
+                                                                {formData.unitNumber && <p className="sidebar-address-unit">Unit {formData.unitNumber}</p>}
+                                                                <span className="sidebar-sqft">{formData.propertySize} sq ft</span>
+                                                            </div>
+                                                            {appliedPartnerCode && (
+                                                                <div className="sidebar-partner-code mb-20">
+                                                                    <label className="sidebar-label d-block mb-10">Partner code</label>
+                                                                    <div className="sidebar-partner-chip">
+                                                                        <span className="sidebar-partner-chip-text">{appliedPartnerCode}</span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            <div className="sidebar-pricing mb-20">
+                                                                <h6 className="sidebar-label">Estimate</h6>
+                                                                {formData.selectedPackage ? (
+                                                                    <>
+                                                                        <div className="sidebar-line-item sidebar-package-item">
+                                                                            <span>{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
+                                                                            <span>${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
+                                                                        </div>
+                                                                        {formData.selectedAddOns.length > 0 && formData.selectedAddOns.map(id => {
+                                                                            const addon = addons.find(a => a.id === id);
+                                                                            return <div key={id} className="sidebar-line-item sidebar-addon-line"><span>{addon?.name}</span><span>${getAddonPrice(id)}</span></div>;
+                                                                        })}
+                                                                        <div className="sidebar-divider"></div>
+                                                                        <div className="sidebar-total"><span>Total</span><span>${calculateTotal()}</span></div>
+                                                                    </>
+                                                                ) : <p className="sidebar-empty">Select a package to see pricing</p>}
+                                                            </div>
+                                                            <div className="sidebar-block mb-20">
+                                                                <h6 className="sidebar-label">Date & Time</h6>
+                                                                <p className="sidebar-value">{formData.preferredDate && formData.preferredTime ? `${formData.preferredDate} at ${formData.preferredTime}` : '—'}</p>
+                                                            </div>
+                                                            <div className="sidebar-block mb-20">
+                                                                <h6 className="sidebar-label">Contact</h6>
+                                                                <p className="sidebar-value mb-1">{formData.name || '—'}</p>
+                                                                <p className="sidebar-value mb-1">{formData.email || '—'}</p>
+                                                                <p className="sidebar-value">{formData.phone || '—'}</p>
+                                                            </div>
+                                                            <div className="sidebar-pricing">
+                                                                <div className="sidebar-line-item"><span>Subtotal</span><span>${calculateTotal().toFixed(2)}</span></div>
+                                                                <div className="sidebar-line-item"><span>HST (13%)</span><span>${(calculateTotal() * 0.13).toFixed(2)}</span></div>
+                                                                <div className="sidebar-divider"></div>
+                                                                <div className="sidebar-total"><span>Total Due</span><span>${(calculateTotal() * 1.13).toFixed(2)}</span></div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1247,10 +1403,30 @@ export default function BookingArea() {
                 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
                 /* Booking page: left progress sidebar + right form */
-                .booking-page-layout { display: flex; gap: 48px; align-items: flex-start; margin-top: 32px; }
-                .booking-progress-sidebar { flex: 0 0 220px; position: sticky; top: 120px; }
-                .booking-form-main { flex: 1; min-width: 0; }
+                .booking-page-layout { display: flex; gap: 32px; align-items: flex-start; margin-top: 32px; }
+                .booking-progress-sidebar { flex: 0 0 160px; position: sticky; top: 120px; }
+                .booking-form-main {
+                    flex: 1;
+                    min-width: 0;
+                    padding: 28px;
+                    border-radius: 16px;
+                    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+                }
                 .booking-form-main .cn-contactform-wrap { padding-left: 0; }
+                .sidebar-block { border: 1px solid rgba(255,255,255,0.12); padding: 20px; margin-bottom: 0; }
+                .sidebar-value { color: #fff; font-size: 14px; margin: 0; line-height: 1.5; }
+
+                /* Right sidebar: consistent text sizes — labels 12px, body 14px */
+                .sidebar-label { font-size: 12px !important; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.4); margin-bottom: 14px; font-weight: 600; }
+                .sidebar-address-text,
+                .sidebar-address-unit,
+                .sidebar-sqft,
+                .sidebar-value,
+                .sidebar-line-item,
+                .sidebar-addon-line,
+                .sidebar-empty,
+                .sidebar-partner-chip-text { font-size: 14px !important; }
+                .sidebar-total { font-size: 14px !important; font-weight: 600; }
 
                 .booking-progress-vertical { display: flex; flex-direction: column; }
                 .booking-progress-step-wrap { display: flex; flex-direction: column; align-items: flex-start; flex: 0 0 auto; }
@@ -1314,10 +1490,9 @@ export default function BookingArea() {
                 /* Sidebar */
                 .sidebar-sticky { position: sticky; top: 120px; }
                 .sidebar-address { border: 1px solid rgba(255,255,255,0.12); padding: 24px; margin-bottom: 20px; }
-                .sidebar-label { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.4); margin-bottom: 14px; font-weight: 600; }
-                .sidebar-address-text { color: #fff; font-size: 16px; font-weight: 500; margin-bottom: 4px; line-height: 1.5; }
-                .sidebar-address-unit { color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 4px; }
-                .sidebar-sqft { color: rgba(255,255,255,0.4); font-size: 13px; }
+                .sidebar-address-text { color: #fff; font-weight: 500; margin-bottom: 4px; line-height: 1.5; }
+                .sidebar-address-unit { color: rgba(255,255,255,0.6); margin-bottom: 4px; }
+                .sidebar-sqft { color: rgba(255,255,255,0.4); }
                 .sidebar-partner-row { flex-wrap: wrap; }
                 .sidebar-partner-code .sidebar-partner-input {
                     flex: 1; min-width: 120px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2);
@@ -1336,7 +1511,7 @@ export default function BookingArea() {
                     background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
                     border-radius: 9999px; padding: 8px 6px 8px 16px;
                 }
-                .sidebar-partner-chip-text { color: #fff; font-size: 14px; font-weight: 500; }
+                .sidebar-partner-chip-text { color: #fff; font-weight: 500; }
                 .sidebar-partner-chip-remove {
                     display: inline-flex; align-items: center; justify-content: center;
                     width: 22px; height: 22px; border-radius: 50%;
@@ -1345,11 +1520,11 @@ export default function BookingArea() {
                 }
                 .sidebar-partner-chip-remove:hover { background: rgba(255,255,255,0.35); }
                 .sidebar-pricing { border: 1px solid rgba(255,255,255,0.12); padding: 24px; }
-                .sidebar-line-item { display: flex; justify-content: space-between; align-items: baseline; color: #fff; font-size: 15px; margin-bottom: 10px; }
-                .sidebar-addon-line { color: rgba(255,255,255,0.6); font-size: 13px; margin-bottom: 6px; }
+                .sidebar-line-item { display: flex; justify-content: space-between; align-items: baseline; color: #fff; margin-bottom: 10px; }
+                .sidebar-addon-line { color: rgba(255,255,255,0.6); margin-bottom: 6px; }
                 .sidebar-divider { height: 1px; background: rgba(255,255,255,0.15); margin: 16px 0; }
-                .sidebar-total { display: flex; justify-content: space-between; align-items: baseline; color: #fff; font-size: 20px; font-weight: 600; }
-                .sidebar-empty { color: rgba(255,255,255,0.3); font-size: 14px; font-style: italic; margin: 0; }
+                .sidebar-total { display: flex; justify-content: space-between; align-items: baseline; color: #fff; font-weight: 600; }
+                .sidebar-empty { color: rgba(255,255,255,0.3); font-style: italic; margin: 0; }
                 .sidebar-edit-btn { background: transparent; border: none; color: rgba(255,255,255,0.5); cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: color 0.2s; }
                 .sidebar-edit-btn:hover { color: rgba(255,255,255,0.9); }
                 .sidebar-package-item { position: relative; }
@@ -1516,6 +1691,9 @@ export default function BookingArea() {
                 .booking-theme-light .sidebar-edit-btn:hover { color: #1a1a1a; }
                 .booking-theme-light .sidebar-remove-btn { color: rgba(0,0,0,0.5); }
                 .booking-theme-light .sidebar-remove-btn:hover { color: #1a1a1a; }
+                .booking-theme-light .booking-form-main { background: #fff; }
+                .booking-theme-light .sidebar-block { border-color: rgba(0,0,0,0.12); background: #fff; }
+                .booking-theme-light .sidebar-value { color: #1a1a1a; }
 
                 .booking-theme-light .pkg-card { border-color: rgba(0,0,0,0.12); background: #fff; }
                 .booking-theme-light .pkg-card:hover { border-color: rgba(0,0,0,0.25); }

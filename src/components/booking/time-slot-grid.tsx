@@ -97,7 +97,8 @@ export default function TimeSlotGrid({ selectedDate, selectedTime, onTimeSelect 
                 .slot-btn.selected {
                     background: white;
                     color: black;
-                    border-color: white;
+                    border: 2px solid #1a1a1a;
+                    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
                     font-weight: 600;
                 }
             `}</style>
