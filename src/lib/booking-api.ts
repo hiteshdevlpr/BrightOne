@@ -18,6 +18,8 @@ export interface BookingFormData {
   message?: string;
   recaptchaToken?: string;
   website_url?: string;
+  paymentIntentId?: string;
+  paymentStatus?: string;
 }
 
 export interface BookingResponse {

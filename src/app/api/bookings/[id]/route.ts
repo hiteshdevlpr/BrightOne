@@ -96,12 +96,15 @@ export async function PUT(
   }
 }
 
-// DELETE /api/bookings/[id] - Delete a booking
+// DELETE /api/bookings/[id] - Delete a booking (admin only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authError = requireAdminKey(request);
+    if (authError) return authError;
+
     const { id } = await params;
 
     if (!id) {

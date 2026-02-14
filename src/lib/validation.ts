@@ -62,6 +62,8 @@ export function sanitizeBookingInput(body: Record<string, unknown>): {
   packageType?: string;
   totalPrice?: string;
   preferredPartnerCode?: string;
+  paymentIntentId?: string;
+  paymentStatus?: string;
 } {
   const arr = body.selectedAddOns;
   const addOns = Array.isArray(arr)
@@ -85,6 +87,8 @@ export function sanitizeBookingInput(body: Record<string, unknown>): {
     packageType: body.packageType != null ? sanitizeString(String(body.packageType), 100) : undefined,
     totalPrice: body.totalPrice != null ? sanitizeString(String(body.totalPrice), 20) : undefined,
     preferredPartnerCode: body.preferredPartnerCode != null ? sanitizeString(String(body.preferredPartnerCode), 50) : undefined,
+    paymentIntentId: body.paymentIntentId != null ? sanitizeString(String(body.paymentIntentId), 100) : undefined,
+    paymentStatus: body.paymentStatus != null ? sanitizeString(String(body.paymentStatus), 50) : undefined,
   };
 }
 
@@ -95,12 +99,12 @@ export function validateEmail(email: string): string | null {
   if (!email.trim()) {
     return 'Email is required';
   }
-  
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return 'Invalid email format';
   }
-  
+
   return null;
 }
 
@@ -108,14 +112,14 @@ export function validatePhone(phone: string): string | null {
   if (!phone.trim()) {
     return null; // Phone is optional
   }
-  
+
   const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
   const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
-  
+
   if (!phoneRegex.test(cleanPhone)) {
     return 'Invalid phone number format';
   }
-  
+
   return null;
 }
 

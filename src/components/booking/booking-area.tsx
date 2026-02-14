@@ -12,7 +12,12 @@ import {
     trackAddOnToggle,
     trackAddressAutosuggestSelection,
 } from '@/lib/analytics';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+import CheckoutForm from './checkout-form';
 import ErrorMsg from '../error-msg';
+import BookingCalendar from './booking-calendar';
+import TimeSlotGrid from './time-slot-grid';
 import { RightArrowTwo, ArrowBg, UpArrow } from '../svg';
 
 declare global {
@@ -40,6 +45,8 @@ const HandIcon = () => (
         <path d="M20 10V14M4 10V14M12 2V22M12 2L9 5M12 2L15 5M12 22L9 19M12 22L15 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 // Package image carousel
 function PkgCarousel({ images, packageId }: { images: string[]; packageId: string }) {
@@ -98,10 +105,12 @@ export default function BookingArea() {
     const searchParams = useSearchParams();
     const [currentStep, setCurrentStep] = useState(1);
     const [addressGiven, setAddressGiven] = useState(false);
-    
+    const [clientSecret, setClientSecret] = useState('');
+    const [paymentAmount, setPaymentAmount] = useState(0);
+
     // Use centralized booking logic hook (for listing category only)
     const bookingLogic = useBookingLogic({ defaultCategory: 'listing' });
-    
+
     // Destructure hook state and functions
     const {
         propertyAddressInput,
@@ -156,7 +165,7 @@ export default function BookingArea() {
         handleFormSubmit,
         formatPrice,
     } = bookingLogic;
-    
+
     // Map hook state to BookingArea's formData structure for compatibility
     const formData = {
         name: hookFormData.name,
@@ -173,7 +182,7 @@ export default function BookingArea() {
         message: hookFormData.message,
         [HONEYPOT_FIELD]: hookFormData[HONEYPOT_FIELD],
     };
-    
+
     // Sync formData changes back to hook
     const setFormData = (updater: typeof formData | ((prev: typeof formData) => typeof formData)) => {
         const newData = typeof updater === 'function' ? updater(formData) : updater;
@@ -205,11 +214,11 @@ export default function BookingArea() {
             setPreferredPartnerCodeInput(newData.preferredPartnerCode);
         }
     };
-    
+
     const addressInputRef = propertyAddressInputRef;
     const placesReady = placesReadyListing;
     const enterManually = enterManuallyListing;
-    const setPlacesReady = () => {}; // Managed by hook
+    const setPlacesReady = () => { }; // Managed by hook
     const setEnterManually = setEnterManuallyListing;
 
     useEffect(() => {
@@ -295,7 +304,7 @@ export default function BookingArea() {
         }
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
         if (currentStep === 1) {
             if (!addressGiven) {
                 setFieldErrors({ propertyAddress: "Please select an address from the list or click 'Enter address manually'." });
@@ -310,15 +319,62 @@ export default function BookingArea() {
                 return;
             }
             setFieldErrors({});
+        } else if (currentStep === 4) {
+            if (!formData.preferredDate) {
+                setFormErrors(['Please select a preferred date']);
+                return;
+            }
+            if (!formData.preferredTime) {
+                setFormErrors(['Please select a preferred time']);
+                return;
+            }
+        } else if (currentStep === 5) {
+            if (!formData.name || !formData.email) {
+                setFormErrors(['Please fill in your name and email']);
+                return;
+            }
+
+            // Fetch Payment Intent
+            setIsSubmitting(true);
+            try {
+                const res = await fetch('/api/create-payment-intent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        selectedPackageId: formData.selectedPackage,
+                        selectedAddOns: formData.selectedAddOns,
+                        propertySize: formData.propertySize,
+                        preferredPartnerCode: formData.preferredPartnerCode,
+                    }),
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    // If amount too low (e.g. 0), we might skip payment step?
+                    // For now, assume payment is required if > 0.
+                    // But if res fails, show error.
+                    throw new Error(data.error || 'Failed to initialize payment');
+                }
+
+                setClientSecret(data.clientSecret);
+                setPaymentAmount(data.amount);
+                setFormErrors([]);
+                setFieldErrors({});
+                setCurrentStep(6);
+                trackBookingStepChange(6, 'next');
+                window.scrollTo(0, 300);
+                return; // Prevent default increment
+            } catch (err: any) {
+                setFormErrors([err.message || 'Payment initialization failed']);
+                return;
+            } finally {
+                setIsSubmitting(false);
+            }
         }
-        // Allow proceeding to step 3 (Add Ons) even without a package
-        // if (currentStep === 2 && !formData.selectedPackage) {
-        //     setFormErrors(['Please select a package to continue']);
-        //     return;
-        // }
+
         setFormErrors([]);
         setFieldErrors({});
-        setCurrentStep(prev => Math.min(4, prev + 1));
+        setCurrentStep(prev => Math.min(6, prev + 1));
         trackBookingStepChange(currentStep + 1, 'next');
         window.scrollTo(0, 300);
     };
@@ -337,28 +393,38 @@ export default function BookingArea() {
             window.scrollTo(0, 300);
             return;
         }
-        
+
         // Allow navigation to current step (no-op)
         if (currentStep === stepId) {
             return;
         }
-        
+
+        // For future steps, check prerequisites
         // For future steps, check prerequisites
         if (stepId === 2) {
-            // Can go to step 2 if step 1 is completed (address and size filled)
             if (formData.propertyAddress && formData.propertySize) {
                 setCurrentStep(stepId);
                 trackBookingStepChange(stepId, 'next');
                 window.scrollTo(0, 300);
             }
         } else if (stepId === 3) {
-            // Can go to step 3 (Add Ons) - no package required
             setCurrentStep(stepId);
             trackBookingStepChange(stepId, 'next');
             window.scrollTo(0, 300);
         } else if (stepId === 4) {
-            // Can go to step 4 if we've been to step 3 (no package required)
             if (currentStep >= 3) {
+                setCurrentStep(stepId);
+                trackBookingStepChange(stepId, 'next');
+                window.scrollTo(0, 300);
+            }
+        } else if (stepId === 5) {
+            if (currentStep >= 4 && formData.preferredDate && formData.preferredTime) {
+                setCurrentStep(stepId);
+                trackBookingStepChange(stepId, 'next');
+                window.scrollTo(0, 300);
+            }
+        } else if (stepId === 6) {
+            if (currentStep >= 5 && clientSecret && formData.name && formData.email) {
                 setCurrentStep(stepId);
                 trackBookingStepChange(stepId, 'next');
                 window.scrollTo(0, 300);
@@ -368,7 +434,7 @@ export default function BookingArea() {
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Sync BookingArea's formData to hook's state before submission
         setHookFormData({
             name: formData.name,
@@ -379,14 +445,18 @@ export default function BookingArea() {
             message: formData.message,
             [HONEYPOT_FIELD]: formData[HONEYPOT_FIELD],
         });
-        
+
         // Apply property details before submission
         setAppliedPropertyAddress(formData.propertyAddress);
         setAppliedPropertySuite(formData.unitNumber);
         setAppliedPropertySize(formData.propertySize);
-        
-        // Use hook's form submit handler
-        await handleFormSubmit(e);
+
+        // Use hook's form submit handler with overrides since state updates are async
+        await handleFormSubmit(e, {
+            propertyAddress: formData.propertyAddress,
+            unitNumber: formData.unitNumber,
+            propertySize: formData.propertySize
+        });
     };
 
     if (isSubmitted) {
@@ -420,11 +490,15 @@ export default function BookingArea() {
 
     // packages already available from hook
 
+    // packages already available from hook
+
     const steps = [
-        { id: 1, name: 'Property Details' },
+        { id: 1, name: 'Property' },
         { id: 2, name: 'Package' },
         { id: 3, name: 'Add Ons' },
-        { id: 4, name: 'Complete Booking' },
+        { id: 4, name: 'Scheduling' },
+        { id: 5, name: 'Contact' },
+        { id: 6, name: 'Payment' },
     ];
 
     return (
@@ -437,14 +511,14 @@ export default function BookingArea() {
                             <aside className="booking-progress-sidebar">
                                 <div className="booking-progress-vertical">
                                     {steps.map((step, idx) => {
-                                        const isClickable = currentStep > step.id || 
+                                        const isClickable = currentStep > step.id ||
                                             (step.id === 2 && formData.propertyAddress && formData.propertySize) ||
                                             (step.id === 3 && formData.propertyAddress && formData.propertySize) || // Can access Add Ons after step 1
                                             (step.id === 4 && currentStep >= 3); // Can access step 4 if we've been to step 3
-                                        
+
                                         return (
-                                            <div 
-                                                key={step.id} 
+                                            <div
+                                                key={step.id}
                                                 className={`booking-progress-step-wrap ${isClickable ? 'clickable' : ''}`}
                                                 onClick={() => isClickable && handleStepClick(step.id)}
                                                 style={{ cursor: isClickable ? 'pointer' : 'default' }}
@@ -456,7 +530,7 @@ export default function BookingArea() {
                                                     >
                                                         {currentStep > step.id && (
                                                             <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg" className="booking-progress-check">
-                                                                <path d="M1 5L5 9L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                                <path d="M1 5L5 9L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                                             </svg>
                                                         )}
                                                     </div>
@@ -475,261 +549,210 @@ export default function BookingArea() {
 
                             <div className="booking-form-main">
                                 <div className="cn-contactform-wrap p-relative">
-                                    <form onSubmit={onSubmit}>
-                                {currentStep === 1 && (
-                                    <div className="step-content fadeIn">
-                                        <div className="row justify-content-start">
-                                            <div className="col-lg-8">
-                                                {/* Honeypot - leave blank */}
-                                                <div className="visually-hidden" aria-hidden="true">
-                                                    <label htmlFor="booking-website_url">Leave this blank</label>
-                                                    <input
-                                                        id="booking-website_url"
-                                                        name={HONEYPOT_FIELD}
-                                                        type="text"
-                                                        tabIndex={-1}
-                                                        autoComplete="off"
-                                                        value={formData[HONEYPOT_FIELD as keyof typeof formData] ?? ''}
-                                                        onChange={handleInputChange}
-                                                    />
-                                                </div>
-                                                <div className="cn-contactform-input mb-25">
-                                                    <label className="text-white">Property Address *</label>
-                                                    <input
-                                                        key={enterManually ? 'manual' : 'autosuggest'}
-                                                        ref={!enterManually ? addressInputRef : undefined}
-                                                        name="propertyAddress"
-                                                        type="text"
-                                                        placeholder={enterManually ? 'Enter full address' : 'Start typing an address...'}
-                                                        value={formData.propertyAddress}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                        autoComplete="off"
-                                                        className="property-address-input"
-                                                    />
-                                                    {!addressGiven && (
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-link p-0 mt-2 text-white-50 text-decoration-underline"
-                                                            onClick={() => {
-                                                                setEnterManually(true);
-                                                                setAddressGiven(true);
-                                                            }}
-                                                        >
-                                                            Enter address manually
-                                                        </button>
-                                                    )}
-                                                    {fieldErrors.propertyAddress && <ErrorMsg msg={fieldErrors.propertyAddress} />}
-                                                </div>
-                                                {addressGiven && (
-                                                    <div className="row">
-                                                        <div className="col-md-6">
-                                                            <div className="cn-contactform-input mb-25">
-                                                                <label className="text-white">Unit / Suite (Optional)</label>
-                                                                <input
-                                                                    name="unitNumber"
-                                                                    type="text"
-                                                                    placeholder="Apt 2B"
-                                                                    value={formData.unitNumber}
-                                                                    onChange={handleInputChange}
-                                                                    style={{ fontSize: '16px' }}
-                                                                    className="property-input-16px"
-                                                                />
-                                                            </div>
+                                    <div className="booking-form-wrapper">
+                                        {currentStep === 1 && (
+                                            <div className="step-content fadeIn">
+                                                <div className="row justify-content-start">
+                                                    <div className="col-lg-8">
+                                                        {/* Honeypot - leave blank */}
+                                                        <div className="visually-hidden" aria-hidden="true">
+                                                            <label htmlFor="booking-website_url">Leave this blank</label>
+                                                            <input
+                                                                id="booking-website_url"
+                                                                name={HONEYPOT_FIELD}
+                                                                type="text"
+                                                                tabIndex={-1}
+                                                                autoComplete="off"
+                                                                value={formData[HONEYPOT_FIELD as keyof typeof formData] ?? ''}
+                                                                onChange={handleInputChange}
+                                                            />
                                                         </div>
-                                                        <div className="col-md-6">
-                                                            <div className="cn-contactform-input mb-25">
-                                                                <label className="text-white">Square Footage (sq ft) *</label>
-                                                                <input
-                                                                    name="propertySize"
-                                                                    type="number"
-                                                                    placeholder="e.g. 1500"
-                                                                    value={formData.propertySize}
-                                                                    onChange={handleInputChange}
-                                                                    required
-                                                                    style={{ fontSize: '16px' }}
-                                                                    className="property-input-16px property-size-input"
-                                                                />
-                                                                {fieldErrors.propertySize && <ErrorMsg msg={fieldErrors.propertySize} />}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {currentStep === 2 && (
-                                    <div className="step-content fadeIn">
-                                        <div className="step2-layout">
-                                            <div className="step2-left">
-                                                <div className="tp-price-area">
-                                                    {packages.map((item, index) => (
-                                                        <div
-                                                            key={item.id}
-                                                            className={`pkg-card cursor-pointer ${formData.selectedPackage === item.id ? "pkg-card-active" : ""}`}
-                                                            onClick={() => handlePackageSelect(item.id)}
-                                                        >
-                                                            <PkgCarousel images={item.images} packageId={item.id} />
-                                                            <div className="pkg-card-inner">
-                                                                <div className="pkg-card-header">
-                                                                    <div className="pkg-card-title">
-                                                                        <span className="pkg-card-num">0{index + 1}</span>
-                                                                        <h5>{item.name}</h5>
-                                                                        {item.popular && <span className="pkg-popular-tag">Popular</span>}
-                                                                    </div>
-                                                                    <div className="pkg-card-price">
-                                                                        <span className="pkg-price-amount">${getDisplayPackagePrice(item.basePrice, item.id)}</span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="pkg-card-features">
-                                                                    <ul>
-                                                                        {item.services.map((l, i) => (
-                                                                            <li key={i}>
-                                                                                <i className="fa-sharp fa-light fa-check"></i>
-                                                                                {l}
-                                                                            </li>
-                                                                        ))}
-                                                                    </ul>
-                                                                </div>
-                                                                <div className="pkg-card-action">
-                                                                    <button
-                                                                        type="button"
-                                                                        className={`tp-btn-black-md ${formData.selectedPackage === item.id ? "pkg-btn-default" : "pkg-btn-proceed"}`}
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handlePackageSelect(item.id);
-                                                                        }}
-                                                                    >
-                                                                        {formData.selectedPackage === item.id ? "Selected" : "Choose Package"}
-                                                                        <span>
-                                                                            <UpArrow />
-                                                                        </span>
-                                                                    </button>
-                                                                    {formData.selectedPackage === item.id && (
-                                                                        <button
-                                                                            type="button"
-                                                                            className="tp-btn-black-md pkg-btn-proceed"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                handleNext();
-                                                                            }}
-                                                                        >
-                                                                            Choose Addons
-                                                                        </button>
-                                                                    )}
-                                                                    {!formData.selectedPackage && (
-                                                                        <button
-                                                                            type="button"
-                                                                            className="tp-btn-black-md pkg-btn-default"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                handleNext();
-                                                                            }}
-                                                                        >
-                                                                            I'll Pick & Choose
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="step2-right">
-                                                <div className="sidebar-sticky">
-                                                    {/* Property Address */}
-                                                    <div className="sidebar-address">
-                                                        <div className="d-flex justify-content-between align-items-center mb-14">
-                                                            <h6 className="sidebar-label mb-0">Property</h6>
-                                                            <button
-                                                                type="button"
-                                                                className="sidebar-edit-btn"
-                                                                onClick={() => setCurrentStep(1)}
-                                                                title="Edit property details"
-                                                            >
-                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                                                </svg>
-                                                            </button>
-                                                        </div>
-                                                        <p className="sidebar-address-text">
-                                                            {formData.propertyAddress}
-                                                        </p>
-                                                        {formData.unitNumber && (
-                                                            <p className="sidebar-address-unit">Unit {formData.unitNumber}</p>
-                                                        )}
-                                                        <span className="sidebar-sqft">{formData.propertySize} sq ft</span>
-                                                    </div>
-
-                                                    {/* Preferred Partner Code */}
-                                                    <div className="sidebar-partner-code mb-20">
-                                                        <label className="sidebar-label d-block mb-10">Preferred partner code (optional)</label>
-                                                        {appliedPartnerCode ? (
-                                                            <div className="sidebar-partner-chip">
-                                                                <span className="sidebar-partner-chip-text">{appliedPartnerCode}</span>
+                                                        <div className="cn-contactform-input mb-25">
+                                                            <label className="text-white">Property Address *</label>
+                                                            <input
+                                                                key={enterManually ? 'manual' : 'autosuggest'}
+                                                                ref={!enterManually ? addressInputRef : undefined}
+                                                                name="propertyAddress"
+                                                                type="text"
+                                                                placeholder={enterManually ? 'Enter full address' : 'Start typing an address...'}
+                                                                value={formData.propertyAddress}
+                                                                onChange={handleInputChange}
+                                                                required
+                                                                autoComplete="off"
+                                                                className="property-address-input"
+                                                            />
+                                                            {!addressGiven && (
                                                                 <button
                                                                     type="button"
-                                                                    className="sidebar-partner-chip-remove"
+                                                                    className="btn btn-link p-0 mt-2 text-white-50 text-decoration-underline"
                                                                     onClick={() => {
-                                                                        setAppliedPartnerCode('');
-                                                                        setFormData(prev => ({ ...prev, preferredPartnerCode: '' }));
+                                                                        setEnterManually(true);
+                                                                        setAddressGiven(true);
                                                                     }}
-                                                                    aria-label="Remove partner code"
                                                                 >
-                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                                                                    </svg>
+                                                                    Enter address manually
                                                                 </button>
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                <div className="sidebar-partner-row d-flex gap-2 align-items-flex-start">
-                                                                    <input
-                                                                        type="text"
-                                                                        name="preferredPartnerCode"
-                                                                        className="sidebar-partner-input"
-                                                                        placeholder="Enter code"
-                                                                        value={formData.preferredPartnerCode}
-                                                                        onChange={handleInputChange}
-                                                                        autoComplete="off"
-                                                                    />
-                                                                    <button
-                                                                        type="button"
-                                                                        className="sidebar-partner-apply-btn"
-                                                                        onClick={handleApplyPartnerCode}
-                                                                    >
-                                                                        Apply
-                                                                    </button>
-                                                                </div>
-                                                                {partnerCodeError && (
-                                                                    <div className="sidebar-partner-error mt-2">
-                                                                        <ErrorMsg msg={partnerCodeError} />
+                                                            )}
+                                                            {fieldErrors.propertyAddress && <ErrorMsg msg={fieldErrors.propertyAddress} />}
+                                                        </div>
+                                                        {addressGiven && (
+                                                            <div className="row">
+                                                                <div className="col-md-6">
+                                                                    <div className="cn-contactform-input mb-25">
+                                                                        <label className="text-white">Unit / Suite (Optional)</label>
+                                                                        <input
+                                                                            name="unitNumber"
+                                                                            type="text"
+                                                                            placeholder="Apt 2B"
+                                                                            value={formData.unitNumber}
+                                                                            onChange={handleInputChange}
+                                                                            style={{ fontSize: '16px' }}
+                                                                            className="property-input-16px"
+                                                                        />
                                                                     </div>
-                                                                )}
-                                                            </>
+                                                                </div>
+                                                                <div className="col-md-6">
+                                                                    <div className="cn-contactform-input mb-25">
+                                                                        <label className="text-white">Square Footage (sq ft) *</label>
+                                                                        <input
+                                                                            name="propertySize"
+                                                                            type="number"
+                                                                            placeholder="e.g. 1500"
+                                                                            value={formData.propertySize}
+                                                                            onChange={handleInputChange}
+                                                                            required
+                                                                            style={{ fontSize: '16px' }}
+                                                                            className="property-input-16px property-size-input"
+                                                                        />
+                                                                        {fieldErrors.propertySize && <ErrorMsg msg={fieldErrors.propertySize} />}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         )}
                                                     </div>
+                                                </div>
+                                            </div>
+                                        )}
 
-                                                    {/* Price Summary */}
-                                                    <div className="sidebar-pricing">
-                                                        <h6 className="sidebar-label">Estimate</h6>
+                                        {currentStep === 2 && (
+                                            <div className="step-content fadeIn">
+                                                <div className="step2-layout">
+                                                    <div className="step2-left">
+                                                        <div className="tp-price-area">
+                                                            {packages.map((item, index) => (
+                                                                <div
+                                                                    key={item.id}
+                                                                    className={`pkg-card cursor-pointer ${formData.selectedPackage === item.id ? "pkg-card-active" : ""}`}
+                                                                    onClick={() => handlePackageSelect(item.id)}
+                                                                >
+                                                                    <PkgCarousel images={item.images} packageId={item.id} />
+                                                                    <div className="pkg-card-inner">
+                                                                        <div className="pkg-card-header">
+                                                                            <div className="pkg-card-title">
+                                                                                <span className="pkg-card-num">0{index + 1}</span>
+                                                                                <h5>{item.name}</h5>
+                                                                                {item.popular && <span className="pkg-popular-tag">Popular</span>}
+                                                                            </div>
+                                                                            <div className="pkg-card-price">
+                                                                                <span className="pkg-price-amount">${getDisplayPackagePrice(item.basePrice, item.id)}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="pkg-card-features">
+                                                                            <ul>
+                                                                                {item.services.map((l, i) => (
+                                                                                    <li key={i}>
+                                                                                        <i className="fa-sharp fa-light fa-check"></i>
+                                                                                        {l}
+                                                                                    </li>
+                                                                                ))}
+                                                                            </ul>
+                                                                        </div>
+                                                                        <div className="pkg-card-action">
+                                                                            <button
+                                                                                type="button"
+                                                                                className={`tp-btn-black-md ${formData.selectedPackage === item.id ? "pkg-btn-default" : "pkg-btn-proceed"}`}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handlePackageSelect(item.id);
+                                                                                }}
+                                                                            >
+                                                                                {formData.selectedPackage === item.id ? "Selected" : "Choose Package"}
+                                                                                <span>
+                                                                                    <UpArrow />
+                                                                                </span>
+                                                                            </button>
+                                                                            {formData.selectedPackage === item.id && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="tp-btn-black-md pkg-btn-proceed"
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        handleNext();
+                                                                                    }}
+                                                                                >
+                                                                                    Choose Addons
+                                                                                </button>
+                                                                            )}
+                                                                            {!formData.selectedPackage && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="tp-btn-black-md pkg-btn-default"
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        handleNext();
+                                                                                    }}
+                                                                                >
+                                                                                    I'll Pick & Choose
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
 
-                                                        {formData.selectedPackage ? (
-                                                            <>
-                                                                <div className="sidebar-line-item sidebar-package-item">
-                                                                    <span>{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
-                                                                    <div className="d-flex align-items-center gap-2">
-                                                                        <span>${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
+                                                    <div className="step2-right">
+                                                        <div className="sidebar-sticky">
+                                                            {/* Property Address */}
+                                                            <div className="sidebar-address">
+                                                                <div className="d-flex justify-content-between align-items-center mb-14">
+                                                                    <h6 className="sidebar-label mb-0">Property</h6>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="sidebar-edit-btn"
+                                                                        onClick={() => setCurrentStep(1)}
+                                                                        title="Edit property details"
+                                                                    >
+                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                                        </svg>
+                                                                    </button>
+                                                                </div>
+                                                                <p className="sidebar-address-text">
+                                                                    {formData.propertyAddress}
+                                                                </p>
+                                                                {formData.unitNumber && (
+                                                                    <p className="sidebar-address-unit">Unit {formData.unitNumber}</p>
+                                                                )}
+                                                                <span className="sidebar-sqft">{formData.propertySize} sq ft</span>
+                                                            </div>
+
+                                                            {/* Preferred Partner Code */}
+                                                            <div className="sidebar-partner-code mb-20">
+                                                                <label className="sidebar-label d-block mb-10">Preferred partner code (optional)</label>
+                                                                {appliedPartnerCode ? (
+                                                                    <div className="sidebar-partner-chip">
+                                                                        <span className="sidebar-partner-chip-text">{appliedPartnerCode}</span>
                                                                         <button
                                                                             type="button"
-                                                                            className="sidebar-remove-btn"
-                                                                            onClick={handlePackageRemove}
-                                                                            title="Remove package"
+                                                                            className="sidebar-partner-chip-remove"
+                                                                            onClick={() => {
+                                                                                setAppliedPartnerCode('');
+                                                                                setFormData(prev => ({ ...prev, preferredPartnerCode: '' }));
+                                                                            }}
+                                                                            aria-label="Remove partner code"
                                                                         >
                                                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                                                 <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -737,388 +760,481 @@ export default function BookingArea() {
                                                                             </svg>
                                                                         </button>
                                                                     </div>
-                                                                </div>
-
-                                                                {formData.selectedAddOns.length > 0 && (
-                                                                    <div className="sidebar-addons-list">
-                                                                        {formData.selectedAddOns.map(id => {
-                                                                            const addon = addons.find(a => a.id === id);
-                                                                            return (
-                                                                                <div key={id} className="sidebar-line-item sidebar-addon-line">
-                                                                                    <span>{addon?.name}</span>
-                                                                                    <span>${getAddonPrice(id)}</span>
-                                                                                </div>
-                                                                            );
-                                                                        })}
-                                                                    </div>
+                                                                ) : (
+                                                                    <>
+                                                                        <div className="sidebar-partner-row d-flex gap-2 align-items-flex-start">
+                                                                            <input
+                                                                                type="text"
+                                                                                name="preferredPartnerCode"
+                                                                                className="sidebar-partner-input"
+                                                                                placeholder="Enter code"
+                                                                                value={formData.preferredPartnerCode}
+                                                                                onChange={handleInputChange}
+                                                                                autoComplete="off"
+                                                                            />
+                                                                            <button
+                                                                                type="button"
+                                                                                className="sidebar-partner-apply-btn"
+                                                                                onClick={handleApplyPartnerCode}
+                                                                            >
+                                                                                Apply
+                                                                            </button>
+                                                                        </div>
+                                                                        {partnerCodeError && (
+                                                                            <div className="sidebar-partner-error mt-2">
+                                                                                <ErrorMsg msg={partnerCodeError} />
+                                                                            </div>
+                                                                        )}
+                                                                    </>
                                                                 )}
+                                                            </div>
 
-                                                                <div className="sidebar-divider"></div>
+                                                            {/* Price Summary */}
+                                                            <div className="sidebar-pricing">
+                                                                <h6 className="sidebar-label">Estimate</h6>
 
-                                                                <div className="sidebar-total">
-                                                                    <span>Total</span>
-                                                                    <span>${calculateTotal()}</span>
-                                                                </div>
-                                                            </>
-                                                        ) : (
-                                                            <p className="sidebar-empty">Select a package to see pricing</p>
-                                                        )}
+                                                                {formData.selectedPackage ? (
+                                                                    <>
+                                                                        <div className="sidebar-line-item sidebar-package-item">
+                                                                            <span>{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
+                                                                            <div className="d-flex align-items-center gap-2">
+                                                                                <span>${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="sidebar-remove-btn"
+                                                                                    onClick={handlePackageRemove}
+                                                                                    title="Remove package"
+                                                                                >
+                                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                                                    </svg>
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {formData.selectedAddOns.length > 0 && (
+                                                                            <div className="sidebar-addons-list">
+                                                                                {formData.selectedAddOns.map(id => {
+                                                                                    const addon = addons.find(a => a.id === id);
+                                                                                    return (
+                                                                                        <div key={id} className="sidebar-line-item sidebar-addon-line">
+                                                                                            <span>{addon?.name}</span>
+                                                                                            <span>${getAddonPrice(id)}</span>
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                        )}
+
+                                                                        <div className="sidebar-divider"></div>
+
+                                                                        <div className="sidebar-total">
+                                                                            <span>Total</span>
+                                                                            <span>${calculateTotal()}</span>
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <p className="sidebar-empty">Select a package to see pricing</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </div>
 
-                                        {formErrors.length > 0 && (
-                                            <div className="mt-20 text-center">
-                                                {formErrors.map((err, i) => <ErrorMsg key={i} msg={err} />)}
+                                                {formErrors.length > 0 && (
+                                                    <div className="mt-20 text-center">
+                                                        {formErrors.map((err, i) => <ErrorMsg key={i} msg={err} />)}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
-                                    </div>
-                                )}
 
-                                {currentStep === 3 && (
-                                    <div className="step-content fadeIn">
-                                        <div className="step2-layout">
-                                            <div className="step2-left">
-                                                <div className="addons-section">
-                                                    <h6 className="text-white mb-20" style={{ fontSize: '18px', letterSpacing: '0.5px' }}>Enhance Your Listing</h6>
-                                                    <div className="addons-grid">
-                                                        {availableAddOns.filter(addon => {
-                                                            // Hide listing_website when a package is selected
-                                                            if (formData.selectedPackage && addon.id === 'listing_website') {
-                                                                return false;
-                                                            }
-                                                            return true;
-                                                        }).map(addon => (
-                                                            <div
-                                                                key={addon.id}
-                                                                className={`addon-thumb ${formData.selectedAddOns.includes(addon.id) ? 'addon-thumb-active' : ''}`}
-                                                                onClick={() => handleAddOnToggleWithTracking(addon.id)}
-                                                            >
-                                                                <div className="addon-thumb-img">
-                                                                    <img src={addon.image} alt={addon.name} loading="lazy" />
-                                                                    {formData.selectedAddOns.includes(addon.id) && (
-                                                                        <div className="addon-thumb-check">✓</div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="addon-thumb-info">
-                                                                    <span className="addon-thumb-name">{addon.name}</span>
-                                                                    <span className="addon-thumb-price">+${getAddonPrice(addon.id)}</span>
-                                                                </div>
+                                        {currentStep === 3 && (
+                                            <div className="step-content fadeIn">
+                                                <div className="step2-layout">
+                                                    <div className="step2-left">
+                                                        <div className="addons-section">
+                                                            <h6 className="text-white mb-20" style={{ fontSize: '18px', letterSpacing: '0.5px' }}>Enhance Your Listing</h6>
+                                                            <div className="addons-grid">
+                                                                {availableAddOns.filter(addon => {
+                                                                    // Hide listing_website when a package is selected
+                                                                    if (formData.selectedPackage && addon.id === 'listing_website') {
+                                                                        return false;
+                                                                    }
+                                                                    return true;
+                                                                }).map(addon => (
+                                                                    <div
+                                                                        key={addon.id}
+                                                                        className={`addon-thumb ${formData.selectedAddOns.includes(addon.id) ? 'addon-thumb-active' : ''}`}
+                                                                        onClick={() => handleAddOnToggleWithTracking(addon.id)}
+                                                                    >
+                                                                        <div className="addon-thumb-img">
+                                                                            <img src={addon.image} alt={addon.name} loading="lazy" />
+                                                                            {formData.selectedAddOns.includes(addon.id) && (
+                                                                                <div className="addon-thumb-check">✓</div>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="addon-thumb-info">
+                                                                            <span className="addon-thumb-name">{addon.name}</span>
+                                                                            <span className="addon-thumb-price">+${getAddonPrice(addon.id)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
                                                             </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="step2-right">
-                                                <div className="sidebar-sticky">
-                                                    <div className="sidebar-address">
-                                                        <div className="d-flex justify-content-between align-items-center mb-14">
-                                                            <h6 className="sidebar-label mb-0">Property</h6>
-                                                            <button
-                                                                type="button"
-                                                                className="sidebar-edit-btn"
-                                                                onClick={() => setCurrentStep(1)}
-                                                                title="Edit property details"
-                                                            >
-                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                                                </svg>
-                                                            </button>
                                                         </div>
-                                                        <p className="sidebar-address-text">{formData.propertyAddress}</p>
-                                                        {formData.unitNumber && <p className="sidebar-address-unit">Unit {formData.unitNumber}</p>}
-                                                        <span className="sidebar-sqft">{formData.propertySize} sq ft</span>
                                                     </div>
-                                                    <div className="sidebar-partner-code mb-20">
-                                                        <label className="sidebar-label d-block mb-10">Preferred partner code (optional)</label>
-                                                        {appliedPartnerCode ? (
-                                                            <div className="sidebar-partner-chip">
-                                                                <span className="sidebar-partner-chip-text">{appliedPartnerCode}</span>
-                                                                <button type="button" className="sidebar-partner-chip-remove" onClick={() => { setAppliedPartnerCode(''); setFormData(prev => ({ ...prev, preferredPartnerCode: '' })); }} aria-label="Remove partner code">
-                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                <div className="sidebar-partner-row d-flex gap-2 align-items-flex-start">
-                                                                    <input type="text" name="preferredPartnerCode" className="sidebar-partner-input" placeholder="Enter code" value={formData.preferredPartnerCode} onChange={handleInputChange} autoComplete="off" />
-                                                                    <button type="button" className="sidebar-partner-apply-btn" onClick={handleApplyPartnerCode}>Apply</button>
+                                                    <div className="step2-right">
+                                                        <div className="sidebar-sticky">
+                                                            <div className="sidebar-address">
+                                                                <div className="d-flex justify-content-between align-items-center mb-14">
+                                                                    <h6 className="sidebar-label mb-0">Property</h6>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="sidebar-edit-btn"
+                                                                        onClick={() => setCurrentStep(1)}
+                                                                        title="Edit property details"
+                                                                    >
+                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                                        </svg>
+                                                                    </button>
                                                                 </div>
-                                                                {fieldErrors.preferredPartnerCode && <div className="sidebar-partner-error mt-2"><ErrorMsg msg={fieldErrors.preferredPartnerCode} /></div>}
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                    <div className="sidebar-pricing">
-                                                        <h6 className="sidebar-label">Estimate</h6>
-                                                        {formData.selectedPackage ? (
-                                                            <>
-                                                                <div className="sidebar-line-item sidebar-package-item">
-                                                                    <span>{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
-                                                                    <div className="d-flex align-items-center gap-2">
-                                                                        <span>${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
-                                                                        <button type="button" className="sidebar-remove-btn" onClick={handlePackageRemove} title="Remove package">
+                                                                <p className="sidebar-address-text">{formData.propertyAddress}</p>
+                                                                {formData.unitNumber && <p className="sidebar-address-unit">Unit {formData.unitNumber}</p>}
+                                                                <span className="sidebar-sqft">{formData.propertySize} sq ft</span>
+                                                            </div>
+                                                            <div className="sidebar-partner-code mb-20">
+                                                                <label className="sidebar-label d-block mb-10">Preferred partner code (optional)</label>
+                                                                {appliedPartnerCode ? (
+                                                                    <div className="sidebar-partner-chip">
+                                                                        <span className="sidebar-partner-chip-text">{appliedPartnerCode}</span>
+                                                                        <button type="button" className="sidebar-partner-chip-remove" onClick={() => { setAppliedPartnerCode(''); setFormData(prev => ({ ...prev, preferredPartnerCode: '' })); }} aria-label="Remove partner code">
                                                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                                                         </button>
                                                                     </div>
-                                                                </div>
-                                                                {formData.selectedAddOns.length > 0 && (
-                                                                    <div className="sidebar-addons-list">
-                                                                        {formData.selectedAddOns.map(id => {
-                                                                            const addon = addons.find(a => a.id === id);
-                                                                            return <div key={id} className="sidebar-line-item sidebar-addon-line"><span>{addon?.name}</span><span>${getAddonPrice(id)}</span></div>;
-                                                                        })}
-                                                                    </div>
+                                                                ) : (
+                                                                    <>
+                                                                        <div className="sidebar-partner-row d-flex gap-2 align-items-flex-start">
+                                                                            <input type="text" name="preferredPartnerCode" className="sidebar-partner-input" placeholder="Enter code" value={formData.preferredPartnerCode} onChange={handleInputChange} autoComplete="off" />
+                                                                            <button type="button" className="sidebar-partner-apply-btn" onClick={handleApplyPartnerCode}>Apply</button>
+                                                                        </div>
+                                                                        {fieldErrors.preferredPartnerCode && <div className="sidebar-partner-error mt-2"><ErrorMsg msg={fieldErrors.preferredPartnerCode} /></div>}
+                                                                    </>
                                                                 )}
-                                                                <div className="sidebar-divider"></div>
-                                                                <div className="sidebar-total"><span>Total</span><span>${calculateTotal()}</span></div>
-                                                            </>
-                                                        ) : (
-                                                            <p className="sidebar-empty">Select a package to see pricing</p>
-                                                        )}
+                                                            </div>
+                                                            <div className="sidebar-pricing">
+                                                                <h6 className="sidebar-label">Estimate</h6>
+                                                                {formData.selectedPackage ? (
+                                                                    <>
+                                                                        <div className="sidebar-line-item sidebar-package-item">
+                                                                            <span>{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
+                                                                            <div className="d-flex align-items-center gap-2">
+                                                                                <span>${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
+                                                                                <button type="button" className="sidebar-remove-btn" onClick={handlePackageRemove} title="Remove package">
+                                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                        {formData.selectedAddOns.length > 0 && (
+                                                                            <div className="sidebar-addons-list">
+                                                                                {formData.selectedAddOns.map(id => {
+                                                                                    const addon = addons.find(a => a.id === id);
+                                                                                    return <div key={id} className="sidebar-line-item sidebar-addon-line"><span>{addon?.name}</span><span>${getAddonPrice(id)}</span></div>;
+                                                                                })}
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="sidebar-divider"></div>
+                                                                        <div className="sidebar-total"><span>Total</span><span>${calculateTotal()}</span></div>
+                                                                    </>
+                                                                ) : (
+                                                                    <p className="sidebar-empty">Select a package to see pricing</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </div>
-                                        {formErrors.length > 0 && (
-                                            <div className="mt-20 text-center">
-                                                {formErrors.map((err, i) => <ErrorMsg key={i} msg={err} />)}
+                                                {formErrors.length > 0 && (
+                                                    <div className="mt-20 text-center">
+                                                        {formErrors.map((err, i) => <ErrorMsg key={i} msg={err} />)}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
-                                    </div>
-                                )}
 
-                                {currentStep === 4 && (
-                                    <div className="step-content fadeIn">
-                                        <div className="row justify-content-center">
-                                            <div className="col-lg-10">
-                                                <div className="row">
-                                                    <div className="col-md-6">
-                                                        <div className="cn-contactform-input mb-25">
-                                                            <label className="text-white">Full Name *</label>
-                                                            <input
-                                                                name="name"
-                                                                type="text"
-                                                                placeholder="John Doe"
-                                                                value={formData.name}
-                                                                onChange={handleInputChange}
-                                                                required
-                                                                style={{ fontSize: '16px' }}
-                                                                className="property-input-16px"
-                                                            />
-                                                            {fieldErrors.name && <ErrorMsg msg={fieldErrors.name} />}
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-md-6">
-                                                        <div className="cn-contactform-input mb-25">
-                                                            <label className="text-white">Email Address *</label>
-                                                            <input
-                                                                name="email"
-                                                                type="email"
-                                                                placeholder="john@example.com"
-                                                                value={formData.email}
-                                                                onChange={handleInputChange}
-                                                                onBlur={(e) => handleEmailBlur(e)}
-                                                                required
-                                                            />
-                                                            {fieldErrors.email && <ErrorMsg msg={fieldErrors.email} />}
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-md-6">
-                                                        <div className="cn-contactform-input mb-25">
-                                                            <label className="text-white">Phone Number</label>
-                                                            <input
-                                                                name="phone"
-                                                                type="tel"
-                                                                placeholder="(123) 456-7890"
-                                                                value={formData.phone}
-                                                                onChange={handleInputChange}
-                                                                onBlur={(e) => handlePhoneBlur(e)}
-                                                            />
-                                                            {fieldErrors.phone && <ErrorMsg msg={fieldErrors.phone} />}
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-md-6">
-                                                        <div className="cn-contactform-input mb-25">
-                                                            <label className="text-white">Preferred Date</label>
-                                                            <input
-                                                                name="preferredDate"
-                                                                type="date"
-                                                                value={formData.preferredDate}
-                                                                onChange={handleInputChange}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-md-6">
-                                                        <div className="cn-contactform-input mb-25">
-                                                            <label className="text-white">Preferred Start Time</label>
-                                                            <input
-                                                                name="preferredTime"
-                                                                type="time"
-                                                                value={formData.preferredTime}
-                                                                onChange={handleInputChange}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-12">
-                                                        <div className="cn-contactform-input mb-25">
-                                                            <label className="text-white">Notes or Special Requirements</label>
-                                                            <textarea
-                                                                name="message"
-                                                                placeholder="Tell us about the property, access instructions, or any specific shots you need..."
-                                                                value={formData.message}
-                                                                onChange={handleInputChange}
-                                                            ></textarea>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                        {currentStep === 4 && (
+                                            <div className="step-content fadeIn">
+                                                <div className="row justify-content-center">
+                                                    <div className="col-lg-10">
+                                                        <h4 className="text-white mb-30 text-center">Select Date & Time</h4>
 
-                                                <div className="booking-summary booking-summary-light mt-50 p-5 border rounded">
-                                                    <h3 className="mb-30 text-center booking-text-primary">Booking Summary</h3>
-                                                    <div className="summary-details">
-                                                        <div className="d-flex justify-content-between mb-15">
-                                                            <span className="booking-text-muted">Package:</span>
-                                                            <span className="font-weight-bold booking-text-primary">{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
-                                                        </div>
-                                                        <div className="d-flex justify-content-between mb-15">
-                                                            <span className="booking-text-muted">Base Price:</span>
-                                                            <span className="booking-text-primary">${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
-                                                        </div>
+                                                        <BookingCalendar
+                                                            selectedDate={formData.preferredDate || ''}
+                                                            onDateSelect={(date) => {
+                                                                setFormData(prev => ({ ...prev, preferredDate: date, preferredTime: '' }));
+                                                                setFormErrors([]);
+                                                            }}
+                                                        />
 
-                                                        {formData.selectedAddOns.length > 0 && (
-                                                            <div className="addon-summary mb-15">
-                                                                <span className="booking-text-muted d-block mb-10">Add-ons:</span>
-                                                                {formData.selectedAddOns.map(id => {
-                                                                    const addon = addons.find(a => a.id === id);
-                                                                    return (
-                                                                        <div key={id} className="d-flex justify-content-between mb-5 pl-20">
-                                                                            <span className="booking-text-muted small">- {addon?.name}</span>
-                                                                            <span className="booking-text-muted small">${getAddonPrice(id)}</span>
-                                                                        </div>
-                                                                    );
-                                                                })}
+                                                        <TimeSlotGrid
+                                                            selectedDate={formData.preferredDate || null}
+                                                            selectedTime={formData.preferredTime || null}
+                                                            onTimeSelect={(time) => {
+                                                                setFormData(prev => ({ ...prev, preferredTime: time }));
+                                                                setFormErrors([]);
+                                                            }}
+                                                        />
+
+                                                        {formErrors.length > 0 && (
+                                                            <div className="mt-4">
+                                                                {formErrors.map((err, i) => (
+                                                                    <ErrorMsg key={i} msg={err} />
+                                                                ))}
                                                             </div>
                                                         )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
 
-                                                        <div className="border-top my-20 booking-summary-divider"></div>
-
-                                                        <div className="d-flex justify-content-between mb-10">
-                                                            <span className="booking-text-muted">Subtotal:</span>
-                                                            <span className="booking-text-primary">${calculateTotal().toFixed(2)}</span>
+                                        {currentStep === 5 && (
+                                            <div className="step-content fadeIn">
+                                                <div className="row justify-content-center">
+                                                    <div className="col-lg-10">
+                                                        <h4 className="text-white mb-30 text-center">Contact Details</h4>
+                                                        <div className="row">
+                                                            <div className="col-md-6">
+                                                                <div className="cn-contactform-input mb-25">
+                                                                    <label className="text-white">Full Name *</label>
+                                                                    <input
+                                                                        name="name"
+                                                                        type="text"
+                                                                        placeholder="John Doe"
+                                                                        value={formData.name}
+                                                                        onChange={handleInputChange}
+                                                                        required
+                                                                        style={{ fontSize: '16px' }}
+                                                                        className="property-input-16px"
+                                                                    />
+                                                                    {fieldErrors.name && <ErrorMsg msg={fieldErrors.name} />}
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-md-6">
+                                                                <div className="cn-contactform-input mb-25">
+                                                                    <label className="text-white">Email Address *</label>
+                                                                    <input
+                                                                        name="email"
+                                                                        type="email"
+                                                                        placeholder="john@example.com"
+                                                                        value={formData.email}
+                                                                        onChange={handleInputChange}
+                                                                        onBlur={(e) => handleEmailBlur(e)}
+                                                                        required
+                                                                    />
+                                                                    {fieldErrors.email && <ErrorMsg msg={fieldErrors.email} />}
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-md-6">
+                                                                <div className="cn-contactform-input mb-25">
+                                                                    <label className="text-white">Phone Number *</label>
+                                                                    <input
+                                                                        name="phone"
+                                                                        type="tel"
+                                                                        placeholder="(123) 456-7890"
+                                                                        value={formData.phone}
+                                                                        onChange={handleInputChange}
+                                                                        onBlur={(e) => handlePhoneBlur(e)}
+                                                                        required
+                                                                    />
+                                                                    {fieldErrors.phone && <ErrorMsg msg={fieldErrors.phone} />}
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-12">
+                                                                <div className="cn-contactform-input mb-25">
+                                                                    <label className="text-white">Notes (Optional)</label>
+                                                                    <textarea
+                                                                        name="message"
+                                                                        placeholder="Access instructions, special requests..."
+                                                                        value={formData.message}
+                                                                        onChange={handleInputChange}
+                                                                    ></textarea>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div className="d-flex justify-content-between mb-15">
-                                                            <span className="booking-text-muted">HST (13%):</span>
-                                                            <span className="booking-text-primary">${(calculateTotal() * 0.13).toFixed(2)}</span>
-                                                        </div>
 
-                                                        <div className="border-top my-20 booking-summary-divider"></div>
-
-                                                        <div className="d-flex justify-content-between">
-                                                            <h4 className="booking-text-primary mb-0">Total</h4>
-                                                            <h4 className="booking-text-primary mb-0">${(calculateTotal() * 1.13).toFixed(2)}</h4>
+                                                        <div className="booking-summary booking-summary-light mt-40 p-5 border rounded">
+                                                            <h3 className="mb-30 text-center booking-text-primary">Booking Summary</h3>
+                                                            <div className="summary-details">
+                                                                <div className="d-flex justify-content-between mb-15">
+                                                                    <span className="booking-text-muted">Date & Time:</span>
+                                                                    <span className="font-weight-bold booking-text-primary">{formData.preferredDate} at {formData.preferredTime}</span>
+                                                                </div>
+                                                                <div className="d-flex justify-content-between mb-15">
+                                                                    <span className="booking-text-muted">Subtotal:</span>
+                                                                    <span className="booking-text-primary mb-0">${calculateTotal().toFixed(2)}</span>
+                                                                </div>
+                                                                <div className="d-flex justify-content-between mb-15">
+                                                                    <span className="booking-text-muted">HST (13%):</span>
+                                                                    <span className="booking-text-primary mb-0">${(calculateTotal() * 0.13).toFixed(2)}</span>
+                                                                </div>
+                                                                <div className="border-top my-20 booking-summary-divider"></div>
+                                                                <div className="d-flex justify-content-between">
+                                                                    <h4 className="booking-text-primary mb-0">Total Due</h4>
+                                                                    <h4 className="booking-text-primary mb-0">${(calculateTotal() * 1.13).toFixed(2)}</h4>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        )}
+
+                                        {currentStep === 6 && clientSecret && (
+                                            <div className="step-content fadeIn">
+                                                <div className="row justify-content-center">
+                                                    <div className="col-lg-10">
+                                                        <div className="booking-payment-wrapper p-4 border rounded bg-dark">
+                                                            <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'night', labels: 'floating' } }}>
+                                                                <CheckoutForm
+                                                                    amount={paymentAmount}
+                                                                    onSuccess={(paymentIntentId) => {
+                                                                        const updatedFormData = { ...formData, paymentIntentId };
+                                                                        setHookFormData({
+                                                                            name: updatedFormData.name,
+                                                                            email: updatedFormData.email,
+                                                                            phone: updatedFormData.phone,
+                                                                            preferredDate: updatedFormData.preferredDate,
+                                                                            preferredTime: updatedFormData.preferredTime,
+                                                                            message: updatedFormData.message,
+                                                                            paymentIntentId: paymentIntentId,
+                                                                            [HONEYPOT_FIELD]: updatedFormData[HONEYPOT_FIELD],
+                                                                        });
+                                                                        setAppliedPropertyAddress(updatedFormData.propertyAddress);
+                                                                        setAppliedPropertySuite(updatedFormData.unitNumber);
+                                                                        setAppliedPropertySize(updatedFormData.propertySize);
+
+                                                                        // Pass paymentIntentId as override since state update is async
+                                                                        handleFormSubmit(undefined, {
+                                                                            paymentIntentId,
+                                                                            propertyAddress: updatedFormData.propertyAddress,
+                                                                            unitNumber: updatedFormData.unitNumber,
+                                                                            propertySize: updatedFormData.propertySize
+                                                                        });
+                                                                    }}
+                                                                    onCancel={() => setCurrentStep(5)}
+                                                                />
+                                                            </Elements>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
 
                                         {formErrors.length > 0 && (
-                                            <div className="mt-20 text-center">
-                                                {formErrors.map((err, i) => <ErrorMsg key={i} msg={err} />)}
+                                            <div className="booking-submission-errors mt-30 mb-20 text-center" role="alert" aria-live="polite">
+                                                <p className="booking-text-primary fw-bold mb-2">Submission failed</p>
+                                                {formErrors.map((err, i) => (
+                                                    <ErrorMsg key={i} msg={err} />
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {currentStep !== 6 && (
+                                            <div className="form-navigation mt-60 d-flex justify-content-start gap-4">
+                                                {currentStep > 1 && (
+                                                    <button
+                                                        type="button"
+                                                        className="tp-btn-black-2 booking-btn-outline"
+                                                        onClick={handlePrevious}
+                                                        disabled={isSubmitting}
+                                                    >
+                                                        Previous Step
+                                                    </button>
+                                                )}
+
+                                                {currentStep === 1 ? (
+                                                    <>
+                                                        <button
+                                                            type="button"
+                                                            className="tp-btn-black-md pkg-btn-proceed"
+                                                            onClick={handleNext}
+                                                            disabled={!formData.propertyAddress || !formData.propertySize}
+                                                        >
+                                                            Choose Package
+                                                            <span className="p-relative">
+                                                                <RightArrowTwo />
+                                                            </span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className="tp-btn-black-md pkg-btn-default"
+                                                            onClick={() => {
+                                                                if (formData.propertyAddress && formData.propertySize) {
+                                                                    setCurrentStep(3);
+                                                                    trackBookingStepChange(3, 'next');
+                                                                    window.scrollTo(0, 300);
+                                                                }
+                                                            }}
+                                                            disabled={!formData.propertyAddress || !formData.propertySize}
+                                                        >
+                                                            Pick Services
+                                                        </button>
+                                                    </>
+                                                ) : currentStep === 2 ? (
+                                                    <button
+                                                        type="button"
+                                                        className="tp-btn-black-2 booking-btn-primary"
+                                                        onClick={handleNext}
+                                                    >
+                                                        Next: AddOns
+                                                        <span className="p-relative">
+                                                            <RightArrowTwo />
+                                                            <ArrowBg />
+                                                        </span>
+                                                    </button>
+                                                ) : currentStep === 3 ? (
+                                                    <button
+                                                        type="button"
+                                                        className="tp-btn-black-2 booking-btn-primary"
+                                                        onClick={handleNext}
+                                                    >
+                                                        Next: Scheduling
+                                                        <span className="p-relative">
+                                                            <RightArrowTwo />
+                                                            <ArrowBg />
+                                                        </span>
+                                                    </button>
+                                                ) : currentStep === 4 ? (
+                                                    <button
+                                                        type="button"
+                                                        className="tp-btn-black-2 booking-btn-primary"
+                                                        onClick={handleNext}
+                                                    >
+                                                        Next: Contact Details
+                                                        <span className="p-relative">
+                                                            <RightArrowTwo />
+                                                            <ArrowBg />
+                                                        </span>
+                                                    </button>
+                                                ) : currentStep === 5 ? (
+                                                    <button
+                                                        type="button"
+                                                        className="tp-btn-black-2 booking-btn-primary"
+                                                        onClick={handleNext}
+                                                        disabled={isSubmitting}
+                                                    >
+                                                        {isSubmitting ? 'Processing...' : 'Next: Payment'}
+                                                        <span className="p-relative">
+                                                            <RightArrowTwo />
+                                                            <ArrowBg />
+                                                        </span>
+                                                    </button>
+                                                ) : null}
                                             </div>
                                         )}
                                     </div>
-                                )}
-
-                                {formErrors.length > 0 && (
-                                    <div className="booking-submission-errors mt-30 mb-20 text-center" role="alert" aria-live="polite">
-                                        <p className="booking-text-primary fw-bold mb-2">Submission failed</p>
-                                        {formErrors.map((err, i) => (
-                                            <ErrorMsg key={i} msg={err} />
-                                        ))}
-                                    </div>
-                                )}
-
-                                <div className="form-navigation mt-60 d-flex justify-content-start gap-4">
-                                    {currentStep > 1 && (
-                                        <button
-                                            type="button"
-                                            className="tp-btn-black-2 booking-btn-outline"
-                                            onClick={handlePrevious}
-                                            disabled={isSubmitting}
-                                        >
-                                            Previous Step
-                                        </button>
-                                    )}
-
-                                    {currentStep === 1 ? (
-                                        <>
-                                            <button
-                                                type="button"
-                                                className="tp-btn-black-md pkg-btn-proceed"
-                                                onClick={handleNext}
-                                                disabled={!formData.propertyAddress || !formData.propertySize}
-                                            >
-                                                Choose Package
-                                                <span className="p-relative">
-                                                    <RightArrowTwo />
-                                                </span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="tp-btn-black-md pkg-btn-default"
-                                                onClick={() => {
-                                                    if (formData.propertyAddress && formData.propertySize) {
-                                                        setCurrentStep(3);
-                                                        trackBookingStepChange(3, 'next');
-                                                        window.scrollTo(0, 300);
-                                                    }
-                                                }}
-                                                disabled={!formData.propertyAddress || !formData.propertySize}
-                                            >
-                                                Pick Services
-                                            </button>
-                                        </>
-                                    ) : currentStep === 2 ? (
-                                        <button
-                                            type="button"
-                                            className="tp-btn-black-2 booking-btn-primary"
-                                            onClick={handleNext}
-                                        >
-                                            Next: AddOns
-                                            <span className="p-relative">
-                                                <RightArrowTwo />
-                                                <ArrowBg />
-                                            </span>
-                                        </button>
-                                    ) : currentStep === 3 ? (
-                                        <button
-                                            type="button"
-                                            className="tp-btn-black-2 booking-btn-primary"
-                                            onClick={handleNext}
-                                        >
-                                            Next: Complete Booking
-                                            <span className="p-relative">
-                                                <RightArrowTwo />
-                                                <ArrowBg />
-                                            </span>
-                                        </button>
-                                    ) : (
-                                        <button
-                                            type="submit"
-                                            className="tp-btn-black-2 booking-btn-primary"
-                                            disabled={isSubmitting}
-                                        >
-                                            {isSubmitting ? 'Processing...' : 'Complete Booking'}
-                                            <span className="p-relative">
-                                                <RightArrowTwo />
-                                                <ArrowBg />
-                                            </span>
-                                        </button>
-                                    )}
-                                </div>
-                            </form>
                                 </div>
                             </div>
                         </div>
@@ -1461,7 +1577,7 @@ export default function BookingArea() {
                 .booking-theme-light .pkg-btn-proceed:hover { background-color: #333; color: #fff; border-color: #333; }
 
             `}</style>
-        </div>
+        </div >
     );
 }
 

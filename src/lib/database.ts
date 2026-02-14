@@ -14,11 +14,11 @@ if (!connectionString?.trim()) {
 }
 
 const pool = new Pool({
-    connectionString: connectionString || 'postgresql://localhost:5432/local',
-    ssl: false,
-    connectionTimeoutMillis: 5000,
-    idleTimeoutMillis: 30000,
-  });
+  connectionString: connectionString || 'postgresql://localhost:5432/local',
+  ssl: false,
+  connectionTimeoutMillis: 5000,
+  idleTimeoutMillis: 30000,
+});
 
 // Test database connection
 export async function testConnection() {
@@ -26,7 +26,7 @@ export async function testConnection() {
     console.log('Attempting to connect to database...');
     console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
     console.log('NODE_ENV:', process.env.NODE_ENV);
-    
+
     const client = await pool.connect();
     const result = await client.query('SELECT NOW()');
     client.release();
@@ -115,6 +115,8 @@ export const db = {
     taxAmount?: number;
     finalTotal?: number;
     priceBreakdown?: string | object;
+    paymentIntentId?: string;
+    paymentStatus?: string;
   }) {
     const {
       name,
@@ -147,8 +149,8 @@ export const db = {
         name, email, phone, service_type, property_address, 
         property_type, property_size, budget, timeline, 
         service_tier, selected_addons, preferred_partner_code, preferred_date, preferred_time, total_price, message,
-        package_price, addons_price, subtotal, tax_rate, tax_amount, final_total, price_breakdown
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23) RETURNING *`,
+        package_price, addons_price, subtotal, tax_rate, tax_amount, final_total, price_breakdown, payment_intent_id, payment_status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25) RETURNING *`,
       [
         name,
         email,
@@ -173,6 +175,8 @@ export const db = {
         taxAmount ?? null,
         finalTotal ?? null,
         priceBreakdown ? JSON.stringify(priceBreakdown) : null,
+        bookingData.paymentIntentId ?? null,
+        bookingData.paymentStatus ?? 'pending',
       ]
     );
     return result.rows[0];

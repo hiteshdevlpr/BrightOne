@@ -99,6 +99,7 @@ interface UseBookingLogicReturn {
         preferredDate: string;
         preferredTime: string;
         message: string;
+        paymentIntentId?: string;
         [HONEYPOT_FIELD]: string;
     };
     isSubmitting: boolean;
@@ -160,7 +161,7 @@ interface UseBookingLogicReturn {
     handleFormChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     handleEmailBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
     handlePhoneBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
-    handleFormSubmit: (e: React.FormEvent) => Promise<void>;
+    handleFormSubmit: (e?: React.FormEvent, overrideData?: Record<string, any>) => Promise<void>;
     formatPrice: (price: number) => string;
     propertyAddressInputRef: React.RefObject<HTMLInputElement | null>;
     autocompleteListenerRef: React.MutableRefObject<{ remove: () => void } | null>;
@@ -193,6 +194,7 @@ export function useBookingLogic(options: UseBookingLogicOptions = {}): UseBookin
         preferredDate: '',
         preferredTime: '',
         message: '',
+        paymentIntentId: '',
         [HONEYPOT_FIELD]: '',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -289,7 +291,7 @@ export function useBookingLogic(options: UseBookingLogicOptions = {}): UseBookin
         if (selectedCategory !== 'listing' || !googleMapsApiKey || typeof window === 'undefined') return;
         loadGoogleMapsPlaces(googleMapsApiKey)
             .then(() => setPlacesReadyListing(true))
-            .catch(() => {});
+            .catch(() => { });
     }, [selectedCategory, googleMapsApiKey]);
 
     useEffect(() => {
@@ -503,13 +505,20 @@ export function useBookingLogic(options: UseBookingLogicOptions = {}): UseBookin
     }, []);
 
     const handleFormSubmit = useCallback(
-        async (e: React.FormEvent) => {
-            e.preventDefault();
+        async (e?: React.FormEvent, overrideData?: Record<string, any>) => {
+            if (e) e.preventDefault();
+
+            const effectiveFormData = { ...formData, ...overrideData };
+
+            const effectivePropertyAddress = overrideData?.propertyAddress || appliedPropertyAddress;
+            const effectiveUnitNumber = overrideData?.unitNumber || appliedPropertySuite;
+            const effectivePropertySize = overrideData?.propertySize || appliedPropertySize;
+
             if (!selectedPackageId && selectedAddOns.length === 0) {
                 setFormErrors(['Please select a package or at least one add-on to continue']);
                 return;
             }
-            if (selectedCategory === 'listing' && !appliedPropertyAddress.trim()) {
+            if (selectedCategory === 'listing' && !effectivePropertyAddress.trim()) {
                 setFormErrors(['Please enter the property address in Step 1.']);
                 return;
             }
@@ -522,16 +531,16 @@ export function useBookingLogic(options: UseBookingLogicOptions = {}): UseBookin
 
             const propertyAddress =
                 selectedCategory === 'personal'
-                    ? formData.message
+                    ? effectiveFormData.message
                         ? 'See message'
                         : 'To be confirmed'
-                    : appliedPropertyAddress || 'Address to be provided';
+                    : effectivePropertyAddress || 'Address to be provided';
             const serviceType = selectedCategory === 'personal' ? 'Personal Branding' : 'Real Estate Media';
 
             const payloadForValidation = {
-                name: formData.name,
-                email: formData.email,
-                phone: formData.phone,
+                name: effectiveFormData.name,
+                email: effectiveFormData.email,
+                phone: effectiveFormData.phone,
                 serviceType,
                 propertyAddress,
                 serviceTier: selectedPackageId || undefined,
@@ -560,24 +569,25 @@ export function useBookingLogic(options: UseBookingLogicOptions = {}): UseBookin
                 return;
             }
 
-            const honeypotValue = formData[HONEYPOT_FIELD as keyof typeof formData];
+            const honeypotValue = effectiveFormData[HONEYPOT_FIELD as keyof typeof effectiveFormData];
             const websiteUrl = typeof honeypotValue === 'string' ? honeypotValue : '';
 
             const payload = {
-                name: formData.name,
-                email: formData.email,
-                phone: formData.phone,
+                name: effectiveFormData.name,
+                email: effectiveFormData.email,
+                phone: effectiveFormData.phone,
                 serviceType,
                 propertyAddress,
-                unitNumber: selectedCategory === 'listing' && appliedPropertySuite ? appliedPropertySuite : undefined,
-                propertySize: selectedCategory === 'listing' ? appliedPropertySize : undefined,
+                unitNumber: selectedCategory === 'listing' && effectiveUnitNumber ? effectiveUnitNumber : undefined,
+                propertySize: selectedCategory === 'listing' ? effectivePropertySize : undefined,
                 serviceTier: selectedPackageId || undefined,
                 selectedAddOns: resolvedSelectedAddOns,
                 preferredPartnerCode: appliedPartnerCode || undefined,
-                preferredDate: formData.preferredDate || undefined,
-                preferredTime: formData.preferredTime || undefined,
-                message: formData.message || undefined,
+                preferredDate: effectiveFormData.preferredDate || undefined,
+                preferredTime: effectiveFormData.preferredTime || undefined,
+                message: effectiveFormData.message || undefined,
                 totalPrice,
+                paymentIntentId: effectiveFormData.paymentIntentId,
                 recaptchaToken,
                 website_url: websiteUrl,
             };

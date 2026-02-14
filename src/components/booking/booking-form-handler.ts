@@ -20,6 +20,8 @@ export interface BookingFormData {
     totalPrice?: string;
     recaptchaToken?: string;
     website_url?: string;
+    paymentIntentId?: string;
+    paymentStatus?: string;
 }
 
 export async function handleBookingSubmission(

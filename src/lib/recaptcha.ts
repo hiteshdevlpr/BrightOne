@@ -30,6 +30,14 @@ export async function verifyRecaptchaToken(
     return { valid: true };
   }
 
+  // Skip verification in development so localhost works without adding it to reCAPTCHA domains
+  if (process.env.NODE_ENV === 'development') {
+    if (token && typeof token === 'string' && token.length >= 10) {
+      return { valid: true };
+    }
+    return { valid: false, error: 'Missing or invalid reCAPTCHA token' };
+  }
+
   if (!token || typeof token !== 'string' || token.length < 10) {
     return { valid: false, error: 'Missing or invalid reCAPTCHA token' };
   }

@@ -389,9 +389,7 @@ SELECT
         'Premium Agent Walkthrough Video or Social Media Reel (60 - 90 seconds)',
         'Listing Website'
     ]
-ON CONFLICT (category_id, code) DO NOTHING;
-
--- Insert Personal Branding packages
+ON CONFLICT (category_id, code) DO NOTHING;-- Insert Personal Branding packages
 WITH categories AS (
     SELECT id, code FROM service_categories WHERE code IN ('listing', 'personal')
 )

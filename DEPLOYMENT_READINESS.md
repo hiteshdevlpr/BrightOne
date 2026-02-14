@@ -48,6 +48,10 @@ There is no branch named **origin/old-database**. Comparison is with **origin/ol
 - **Deploy script**: `scripts/bluegreen-deploy.sh` (run from repo root) picks the inactive slot, starts it, waits for health (up to ~3 min), runs the Nginx switch, verifies the new slot still responds, then stops the other slot. App containers use `restart: unless-stopped` so a crash after deploy will restart automatically.
 - **First deploy / existing server**: Re-run `scripts/setup-server-full.sh` once so the upstream file and sudoers are in place; then the first blue-green deploy will start blue and switch Nginx to 3000.
 
+### 503 Service Unavailable on pages (booking, about-us, etc.)
+
+If you see **503** on page requests (e.g. `/booking`, `/about-us`, or any `?_rsc=...` fetch) while static assets return **200**, Nginx is up but the **Next.js app** it proxies to is not responding. Fix it using the steps below (“If the app doesn’t start after a deploy”).
+
 ### If the app doesn’t start after a deploy
 
 1. **Connect and run the diagnostic** (from your machine or from the droplet):

@@ -3,6 +3,7 @@ import { db, query } from '@/lib/database';
 import { requireAdminKey } from '@/lib/admin-auth';
 import { handleBookingSubmissionServer } from '@/lib/server-form-handlers';
 import { verifyRecaptchaToken } from '@/lib/recaptcha';
+import { verifyPaymentIntent } from '@/lib/stripe';
 import { sanitizeBookingInput, validateBookingForm, HONEYPOT_FIELD } from '@/lib/validation';
 
 const RECAPTCHA_ACTION = 'booking';
@@ -42,6 +43,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Derive payment status from Stripe when paymentIntentId is present; never trust client-supplied paymentStatus
+    let paymentIntentId: string | undefined = sanitized.paymentIntentId?.trim() || undefined;
+    let paymentStatus = 'pending';
+    if (paymentIntentId) {
+      const verification = await verifyPaymentIntent(paymentIntentId);
+      if (!verification.verified) {
+        return NextResponse.json(
+          { error: 'Invalid or expired payment. Please complete payment again.' },
+          { status: 400 }
+        );
+      }
+      paymentStatus = verification.status === 'succeeded' ? 'succeeded' : 'pending';
+    }
+
     // Use server-side form handler to handle submission and emails
     const result = await handleBookingSubmissionServer({
       name: sanitized.name,
@@ -61,6 +76,8 @@ export async function POST(request: NextRequest) {
       preferredTime: sanitized.preferredTime,
       packageType: sanitized.packageType,
       totalPrice: sanitized.totalPrice,
+      paymentIntentId,
+      paymentStatus,
     });
 
     if (result.success) {

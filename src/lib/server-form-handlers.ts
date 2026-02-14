@@ -36,6 +36,8 @@ export interface BookingFormData {
   preferredTime?: string;
   packageType?: string;
   totalPrice?: string;
+  paymentIntentId?: string;
+  paymentStatus?: string;
 }
 
 export interface PriceBreakdown {
@@ -144,10 +146,12 @@ async function calculatePriceBreakdown(formData: BookingFormData): Promise<Price
   let addonsPrice = 0;
   const addonsBreakdown: Array<{ name: string; price: number }> = [];
 
+  const MAX_VIRTUAL_STAGING_PHOTOS = 100;
   if (formData.selectedAddOns && formData.selectedAddOns.length > 0) {
     for (const addonId of formData.selectedAddOns) {
       if (addonId.startsWith('virtual_staging_')) {
-        const photoCount = parseInt(addonId.split('_')[2], 10) || 1;
+        const raw = parseInt(addonId.split('_')[2], 10) || 1;
+        const photoCount = Math.min(Math.max(1, raw), MAX_VIRTUAL_STAGING_PHOTOS);
         const vsAddon = allAddons.find((a: Addon) => a.code === 'virtual_staging');
         if (vsAddon) {
           const clientAddon = addonToClient(vsAddon, hasPackageSelected);
@@ -212,6 +216,8 @@ export interface BookingRecord {
   preferred_date?: string;
   preferred_time?: string;
   total_price?: string;
+  payment_intent_id?: string;
+  payment_status?: string;
   message?: string;
   status: string;
   created_at: string;
@@ -221,10 +227,10 @@ export interface BookingRecord {
 export async function handleContactSubmissionServer(formData: ContactFormData): Promise<{ success: boolean; error?: string; contact?: ContactRecord }> {
   try {
     console.log('APP_LOG:: Server-side contact form submission started');
-    
+
     // Validate form data
     const validationErrors = validateContactForm(formData);
-    
+
     if (validationErrors.length > 0) {
       console.log('APP_LOG:: Validation errors:', validationErrors);
       return {
@@ -234,7 +240,7 @@ export async function handleContactSubmissionServer(formData: ContactFormData): 
     }
 
     console.log('APP_LOG:: Submitting contact message to database');
-    
+
     // Submit contact message to database directly
     const contact = await db.createContactMessage({
       name: formData.name.trim(),
@@ -299,10 +305,10 @@ export async function handleContactSubmissionServer(formData: ContactFormData): 
 export async function handleBookingSubmissionServer(formData: BookingFormData): Promise<{ success: boolean; error?: string; booking?: BookingRecord }> {
   try {
     console.log('APP_LOG:: Server-side booking form submission started');
-    
+
     // Validate form data
     const validationErrors = validateBookingForm(formData);
-    
+
     if (validationErrors.length > 0) {
       console.log('APP_LOG:: Validation errors:', validationErrors);
       return {
@@ -316,7 +322,7 @@ export async function handleBookingSubmissionServer(formData: BookingFormData): 
     // Calculate price breakdown from database services
     const priceBreakdown = await calculatePriceBreakdown(formData);
     console.log('APP_LOG:: Price breakdown calculated:', priceBreakdown);
-    
+
     // Submit booking to database directly
     const booking = await db.createBooking({
       name: formData.name.trim(),
@@ -342,6 +348,8 @@ export async function handleBookingSubmissionServer(formData: BookingFormData): 
       taxAmount: priceBreakdown.taxAmount,
       finalTotal: priceBreakdown.finalTotal,
       priceBreakdown: JSON.stringify(priceBreakdown.breakdown),
+      paymentIntentId: formData.paymentIntentId,
+      paymentStatus: formData.paymentStatus,
     });
 
     console.log('APP_LOG:: Booking submitted to database:', booking.id);
@@ -398,6 +406,8 @@ export async function handleBookingSubmissionServer(formData: BookingFormData): 
         preferred_date: booking.preferred_date,
         preferred_time: booking.preferred_time,
         total_price: booking.total_price,
+        payment_intent_id: booking.payment_intent_id,
+        payment_status: booking.payment_status,
         message: booking.message,
         status: booking.status,
         created_at: booking.created_at,
