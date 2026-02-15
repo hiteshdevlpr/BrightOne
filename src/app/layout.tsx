@@ -22,6 +22,11 @@ export const metadata: Metadata = {
   title: "BrightOne Creative | Real Estate Media & Personal Branding | Durham Region",
   description: "Professional real estate photography, videography, and personal branding services in the Greater Toronto Area. HDR photography, cinematic video tours, drone aerials, virtual staging, and social media content.",
   keywords: "real estate photography, property photography, real estate videography, drone photography, virtual staging, personal branding, headshots, Toronto real estate photography, GTA photography, listing photography",
+  verification: {
+    other: {
+      "facebook-domain-verification": "n5w92npkxx7521v8zad0yd8eogi8gk",
+    },
+  },
   icons: {
     icon: [
       { url: "/favicon.png", type: "image/png" },

@@ -83,7 +83,10 @@
 /* Offset for sticky listing nav strip so anchor scroll lands visible below it */
 .scroll-mt-nav { scroll-margin-top: 5rem; }
 
-/* Compact header: 54px strip */
+/* Compact header: 54px strip — reserve height so no layout shift when header goes fixed */
+header.header-compact {
+  min-height: 54px;
+}
 header.header-compact .tp-header-3-area {
   margin-top: 0 !important;
   min-height: 54px;
