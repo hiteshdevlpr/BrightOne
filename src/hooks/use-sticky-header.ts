@@ -1,9 +1,12 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 const useStickyHeader = (offset = 20) => {
     const [isSticky, setIsSticky] = useState(false);
     const headerRef = useRef<HTMLDivElement | null>(null);
+    const isStickyRef = useRef(false);
+    const tickRef = useRef<number | null>(null);
+    const HYSTERESIS = 8; // Unstick when scrollY drops this many px below offset to avoid flicker at threshold
 
     useEffect(() => {
         const setHeaderHeight = headerRef.current?.offsetHeight;
@@ -16,7 +19,7 @@ const useStickyHeader = (offset = 20) => {
         }
     }, []);
 
-    function adjustMenuBackground() {
+    const adjustMenuBackground = useCallback(() => {
         if (typeof window === 'undefined') return;
 
         const headerArea = document.querySelector<HTMLElement>('.tp-header-3-area');
@@ -27,22 +30,17 @@ const useStickyHeader = (offset = 20) => {
             if (menuBox && menuBg && headerArea) {
                 const menuBoxRect = menuBox.getBoundingClientRect();
                 const headerAreaRect = headerArea.getBoundingClientRect();
-                
-                // Calculate width and height
                 const width = menuBox.offsetWidth;
                 const height = menuBox.offsetHeight;
-
-                // Calculate positions relative to header area
                 const left = menuBoxRect.left - headerAreaRect.left;
                 const top = menuBoxRect.top - headerAreaRect.top;
-
                 menuBg.style.width = `${width + 46}px`;
                 menuBg.style.height = `${height}px`;
-                menuBg.style.left = `${left - 23}px`; // Center the extra 46px padding (23px on each side)
+                menuBg.style.left = `${left - 23}px`;
                 menuBg.style.top = `${top}px`;
             }
         }
-    }
+    }, []);
 
     function headerFullWidth() {
         if (typeof document === 'undefined') return;
@@ -53,36 +51,53 @@ const useStickyHeader = (offset = 20) => {
                 previousDiv.classList.add("has-homemenu");
             }
         });
-    };
+    }
 
     useEffect(() => {
+        const updateSticky = () => {
+            const y = window.scrollY;
+            const stickThreshold = offset;
+            const unstickThreshold = Math.max(0, offset - HYSTERESIS);
+            const next = isStickyRef.current
+                ? y > unstickThreshold
+                : y > stickThreshold;
+            if (next !== isStickyRef.current) {
+                isStickyRef.current = next;
+                setIsSticky(next);
+            }
+        };
+
         const handleScroll = () => {
-            setIsSticky(window.scrollY > offset);
-            adjustMenuBackground();
+            if (tickRef.current !== null) return;
+            tickRef.current = requestAnimationFrame(() => {
+                updateSticky();
+                tickRef.current = null;
+            });
         };
 
         const handleResize = () => {
             adjustMenuBackground();
         };
 
-        // Initial check
-        handleScroll();
+        updateSticky();
         adjustMenuBackground();
 
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
         window.addEventListener('resize', handleResize);
-        
-        // Recalculate after a short delay to ensure DOM is ready
-        const timeoutId = setTimeout(() => {
-            adjustMenuBackground();
-        }, 100);
+
+        const timeoutId = setTimeout(() => adjustMenuBackground(), 100);
 
         return () => {
             window.removeEventListener('scroll', handleScroll);
             window.removeEventListener('resize', handleResize);
+            if (tickRef.current !== null) cancelAnimationFrame(tickRef.current);
             clearTimeout(timeoutId);
         };
-    }, [offset]);
+    }, [offset, adjustMenuBackground]);
+
+    useEffect(() => {
+        adjustMenuBackground();
+    }, [isSticky, adjustMenuBackground]);
 
     return { isSticky, headerFullWidth, adjustMenuBackground, headerRef };
 };
