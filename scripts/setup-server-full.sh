@@ -101,7 +101,19 @@ fi
 # --- Fail2ban ---
 echo ""
 echo "=== Installing and configuring Fail2ban (SSH jail) ==="
+# Wait for dpkg lock (e.g. unattended-upgrades) so apt doesn't fail with "Could not get lock"
+echo "Waiting for dpkg lock..."
+for i in $(seq 1 60); do
+  if ! fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; then
+    break
+  fi
+  echo "  Lock held, waiting... ($i/60)"
+  sleep 10
+done
+# Stop unattended-upgrades during install to avoid races
+systemctl stop unattended-upgrades 2>/dev/null || true
 apt-get install -y fail2ban
+systemctl start unattended-upgrades 2>/dev/null || true
 mkdir -p /etc/fail2ban/jail.d
 cat > /etc/fail2ban/jail.d/sshd.local << 'JAIL'
 [sshd]
