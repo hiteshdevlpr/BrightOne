@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { PortfolioPicture } from '@/components/portfolio-picture';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
 import { ScrollTrigger, SplitText } from '@/plugins';
@@ -122,7 +123,7 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
       <main>
         <section id="hero" className="listing-hero scroll-mt-nav">
           <div className="listing-hero-bg">
-            <Image
+            <PortfolioPicture
               src={images[0]?.src ?? '/meta-header.png'}
               alt={images[0]?.alt ?? listing.title}
               fill
@@ -222,7 +223,7 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
                     role="button"
                     tabIndex={0}
                   >
-                    <Image
+                    <PortfolioPicture
                       src={image.src}
                       alt={image.alt}
                       fill
@@ -376,7 +377,7 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
               ›
             </button>
             <div className="position-relative" style={{ maxWidth: '75rem', maxHeight: '90vh', width: '100%' }}>
-              <Image
+              <PortfolioPicture
                 src={images[currentImageIndex]?.src ?? images[0]?.src ?? '/meta-header.png'}
                 alt={images[currentImageIndex]?.alt ?? images[0]?.alt ?? listing.title}
                 width={1200}
