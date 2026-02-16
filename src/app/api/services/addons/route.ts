@@ -15,9 +15,11 @@ export async function GET(request: NextRequest) {
             addons,
         });
     } catch (error) {
-        console.error('Get addons error:', error);
+        const err = error as Error & { code?: string };
+        console.error('Get addons error:', err?.message || error, err);
+        const message = process.env.NODE_ENV === 'development' ? String(err?.message || error) : undefined;
         return NextResponse.json(
-            { error: 'Failed to retrieve addons' },
+            { error: 'Failed to retrieve addons', ...(message && { detail: message }) },
             { status: 500 }
         );
     }

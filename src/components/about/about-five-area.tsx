@@ -13,15 +13,19 @@ export default function AboutFiveArea() {
                   BrightOne Creative
                 </span>
                 <span className="text-space"></span>
-                We are a Media Studio <br /> focused on
+                We are focused on<br /> producing 
                 <span>
                   <BallRound />
                 </span>
-                producing top-notch and impactful
+                impactful visual experiences that make you
                 <span>
                   <BallRound />
                 </span>
-                visual experiences.
+                and your listings 
+                <span>
+                  <BallRound />
+                </span>
+                stand out.
               </h4>
             </div>
           </div>

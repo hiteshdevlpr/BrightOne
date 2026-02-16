@@ -162,7 +162,7 @@ export const db = {
         budget ?? null,
         timeline ?? null,
         serviceTier ?? null,
-        selectedAddOns && selectedAddOns.length > 0 ? selectedAddOns : null,
+        selectedAddOns && selectedAddOns.length > 0 ? JSON.stringify(selectedAddOns) : null,
         preferredPartnerCode ?? null,
         preferredDate ?? null,
         preferredTime ?? null,

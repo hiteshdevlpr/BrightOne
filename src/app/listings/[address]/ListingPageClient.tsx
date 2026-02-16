@@ -43,6 +43,7 @@ export default function ListingPageClient({ listing }: ListingPageClientProps) {
               className="object-cover"
               priority
               sizes="100vw"
+              quality={90}
             />
             <div className="listing-hero-overlay" style={{ background: 'rgba(0,0,0,0.4)' }} />
           </div>
@@ -79,7 +80,7 @@ export default function ListingPageClient({ listing }: ListingPageClientProps) {
                           role="button"
                           tabIndex={0}
                         >
-                          <Image src={image.src} alt={image.alt} fill sizes="(max-width: 768px) 50vw, 33vw" />
+                          <Image src={image.src} alt={image.alt} fill sizes="(max-width: 768px) 50vw, 50vw" quality={90} />
                         </div>
                       ))
                     ) : (

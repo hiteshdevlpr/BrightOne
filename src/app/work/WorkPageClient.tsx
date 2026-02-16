@@ -161,7 +161,8 @@ export default function WorkPageClient() {
                           alt={img.alt}
                           fill
                           className="object-cover"
-                          sizes="(max-width: 576px) 50vw, (max-width: 768px) 33vw, (max-width: 992px) 25vw, 20vw"
+                          sizes="(max-width: 576px) 50vw, (max-width: 768px) 34vw, (max-width: 992px) 26vw, 50vw"
+                          quality={90}
                         />
                       </button>
                     ))}
@@ -263,6 +264,7 @@ export default function WorkPageClient() {
                 className="img-fluid"
                 style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain' }}
                 priority
+                quality={90}
               />
             </div>
             <div className="position-absolute bottom-0 start-50 translate-middle-x text-white small pb-3 z-1">

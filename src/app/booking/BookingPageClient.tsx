@@ -35,6 +35,17 @@ const BookPageClient = () => {
                     <main>
                         {/* hero area - dark theme */}
                         <div className="tp-hero-3-area tp-hero-3-ptb booking-page-hero booking-hero-dark">
+                            <video
+                                className="booking-page-hero-bg-video"
+                                autoPlay
+                                muted
+                                loop
+                                playsInline
+                                aria-hidden
+                            >
+                                <source src="/assets/vids/booking-page-bg.mp4" type="video/mp4" />
+                            </video>
+                            <div className="booking-page-hero-overlay" aria-hidden />
                             <div className="container">
                                 <div className="row">
                                     <div className="col-xl-12">
@@ -69,6 +80,10 @@ const BookPageClient = () => {
                 .booking-hero-outline-light { background-color: transparent; color: #1a1a1a; border: 2px solid rgba(0,0,0,0.25); text-decoration: none; display: inline-flex; align-items: center; }
                 .booking-hero-outline-light:hover { background-color: #1a1a1a; color: #fff; border-color: #1a1a1a; }
                 .booking-form-section-light { background: #f8f9fa; }
+                .booking-page-hero { position: relative; overflow: hidden; }
+                .booking-page-hero-bg-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+                .booking-page-hero-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); z-index: 1; }
+                .booking-page-hero .container { position: relative; z-index: 2; }
                 .booking-page-hero .tp-hero-3-title { font-size: 78px; }
                 @media (max-width: 1199px) { .booking-page-hero .tp-hero-3-title { font-size: 64px; } }
                 @media (max-width: 991px) { .booking-page-hero .tp-hero-3-title { font-size: 53px; } }

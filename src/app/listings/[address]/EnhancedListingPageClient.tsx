@@ -228,7 +228,7 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
                       alt={image.alt}
                       fill
                       className="object-cover"
-                      sizes="(max-width: 768px) 50vw, (max-width: 992px) 33vw, 25vw"
+                      sizes="(max-width: 768px) 50vw, (max-width: 992px) 50vw, 50vw"
                     />
                   </div>
                 ))
@@ -295,7 +295,7 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
                     {listing.floorPlans.map((fp, index) => (
                       <div key={index} className="col-12 col-lg-6">
                         <div className="bg-white rounded shadow-sm p-4">
-                          <Image src={fp.src} alt={fp.alt} width={600} height={450} className="w-100 h-auto rounded mb-3" style={{ width: '100%', height: 'auto' }} />
+                          <Image src={fp.src} alt={fp.alt} width={600} height={450} className="w-100 h-auto rounded mb-3" style={{ width: '100%', height: 'auto' }} quality={90} />
                           <div className="text-center">
                             <h3 className="h6 fw-semibold text-dark mb-2">{fp.alt}</h3>
                             {fp.caption && <p className="text-muted small mb-0">{fp.caption}</p>}
@@ -306,7 +306,7 @@ export default function EnhancedListingPageClient({ listing, googleMapsApiKey }:
                   </div>
                 ) : listing.floorPlanUrl ? (
                   <div className="bg-white rounded shadow-sm p-4">
-                    <Image src={listing.floorPlanUrl} alt="Floor Plan" width={800} height={600} className="w-100 h-auto rounded" style={{ width: '100%', height: 'auto' }} />
+                    <Image src={listing.floorPlanUrl} alt="Floor Plan" width={800} height={600} className="w-100 h-auto rounded" style={{ width: '100%', height: 'auto' }} quality={90} />
                   </div>
                 ) : null}
               </div>

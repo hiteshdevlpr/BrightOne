@@ -316,10 +316,9 @@ SELECT
     true,
     1,
     ARRAY[
-        'https://picsum.photos/seed/essential1/800/400',
-        'https://picsum.photos/seed/essential2/800/400',
-        'https://picsum.photos/seed/essential3/800/400',
-        'https://picsum.photos/seed/essential4/800/400'
+        '/assets/img/booking/essential-1.jpg',
+        '/assets/img/booking/essential-2.jpg',
+        '/assets/img/booking/essential-3.jpg'
     ],
     ARRAY[
         '30-40 Professional HDR Photos',
@@ -344,10 +343,9 @@ SELECT
     true,
     2,
     ARRAY[
-        'https://picsum.photos/seed/premium1/800/400',
-        'https://picsum.photos/seed/premium2/800/400',
-        'https://picsum.photos/seed/premium3/800/400',
-        'https://picsum.photos/seed/premium4/800/400'
+        '/assets/img/booking/premium-1.jpg',
+        '/assets/img/booking/premium-2.jpg',
+        '/assets/img/booking/premium-3.jpg'
     ],
     ARRAY[
         '40-50 Professional HDR Photos',
@@ -374,10 +372,9 @@ SELECT
     true,
     3,
     ARRAY[
-        'https://picsum.photos/seed/luxury1/800/400',
-        'https://picsum.photos/seed/luxury2/800/400',
-        'https://picsum.photos/seed/luxury3/800/400',
-        'https://picsum.photos/seed/luxury4/800/400'
+        '/assets/img/booking/luxury-1.jpg',
+        '/assets/img/booking/luxury-2.jpg',
+        '/assets/img/booking/luxury-3.jpg'
     ],
     ARRAY[
         '50 Professional HDR Photos',
@@ -405,10 +402,9 @@ SELECT
     true,
     1,
     ARRAY[
-        'https://picsum.photos/seed/pb-growth1/800/400',
-        'https://picsum.photos/seed/pb-growth2/800/400',
-        'https://picsum.photos/seed/pb-growth3/800/400',
-        'https://picsum.photos/seed/pb-growth4/800/400'
+        '/assets/img/booking/growth-1.jpg',
+        '/assets/img/booking/growth-2.jpg',
+        '/assets/img/booking/growth-3.jpg'
     ],
     ARRAY[
         '5 Videos per Month',
@@ -436,10 +432,9 @@ SELECT
     true,
     2,
     ARRAY[
-        'https://picsum.photos/seed/pb-accelerator1/800/400',
-        'https://picsum.photos/seed/pb-accelerator2/800/400',
-        'https://picsum.photos/seed/pb-accelerator3/800/400',
-        'https://picsum.photos/seed/pb-accelerator4/800/400'
+        '/assets/img/booking/accelerator-1.jpg',
+        '/assets/img/booking/accelerator-2.jpg',
+        '/assets/img/booking/accelerator-3.jpg'
     ],
     ARRAY[
         '10 Videos per Month',
@@ -469,8 +464,8 @@ SELECT
     true,
     3,
     ARRAY[
-        'https://picsum.photos/seed/pb-tailored1/800/400',
-        'https://picsum.photos/seed/pb-tailored2/800/400'
+        '/assets/img/booking/tailored-1.jpg',
+        '/assets/img/booking/tailored-2.jpg'
     ],
     ARRAY[
         'Custom package built for you',

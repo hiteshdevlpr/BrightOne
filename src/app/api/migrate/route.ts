@@ -3,23 +3,32 @@ import { query } from '@/lib/database';
 import fs from 'fs';
 import path from 'path';
 
+function checkMigrateToken(request: NextRequest): NextResponse | null {
+  const expectedToken = process.env.MIGRATION_TOKEN;
+  if (!expectedToken) {
+    return NextResponse.json(
+      { error: 'Migration not configured. Set MIGRATION_TOKEN on the server.' },
+      { status: 503 }
+    );
+  }
+  const authHeader = request.headers.get('authorization');
+  const bearerMatch = authHeader?.startsWith('Bearer ') && authHeader.slice(7) === expectedToken;
+  const queryToken = request.nextUrl.searchParams.get('token');
+  const tokenValid = bearerMatch || queryToken === expectedToken;
+  if (!tokenValid) {
+    return NextResponse.json(
+      { error: 'Unauthorized. Migration token required (Authorization: Bearer <token> or ?token=<token>).' },
+      { status: 401 }
+    );
+  }
+  return null;
+}
+
 // POST /api/migrate - Run database migrations
 export async function POST(request: NextRequest) {
+  const authError = checkMigrateToken(request);
+  if (authError) return authError;
   try {
-    const authHeader = request.headers.get('authorization');
-    const expectedToken = process.env.MIGRATION_TOKEN;
-    if (!expectedToken) {
-      return NextResponse.json(
-        { error: 'Migration not configured. Set MIGRATION_TOKEN on the server.' },
-        { status: 503 }
-      );
-    }
-    if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Migration token required.' },
-        { status: 401 }
-      );
-    }
 
     console.log('Starting complete database migration via API...');
 
@@ -95,22 +104,9 @@ export async function POST(request: NextRequest) {
 
 // GET /api/migrate - Check migration status
 export async function GET(request: NextRequest) {
+  const authError = checkMigrateToken(request);
+  if (authError) return authError;
   try {
-    const authHeader = request.headers.get('authorization');
-    const expectedToken = process.env.MIGRATION_TOKEN;
-    if (!expectedToken) {
-      return NextResponse.json(
-        { error: 'Migration not configured. Set MIGRATION_TOKEN on the server.' },
-        { status: 503 }
-      );
-    }
-    if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Migration token required.' },
-        { status: 401 }
-      );
-    }
-
     // Check if migration columns exist
     const result = await query(`
       SELECT column_name, data_type, is_nullable, column_default 

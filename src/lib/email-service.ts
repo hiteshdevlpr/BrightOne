@@ -251,7 +251,7 @@ export class EmailService {
    * Send booking notification email to admin
    */
   static async sendBookingNotificationToAdmin(data: BookingEmailData): Promise<boolean> {
-    const subject = `New Booking Request - ${data.serviceType} | ${data.customerName}`;
+    const subject = `New Booking Confirmation - ${data.serviceType} | ${data.customerName}`;
     
     const htmlBody = this.generateBookingAdminHTML(data);
     const textBody = this.generateBookingAdminText(data);
@@ -329,7 +329,7 @@ export class EmailService {
           <div class="content">
             <p>Dear ${data.customerName},</p>
             
-            <p>We have received your booking request and will contact you shortly to confirm the details.</p>
+            <p>Your booking is confirmed. We have received your payment and booking details.</p>
             
             <div class="details">
               <h3>Booking Details:</h3>
@@ -343,9 +343,7 @@ export class EmailService {
             
             ${this.generatePriceBreakdownHTML(data.priceBreakdown)}
             
-            <p>We will contact you within 24 hours to confirm your booking and discuss the next steps.</p>
-            
-            <p>If you have any questions, please don't hesitate to contact us.</p>
+            <p>We will be in touch with any final details before your shoot. If you have any questions in the meantime, please don't hesitate to contact us.</p>
             
             <p>Best regards,<br>The BrightOne Team</p>
           </div>
@@ -369,7 +367,7 @@ Booking Confirmation - BrightOne
 
 Dear ${data.customerName},
 
-We have received your booking request and will contact you shortly to confirm the details.
+Your booking is confirmed. We have received your payment and booking details.
 
 Booking Details:
 - Service: ${data.serviceType}
@@ -381,9 +379,7 @@ ${data.message ? `- Additional Notes: ${data.message}` : ''}
 
 ${this.generatePriceBreakdownText(data.priceBreakdown)}
 
-We will contact you within 24 hours to confirm your booking and discuss the next steps.
-
-If you have any questions, please don't hesitate to contact us.
+We will be in touch with any final details before your shoot. If you have any questions in the meantime, please don't hesitate to contact us.
 
 Best regards,
 The BrightOne Team
@@ -403,7 +399,7 @@ Email: ${this.ADMIN_EMAIL} | Website: brightone.ca
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>New Booking Request</title>
+        <title>New Booking Confirmation</title>
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -417,8 +413,8 @@ Email: ${this.ADMIN_EMAIL} | Website: brightone.ca
       <body>
         <div class="container">
           <div class="header">
-            <h1>New Booking Request</h1>
-            <p>Action Required</p>
+            <h1>New Booking Confirmation</h1>
+            <p>Payment received – customer booking confirmed</p>
           </div>
           
           <div class="content">
@@ -443,10 +439,9 @@ Email: ${this.ADMIN_EMAIL} | Website: brightone.ca
             
             <p><strong>Next Steps:</strong></p>
             <ul>
-              <li>Contact the customer within 24 hours</li>
-              <li>Confirm availability for the requested date/time</li>
-              <li>Send detailed service information</li>
-              <li>Schedule the appointment</li>
+              <li>Contact the customer to confirm availability for the selected date/time</li>
+              <li>Send any final service details if needed</li>
+              <li>Schedule and confirm the shoot</li>
             </ul>
           </div>
         </div>
@@ -460,7 +455,7 @@ Email: ${this.ADMIN_EMAIL} | Website: brightone.ca
    */
   private static generateBookingAdminText(data: BookingEmailData): string {
     return `
-New Booking Request - Action Required
+New Booking Confirmation - Payment received
 
 Customer Information:
 - Name: ${data.customerName}
@@ -478,10 +473,9 @@ ${data.message ? `- Additional Notes: ${data.message}` : ''}
 ${this.generatePriceBreakdownText(data.priceBreakdown)}
 
 Next Steps:
-1. Contact the customer within 24 hours
-2. Confirm availability for the requested date/time
-3. Send detailed service information
-4. Schedule the appointment
+1. Contact the customer to confirm availability for the selected date/time
+2. Send any final service details if needed
+3. Schedule and confirm the shoot
     `;
   }
 
