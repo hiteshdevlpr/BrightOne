@@ -97,7 +97,7 @@ const LISTING_VIDEOS = [
 
 const AGENT_SOCIAL_VIDEOS = [
   'https://youtube.com/shorts/2Ke4KKSewbE?feature=share',
-  'https://youtube.com/shorts/MMvDAzSLdoA?feature=share',
+  'https://youtube.com/shorts/dQRjKv12_3w?feature=share',
   'https://youtube.com/shorts/i184CmdH8QU?feature=share'
 ];
 
