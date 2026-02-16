@@ -35,6 +35,30 @@ jobs:
           docker pull redis:7-alpine
           docker save website-app:latest postgres:15-alpine redis:7-alpine -o images.tar
 
+      # Free disk space so SCP and docker load succeed (prune unused Docker, logs, leftover tarball)
+      - name: Clean server disk (prune unused containers/images, logs)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: root
+          key_path: ${{ github.workspace }}/deploy_key.pem
+          script: |
+            set -e
+            echo "Disk before cleanup:"
+            df -h /
+            echo "Pruning unused Docker containers, networks, and dangling images..."
+            docker system prune -f
+            echo "Pruning unused Docker images..."
+            docker image prune -a -f
+            echo "Vacuuming journal logs (keep 7 days)..."
+            journalctl --vacuum-time=7d 2>/dev/null || true
+            echo "Cleaning apt cache..."
+            apt-get clean -qq 2>/dev/null || true
+            echo "Removing leftover deploy tarball if present..."
+            rm -f /home/brightone/website/deploy.tar.gz
+            echo "Disk after cleanup:"
+            df -h /
+
       - name: Copy files to server
         uses: appleboy/scp-action@v1
         with:
