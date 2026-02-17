@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import {
     getPackages,
-    ADD_ONS,
     getPackagePriceWithPartner,
-    getAddonPriceWithPartner
+    getAddonPriceWithPartner,
 } from '@/data/booking-data';
+import { getPersonalPackages, PERSONAL_ADD_ONS } from '@/data/personal-branding-data';
+
+const PERSONAL_PACKAGE_IDS = ['growth', 'accelerator', 'tailored'];
 
 export async function POST(request: NextRequest) {
     try {
@@ -17,51 +19,74 @@ export async function POST(request: NextRequest) {
             preferredPartnerCode
         } = body;
 
-        // 1. Calculate Package Price
+        // 1. Calculate Package Price (listing from booking-data, personal from personal-branding-data)
         let packagePrice = 0;
         const hasPackageSelected = !!selectedPackageId;
+        const isPersonalBooking = selectedPackageId && PERSONAL_PACKAGE_IDS.includes(selectedPackageId);
 
         if (selectedPackageId) {
-            const packages = getPackages();
-            const pkg = packages.find(p => p.id === selectedPackageId);
-
-            if (pkg) {
-                const { price } = getPackagePriceWithPartner(
-                    pkg.basePrice,
-                    propertySize,
-                    pkg.id,
-                    preferredPartnerCode
-                );
-                packagePrice = price;
+            if (isPersonalBooking) {
+                const personalPackages = getPersonalPackages();
+                const pkg = personalPackages.find(p => p.id === selectedPackageId);
+                if (pkg) {
+                    // Personal: no property size adjustment; partner discount still applies via booking-data
+                    const { price } = getPackagePriceWithPartner(
+                        pkg.basePrice,
+                        null, // no property size for personal
+                        pkg.id,
+                        preferredPartnerCode
+                    );
+                    packagePrice = price;
+                }
+            } else {
+                const packages = getPackages();
+                const pkg = packages.find(p => p.id === selectedPackageId);
+                if (pkg) {
+                    const { price } = getPackagePriceWithPartner(
+                        pkg.basePrice,
+                        propertySize,
+                        pkg.id,
+                        preferredPartnerCode
+                    );
+                    packagePrice = price;
+                }
             }
         }
 
-        // 2. Calculate Add-ons Price (cap virtual_staging photo count to prevent abuse)
+        // 2. Calculate Add-ons Price (listing: booking-data; personal: personal-branding-data)
         const MAX_VIRTUAL_STAGING_PHOTOS = 100;
         const MAX_AMOUNT_CENTS = 99999999; // Stripe max for single payment in CAD cents
         let addonsPrice = 0;
         if (Array.isArray(selectedAddOns)) {
-            addonsPrice = selectedAddOns.reduce((total: number, addonId: string) => {
-                let actualAddonId = addonId;
-                let count = 1;
+            if (isPersonalBooking) {
+                addonsPrice = selectedAddOns.reduce((total: number, addonId: string) => {
+                    const addon = PERSONAL_ADD_ONS.find(a => a.id === addonId);
+                    const price = addon ? addon.price : 0;
+                    return total + price;
+                }, 0);
+            } else {
+                addonsPrice = selectedAddOns.reduce((total: number, addonId: string) => {
+                    let actualAddonId = addonId;
+                    let count = 1;
 
-                if (addonId.startsWith('virtual_staging_')) {
-                    const parts = addonId.split('_');
-                    const parsedCount = parseInt(parts[2], 10);
-                    if (!isNaN(parsedCount) && parsedCount >= 1) {
-                        actualAddonId = 'virtual_staging';
-                        count = Math.min(parsedCount, MAX_VIRTUAL_STAGING_PHOTOS);
+                    if (addonId.startsWith('virtual_staging_')) {
+                        const parts = addonId.split('_');
+                        const parsedCount = parseInt(parts[2], 10);
+                        if (!isNaN(parsedCount) && parsedCount >= 1) {
+                            actualAddonId = 'virtual_staging';
+                            count = Math.min(parsedCount, MAX_VIRTUAL_STAGING_PHOTOS);
+                        }
                     }
-                }
 
-                const price = getAddonPriceWithPartner(
-                    actualAddonId,
-                    hasPackageSelected,
-                    preferredPartnerCode
-                );
+                    const price = getAddonPriceWithPartner(
+                        actualAddonId,
+                        hasPackageSelected,
+                        preferredPartnerCode
+                    );
 
-                return total + (price * count);
-            }, 0);
+                    return total + (price * count);
+                }, 0);
+            }
         }
 
         // 3. Total Calculation

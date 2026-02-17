@@ -59,7 +59,7 @@ export default function PortfolioPageClient({ listings }: PortfolioPageClientPro
                                                                 alt={thumb?.alt ?? listing.title}
                                                                 className="portfolio-listing-card__img"
                                                                 fill
-                                                                sizes="(max-width: 576px) 100vw, (max-width: 992px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                                                                sizes="(max-width: 576px) 100vw, (max-width: 992px) 50vw, (max-width: 1200px) 50vw, 50vw"
                                                             />
                                                         </div>
                                                         <div className="portfolio-listing-card__body">

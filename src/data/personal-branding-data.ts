@@ -75,12 +75,16 @@ export const getPersonalPackages = (): PersonalPackage[] => {
         {
             id: 'tailored',
             name: 'Tailored',
-            description: 'Get in touch and we\'ll modify the package as per your needs and targets.',
+            description: 'Get in touch and we\'ll create a custom package tailored to your needs and goals.',
             basePrice: 0,
             services: [
                 'Custom package built for you',
+                'One-on-one consultation to define your brand vision',
+                'Bespoke mix of headshots, lifestyle shots, and video content',
                 'Flexible deliverables and timeline',
-                'Consultation to align with your goals',
+                'Ideal for executives, thought leaders, and unique campaigns',
+                'No long-term commitment — pay for what you need',
+                'Get a custom quote based on your goals',
             ],
             images: [
                 'https://picsum.photos/seed/pb-tailored1/800/400',

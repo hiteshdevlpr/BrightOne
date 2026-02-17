@@ -3,9 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useBookingLogic } from '@/hooks/use-booking-logic';
-import { handleBookingSubmission } from './booking-form-handler';
-import { getRecaptchaToken } from '@/lib/recaptcha-client';
-import { HONEYPOT_FIELD, validateBookingForm } from '@/lib/validation';
+import { HONEYPOT_FIELD } from '@/lib/validation';
 import {
     trackBookingStart,
     trackBookingStepChange,
@@ -21,51 +19,6 @@ const HandIcon = () => (
         <path d="M20 10V14M4 10V14M12 2V22M12 2L9 5M12 2L15 5M12 22L9 19M12 22L15 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
-
-// Package image carousel
-function PkgCarousel({ images, packageId }: { images: string[]; packageId: string }) {
-    const [current, setCurrent] = useState(0);
-    const total = images.length;
-
-    const goPrev = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setCurrent(prev => (prev === 0 ? total - 1 : prev - 1));
-    };
-
-    const goNext = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setCurrent(prev => (prev === total - 1 ? 0 : prev + 1));
-    };
-
-    if (!images || images.length === 0) return null;
-
-    return (
-        <div className="pkg-carousel">
-            <div className="pkg-carousel-track" style={{ transform: `translateX(-${current * 100}%)` }}>
-                {images.map((src, i) => (
-                    <div key={`${packageId}-img-${i}`} className="pkg-carousel-slide">
-                        <img src={src} alt={`${packageId} example ${i + 1}`} loading="lazy" />
-                    </div>
-                ))}
-            </div>
-            {total > 1 && (
-                <>
-                    <button type="button" className="pkg-carousel-btn pkg-carousel-prev" onClick={goPrev} aria-label="Previous image">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-                    </button>
-                    <button type="button" className="pkg-carousel-btn pkg-carousel-next" onClick={goNext} aria-label="Next image">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
-                    </button>
-                    <div className="pkg-carousel-dots">
-                        {images.map((_, i) => (
-                            <span key={i} className={`pkg-carousel-dot ${i === current ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); setCurrent(i); }} />
-                        ))}
-                    </div>
-                </>
-            )}
-        </div>
-    );
-}
 
 export default function PersonalBrandingArea() {
     const searchParams = useSearchParams();
@@ -104,6 +57,7 @@ export default function PersonalBrandingArea() {
         handleFormChange,
         handleEmailBlur,
         handlePhoneBlur,
+        handleFormSubmit,
     } = bookingLogic;
 
     const formData = {
@@ -191,59 +145,8 @@ export default function PersonalBrandingArea() {
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const combinedMessage = [sessionPurpose, sessionLocation, hookFormData.message].filter(Boolean).join('\n\n');
-        const propertyAddress = sessionLocation || 'To be confirmed';
-        const payloadForValidation = {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            serviceType: 'Personal Branding',
-            propertyAddress,
-            serviceTier: formData.selectedPackage || undefined,
-        };
-        const validationErrors = validateBookingForm(payloadForValidation);
-        if (validationErrors.length > 0) {
-            setFormErrors(validationErrors.map((err) => err.message));
-            const byField = validationErrors.reduce<Record<string, string>>((acc, err) => {
-                acc[err.field] = err.message;
-                return acc;
-            }, {});
-            setFieldErrors((prev: Record<string, string>) => ({ ...prev, ...byField }));
-            return;
-        }
-        setFormErrors([]);
-        setFieldErrors({});
-
-        let recaptchaToken = '';
-        try {
-            recaptchaToken = await getRecaptchaToken('booking');
-        } catch (err) {
-            console.error('reCAPTCHA error:', err);
-            setFormErrors(['Security check failed. Please refresh and try again.']);
-            return;
-        }
-        const honeypotValue = formData[HONEYPOT_FIELD as keyof typeof formData];
-        const websiteUrl = typeof honeypotValue === 'string' ? honeypotValue : '';
-        await handleBookingSubmission(
-            {
-                name: formData.name,
-                email: formData.email,
-                phone: formData.phone,
-                serviceType: 'Personal Branding',
-                propertyAddress,
-                serviceTier: formData.selectedPackage,
-                selectedAddOns: formData.selectedAddOns,
-                preferredPartnerCode: appliedPartnerCode || undefined,
-                preferredDate: formData.preferredDate,
-                preferredTime: formData.preferredTime,
-                message: combinedMessage,
-                totalPrice: (calculateTotal() * 1.13).toFixed(2),
-                recaptchaToken,
-                website_url: websiteUrl,
-            },
-            setIsSubmitting,
-            setIsSubmitted,
-            setFormErrors
-        );
+        setHookFormData((prev) => ({ ...prev, message: combinedMessage }));
+        await handleFormSubmit(e, { message: combinedMessage });
     };
 
     if (isSubmitted) {
@@ -310,16 +213,68 @@ export default function PersonalBrandingArea() {
                                 {/* Step 1 - Packages & Add-ons */}
                                 {currentStep === 1 && (
                                     <div className="step-content fadeIn">
-                                        <div className="step2-layout">
+                                        <div className="step2-layout step2-layout-full">
                                             <div className="step2-left">
-                                                <div className="tp-price-area">
+                                                <div className="personal-partner-code mb-30">
+                                                    <label className="sidebar-label d-block mb-10">Preferred partner code (optional)</label>
+                                                    {appliedPartnerCode ? (
+                                                        <div className="sidebar-partner-chip">
+                                                            <span className="sidebar-partner-chip-text">{appliedPartnerCode}</span>
+                                                            <button
+                                                                type="button"
+                                                                className="sidebar-partner-chip-remove"
+                                                                onClick={() => {
+                                                                    setPreferredPartnerCodeInput('');
+                                                                    setAppliedPartnerCode('');
+                                                                }}
+                                                                aria-label="Remove partner code"
+                                                            >
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className="sidebar-partner-row d-flex gap-2 align-items-flex-start">
+                                                                <input
+                                                                    type="text"
+                                                                    name="preferredPartnerCode"
+                                                                    className="sidebar-partner-input"
+                                                                    placeholder="Enter code"
+                                                                    value={formData.preferredPartnerCode}
+                                                                    onChange={handleInputChange}
+                                                                    autoComplete="off"
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    className="sidebar-partner-apply-btn"
+                                                                    onClick={handleApplyPartnerCode}
+                                                                >
+                                                                    Apply
+                                                                </button>
+                                                            </div>
+                                                            {partnerCodeError && (
+                                                                <div className="sidebar-partner-error mt-2">
+                                                                    <ErrorMsg msg={partnerCodeError} />
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                                <div className="personal-pkg-row tp-price-area">
                                                     {packages.map((item, index) => (
                                                         <div
                                                             key={item.id}
                                                             className={`pkg-card cursor-pointer ${formData.selectedPackage === item.id ? "pkg-card-active" : ""}`}
                                                             onClick={() => handlePackageSelect(item.id)}
                                                         >
-                                                            <PkgCarousel images={item.images} packageId={item.id} />
+                                                            {item.images?.[0] && (
+                                                                <div className="pkg-card-image">
+                                                                    <img src={item.images[0]} alt={item.name} loading="lazy" />
+                                                                </div>
+                                                            )}
                                                             <div className="pkg-card-inner">
                                                                 <div className="pkg-card-header">
                                                                     <div className="pkg-card-title">
@@ -328,7 +283,9 @@ export default function PersonalBrandingArea() {
                                                                         {item.popular && <span className="pkg-popular-tag">Popular</span>}
                                                                     </div>
                                                                     <div className="pkg-card-price">
-                                                                        <span className="pkg-price-amount">${getDisplayPackagePrice(item.basePrice, item.id)}</span>
+                                                                        <span className="pkg-price-amount">
+                                                                            {item.id === 'tailored' ? 'Book a Call' : `$${getDisplayPackagePrice(item.basePrice, item.id)}`}
+                                                                        </span>
                                                                     </div>
                                                                 </div>
                                                                 <div className="pkg-card-features">
@@ -354,135 +311,6 @@ export default function PersonalBrandingArea() {
                                                             </div>
                                                         </div>
                                                     ))}
-                                                </div>
-
-                                                <div className="addons-section mt-50">
-                                                    <h6 className="text-white mb-20" style={{ fontSize: '18px', letterSpacing: '0.5px' }}>Enhance Your Session</h6>
-                                                    <div className="addons-grid">
-                                                        {addons.map(addon => (
-                                                            <div
-                                                                key={addon.id}
-                                                                className={`addon-thumb ${formData.selectedAddOns.includes(addon.id) ? 'addon-thumb-active' : ''}`}
-                                                                onClick={() => handleAddOnToggleWithTracking(addon.id)}
-                                                            >
-                                                                <div className="addon-thumb-img">
-                                                                    <img src={addon.image} alt={addon.name} loading="lazy" />
-                                                                    {formData.selectedAddOns.includes(addon.id) && (
-                                                                        <div className="addon-thumb-check">✓</div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="addon-thumb-info">
-                                                                    <span className="addon-thumb-name">{addon.name}</span>
-                                                                    <span className="addon-thumb-price">+${getAddonPrice(addon.id)}</span>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="step2-right">
-                                                <div className="sidebar-sticky">
-                                                    <div className="sidebar-address">
-                                                        <h6 className="sidebar-label">Package Selection</h6>
-                                                        <p className="sidebar-address-text">
-                                                            Select a package to see pricing details
-                                                        </p>
-                                                    </div>
-
-                                                    <div className="sidebar-partner-code mb-20">
-                                                        <label className="sidebar-label d-block mb-10">Preferred partner code (optional)</label>
-                                                        {appliedPartnerCode ? (
-                                                            <div className="sidebar-partner-chip">
-                                                                <span className="sidebar-partner-chip-text">{appliedPartnerCode}</span>
-                                                                <button
-                                                                    type="button"
-                                                                    className="sidebar-partner-chip-remove"
-                                                                    onClick={() => {
-                                                                        setPreferredPartnerCodeInput('');
-                                                                        setAppliedPartnerCode('');
-                                                                    }}
-                                                                    aria-label="Remove partner code"
-                                                                >
-                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                                                                    </svg>
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                <div className="sidebar-partner-row d-flex gap-2 align-items-flex-start">
-                                                                    <input
-                                                                        type="text"
-                                                                        name="preferredPartnerCode"
-                                                                        className="sidebar-partner-input"
-                                                                        placeholder="Enter code"
-                                                                        value={formData.preferredPartnerCode}
-                                                                        onChange={handleInputChange}
-                                                                        autoComplete="off"
-                                                                    />
-                                                                    <button
-                                                                        type="button"
-                                                                        className="sidebar-partner-apply-btn"
-                                                                        onClick={handleApplyPartnerCode}
-                                                                    >
-                                                                        Apply
-                                                                    </button>
-                                                                </div>
-                                                                {partnerCodeError && (
-                                                                    <div className="sidebar-partner-error mt-2">
-                                                                        <ErrorMsg msg={partnerCodeError} />
-                                                                    </div>
-                                                                )}
-                                                            </>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="sidebar-pricing">
-                                                        <h6 className="sidebar-label">Estimate</h6>
-                                                        {formData.selectedPackage ? (
-                                                            <>
-                                                                <div className="sidebar-line-item sidebar-package-item">
-                                                                    <span>{packages.find(p => p.id === formData.selectedPackage)?.name}</span>
-                                                                    <div className="d-flex align-items-center gap-2">
-                                                                        <span>${packages.find(p => p.id === formData.selectedPackage) ? getDisplayPackagePrice(packages.find(p => p.id === formData.selectedPackage)!.basePrice, formData.selectedPackage) : 0}</span>
-                                                                        <button
-                                                                            type="button"
-                                                                            className="sidebar-remove-btn"
-                                                                            onClick={handlePackageRemove}
-                                                                            title="Remove package"
-                                                                        >
-                                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                                                                            </svg>
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                                {formData.selectedAddOns.length > 0 && (
-                                                                    <div className="sidebar-addons-list">
-                                                                        {formData.selectedAddOns.map(id => {
-                                                                            const addon = addons.find(a => a.id === id);
-                                                                            return (
-                                                                                <div key={id} className="sidebar-line-item sidebar-addon-line">
-                                                                                    <span>{addon?.name}</span>
-                                                                                    <span>${addon ? getAddonPrice(id) : 0}</span>
-                                                                                </div>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                )}
-                                                                <div className="sidebar-divider"></div>
-                                                                <div className="sidebar-total">
-                                                                    <span>Total</span>
-                                                                    <span>${calculateTotal()}</span>
-                                                                </div>
-                                                            </>
-                                                        ) : (
-                                                            <p className="sidebar-empty">Select a package to see pricing</p>
-                                                        )}
-                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -682,14 +510,24 @@ export default function PersonalBrandingArea() {
                 .step-connector.completed { background: rgba(255,255,255,0.6); }
                 @media (max-width: 768px) { .booking-stepper-inner { width: 90%; } .step-connector { margin: 0 10px; margin-bottom: 30px; } }
                 
-                /* Step 2 - Two-column layout */
+                /* Step 2 - Full width (no sidebar) */
                 .step2-layout { display: flex; gap: 40px; }
+                .step2-layout-full .step2-left { flex: 1 1 100%; max-width: 100%; }
                 .step2-left { flex: 0 0 68%; max-width: 68%; }
                 .step2-right { flex: 0 0 28%; max-width: 28%; }
                 @media (max-width: 991px) {
                     .step2-layout { flex-direction: column; }
                     .step2-left { flex: 0 0 100%; max-width: 100%; }
                     .step2-right { flex: 0 0 100%; max-width: 100%; }
+                }
+
+                /* Personal: 3 packages in one row */
+                .personal-pkg-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+                @media (max-width: 991px) {
+                    .personal-pkg-row { grid-template-columns: repeat(2, 1fr); }
+                }
+                @media (max-width: 576px) {
+                    .personal-pkg-row { grid-template-columns: 1fr; }
                 }
 
                 /* Sidebar */
@@ -724,11 +562,15 @@ export default function PersonalBrandingArea() {
                 .sidebar-partner-chip-remove { padding: 4px; border: none; background: transparent; color: rgba(255,255,255,0.6); cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: background 0.2s, color 0.2s; }
                 .sidebar-partner-chip-remove:hover { background: rgba(255,255,255,0.35); color: #fff; }
 
-                /* Package cards - stacked vertically */
+                /* Package cards - flex so button aligns at bottom */
+                .personal-pkg-row .pkg-card { margin-bottom: 0; display: flex; flex-direction: column; }
                 .pkg-card { border: 1px solid rgba(255,255,255,0.1); background: #111; margin-bottom: 16px; cursor: pointer; transition: all 0.3s; }
                 .pkg-card:hover { border-color: rgba(255,255,255,0.3); }
                 .pkg-card-active { border-color: #fff; background: #1a1a1a; }
-                .pkg-card-inner { padding: 28px 30px; }
+                .pkg-card-image { width: 100%; aspect-ratio: 16 / 7; overflow: hidden; background: #0a0a0a; }
+                .pkg-card-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+                .pkg-card-inner { padding: 28px 30px; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+                .pkg-card-action { margin-top: auto; padding-top: 18px; display: flex; justify-content: center; }
                 .pkg-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
                 .pkg-card-title { display: flex; align-items: center; gap: 14px; }
                 .pkg-card-title h5 { color: #fff; margin: 0; font-size: 20px; font-weight: 600; }
@@ -736,16 +578,14 @@ export default function PersonalBrandingArea() {
                 .pkg-popular-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #000; background: #fff; padding: 3px 10px; font-weight: 600; }
                 .pkg-card-price { flex-shrink: 0; }
                 .pkg-price-amount { color: #fff; font-size: 28px; font-weight: 700; }
-                .pkg-card-features { margin-bottom: 18px; }
+                .pkg-card-features { margin-bottom: 0; flex: 1; min-height: 0; }
                 .pkg-card-features ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px 24px; }
                 .pkg-card-features li { color: rgba(255,255,255,0.65); font-size: 14px; display: flex; align-items: center; gap: 8px; }
                 .pkg-card-features li i { color: rgba(255,255,255,0.35); font-size: 12px; }
                 .pkg-card-active .pkg-card-features li { color: rgba(255,255,255,0.85); }
                 .pkg-card-active .pkg-card-features li i { color: #fff; }
-                .pkg-card-action { display: flex; justify-content: flex-end; }
 
-                /* Package carousel */
-                .pkg-carousel { position: relative; width: 100%; aspect-ratio: 16 / 7; overflow: hidden; background: #0a0a0a; }
+                /* Legacy carousel (unused after removing carousel) */
                 .pkg-carousel-track { display: flex; height: 100%; transition: transform 0.4s ease; }
                 .pkg-carousel-slide { position: relative; flex: 0 0 100%; height: 100%; }
                 .pkg-carousel-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }

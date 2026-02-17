@@ -281,35 +281,6 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
     const hasNumericPrice = selectedPkg && getPackagePrice(selectedPkg.basePrice, selectedPkg.id) != null;
     const needsPayment = !!(hasNumericPrice && totalWithTaxCents >= 50);
 
-    if (isSubmitted) {
-        return (
-            <div className="book-mobile-page">
-                <div className="book-logo-container">
-                    <Link href="/">
-                        <img src="/logo-wo-shadow.png" alt="BrightOne Creative" className="book-logo-img" />
-                    </Link>
-                </div>
-                <div className="book-success-wrap">
-                    <div className="book-success-box">
-                        <h2 className="book-success-title">Booking Submitted Successfully!</h2>
-                        <p className="book-success-text">
-                            Thank you for your interest. Our team will review your request and get back to you with confirmation within 24 hours.
-                        </p>
-                        <Link href="/" className="book-form-submit-btn" style={{ display: 'inline-block', textAlign: 'center', textDecoration: 'none' }}>
-                            Back to Home
-                        </Link>
-                    </div>
-                </div>
-                <style jsx>{`
-                    .book-success-wrap { padding: 40px 20px; min-height: 60vh; display: flex; align-items: center; justify-content: center; }
-                    .book-success-box { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; padding: 32px 24px; max-width: 420px; width: 100%; text-align: center; }
-                    .book-success-title { color: #fff; font-size: 22px; font-weight: 700; margin-bottom: 12px; }
-                    .book-success-text { color: rgba(255,255,255,0.8); font-size: 15px; line-height: 1.5; margin-bottom: 24px; }
-                `}</style>
-            </div>
-        );
-    }
-
     return (
         <div className="book-mobile-page">
             {/* Logo */}
@@ -380,7 +351,19 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
 
             {/* Content */}
             <div className="book-content">
-                {!selectedCategory ? (
+                {isSubmitted ? (
+                    <div className="book-success-wrap">
+                        <div className="book-success-box">
+                            <h2 className="book-success-title">Booking Submitted Successfully!</h2>
+                            <p className="book-success-text">
+                                Thank you for your interest. Our team will review your request and get back to you with confirmation within 24 hours.
+                            </p>
+                            <Link href="/" className="book-form-submit-btn" style={{ display: 'inline-block', textAlign: 'center', textDecoration: 'none' }}>
+                                Back to Home
+                            </Link>
+                        </div>
+                    </div>
+                ) : !selectedCategory ? (
                     <>
                         {/* Service Categories */}
                         <h1 className="book-title">Choose Your Service</h1>
@@ -643,51 +626,6 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                             );
                                         })}
                                     </div>
-                                    {/* Preferred partner code for Personal Branding - apply before selecting package */}
-                                    {selectedCategory === 'personal' && (
-                                        <div className="book-partner-code-wrap" style={{ marginTop: '20px' }}>
-                                            <div className="book-partner-code-row">
-                                                {appliedPartnerCode ? (
-                                                    <>
-                                                        <span className="book-partner-applied-code">{appliedPartnerCode}</span>
-                                                        <button
-                                                            type="button"
-                                                            className="book-partner-remove-btn"
-                                                            onClick={() => {
-                                                                setAppliedPartnerCode('');
-                                                                setPreferredPartnerCodeInput('');
-                                                            }}
-                                                            aria-label="Remove partner code"
-                                                        >
-                                                            <i className="fa-solid fa-times"></i>
-                                                        </button>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <input
-                                                            type="text"
-                                                            className="book-partner-input"
-                                                            placeholder="Preferred partner code (optional)"
-                                                            value={preferredPartnerCodeInput}
-                                                            onChange={(e) => {
-                                                                setPreferredPartnerCodeInput(e.target.value);
-                                                                setPartnerCodeError('');
-                                                            }}
-                                                            autoComplete="off"
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            className="book-partner-apply-btn"
-                                                            onClick={handleApplyPartnerCode}
-                                                        >
-                                                            Apply
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
-                                            {partnerCodeError && <div className="book-partner-error-wrap"><ErrorMsg msg={partnerCodeError} /></div>}
-                                        </div>
-                                    )}
                                 </div>
                             )}
                         </div>
@@ -1201,6 +1139,38 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                 .book-content {
                     max-width: 600px;
                     margin: 0 auto;
+                }
+
+                .book-success-wrap {
+                    padding: 40px 20px;
+                    min-height: 50vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .book-success-box {
+                    background: rgba(255, 255, 255, 0.06);
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                    border-radius: 16px;
+                    padding: 32px 24px;
+                    max-width: 420px;
+                    width: 100%;
+                    text-align: center;
+                }
+
+                .book-success-title {
+                    color: #fff;
+                    font-size: 22px;
+                    font-weight: 700;
+                    margin-bottom: 12px;
+                }
+
+                .book-success-text {
+                    color: rgba(255, 255, 255, 0.8);
+                    font-size: 15px;
+                    line-height: 1.5;
+                    margin-bottom: 24px;
                 }
 
                 .book-title {

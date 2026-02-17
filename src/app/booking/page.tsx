@@ -1,11 +1,11 @@
 import { Metadata } from 'next';
-import BookingPageClient from './BookingPageClient';
+import BookingLandingClient from './BookingLandingClient';
 
 export const metadata: Metadata = {
-    title: "Book Real Estate Photography Session | Professional Property Photos | BrightOne",
-    description: "Get a personalized quote and book your professional real estate photography session. Property details, package selection, and contact in one flow.",
+    title: "Book Your Shoot | Real Estate & Personal Branding | BrightOne",
+    description: "Book professional real estate listing media or personal branding sessions. Choose your service and get started.",
 };
 
-export default function BookPage() {
-    return <BookingPageClient />;
+export default function BookingPage() {
+    return <BookingLandingClient />;
 }
