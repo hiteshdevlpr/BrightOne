@@ -19,7 +19,7 @@ const workImageFiles = [
   'brightone-work1.jpg', 'brightone-work2.jpg', 'brightone-work3.jpg', 'brightone-work4.jpg',
   'brightone-work5.jpg', 'brightone-work6.jpg', 'brightone-work7.jpg', 'brightone-work8.jpg',
   'brightone-work9.jpg', 'brightone-work10.jpg', 'brightone-work11.jpg', 'brightone-work12.jpg',
-  'brightone-work13.jpg', 'brightone-work14.jpg', 'brightone-work15.jpg', 'brightone-work16.jpg',
+  'brightone-work13.jpg', 'brightone-work14.jpg', 'brightone-work15.jpg',
   'brightone-work17.jpg', 'brightone-work18.jpg', 'brightone-work19.jpg', 'brightone-work20.jpg',
   'brightone-work21.jpg', 'brightone-work22.jpg', 'brightone-work23.jpg', 'brightone-work24.jpg',
 ];
@@ -74,6 +74,7 @@ function LazyWorkImage({
           src={src}
           alt={alt}
           fill
+          useAvif={false}
           sizes="(max-width: 576px) 50vw, (max-width: 768px) 34vw, (max-width: 992px) 26vw, 25vw"
           priority={priority}
           className="object-cover"
