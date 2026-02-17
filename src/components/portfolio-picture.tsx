@@ -18,6 +18,8 @@ export interface PortfolioPictureProps {
   alt: string;
   /** Optional AVIF src; if omitted, derived from src (replace .jpg with .avif). */
   avifSrc?: string | null;
+  /** When false, only JPG is used (avif source omitted). Use when some AVIFs are missing or failing. Default true. */
+  useAvif?: boolean;
   className?: string;
   style?: React.CSSProperties;
   fill?: boolean;
@@ -35,6 +37,7 @@ export function PortfolioPicture({
   src,
   alt,
   avifSrc,
+  useAvif = true,
   className,
   style,
   fill,
@@ -43,7 +46,7 @@ export function PortfolioPicture({
   height,
   priority,
 }: PortfolioPictureProps) {
-  const avif = avifSrc ?? getPortfolioAvifSrc(src);
+  const avif = useAvif ? (avifSrc ?? getPortfolioAvifSrc(src)) : null;
   const jpgSrc = src;
 
   if (fill) {
