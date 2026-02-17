@@ -1,10 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { gsap } from 'gsap';
+import { useGSAP } from '@gsap/react';
+import { ScrollTrigger } from '@/plugins';
 import FooterFour from '@/layouts/footers/footer-four';
 import useScrollSmooth from '@/hooks/use-scroll-smooth';
+import { fadeAnimation } from '@/utils/title-animation';
+
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const WORK_IMG_BASE = '/assets/img/work';
 const workImageFiles = [
@@ -19,6 +25,76 @@ const galleryImages = workImageFiles.map((file, i) => ({
   src: `${WORK_IMG_BASE}/${file}`,
   alt: `Work sample ${i + 1}`,
 }));
+
+// First N gallery images load immediately (above-the-fold); rest use IntersectionObserver lazy load
+const PRIORITY_GALLERY_COUNT = 8;
+// Low-res placeholder so grid doesn’t jump; neutral dark gray
+const BLUR_DATA_URL = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBEQACEQADAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQIBAT8B/9k=';
+
+/**
+ * Lazy-loads the image when the container scrolls into view (same pattern as homepage counter / portfolio).
+ * Priority items (e.g. first 8) load immediately; others mount the image only after intersecting.
+ */
+function LazyWorkImage({
+  src,
+  alt,
+  priority,
+  blurDataURL,
+}: {
+  src: string;
+  alt: string;
+  priority: boolean;
+  blurDataURL: string;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(priority);
+
+  useEffect(() => {
+    if (priority) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setInView(true);
+        });
+      },
+      { root: null, rootMargin: '100px', threshold: 0.01 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [priority]);
+
+  return (
+    <div ref={containerRef} style={{ position: 'absolute', inset: 0 }}>
+      {inView ? (
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          className="object-cover"
+          sizes="(max-width: 576px) 50vw, (max-width: 768px) 34vw, (max-width: 992px) 26vw, 25vw"
+          quality={75}
+          priority={priority}
+          placeholder="blur"
+          blurDataURL={blurDataURL}
+        />
+      ) : (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: '#1a1a1a',
+            backgroundImage: `url(${blurDataURL})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+          aria-hidden
+        />
+      )}
+    </div>
+  );
+}
 
 function youtubeVideoId(url: string): string | null {
   const patterns = [
@@ -111,6 +187,12 @@ export default function WorkPageClient() {
   useScrollSmooth();
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
+  // Same as homepage: GSAP ScrollTrigger fades in sections when they scroll into view
+  useGSAP(() => {
+    const timer = setTimeout(() => fadeAnimation(), 100);
+    return () => clearTimeout(timer);
+  });
+
   const openPreview = (index: number) => setPreviewIndex(index);
   const closePreview = () => setPreviewIndex(null);
   const goPrev = () =>
@@ -130,11 +212,11 @@ export default function WorkPageClient() {
                   <div className="row">
                     <div className="col-xl-12">
                       <div className="tm-hero-content">
-                        <span className="tm-hero-subtitle">BrightOne Creative</span>
-                        <h1 className="tm-hero-title-big" style={{ fontSize: 'clamp(48px, 10vw, 120px)' }}>
+                        <span className="tm-hero-subtitle tp_fade_left">BrightOne Creative</span>
+                        <h1 className="tm-hero-title-big tp_fade_bottom" style={{ fontSize: 'clamp(48px, 10vw, 120px)' }}>
                           Our Work
                         </h1>
-                        <p className="text-white-50 mt-3 mb-0" style={{ fontSize: '1.15rem', maxWidth: '36rem', marginLeft: 'auto', marginRight: 'auto' }}>
+                        <p className="text-white-50 mt-3 mb-0 tp_fade_bottom" style={{ fontSize: '1.15rem', maxWidth: '36rem', marginLeft: 'auto', marginRight: 'auto' }}>
                           Real estate photography, listing shoots, agent content, and location shoots.
                         </p>
                       </div>
@@ -146,8 +228,8 @@ export default function WorkPageClient() {
               {/* Photos gallery */}
               <section className="work-section work-gallery">
                 <div className="container-fluid">
-                  <h2 className="work-section-title">Photos</h2>
-                  <div className="work-gallery-grid">
+                  <h2 className="work-section-title tp_fade_bottom">Photos</h2>
+                  <div className="work-gallery-grid tp_fade_bottom">
                     {galleryImages.map((img, index) => (
                       <button
                         key={index}
@@ -156,13 +238,11 @@ export default function WorkPageClient() {
                         onClick={() => openPreview(index)}
                         aria-label={`View ${img.alt}`}
                       >
-                        <Image
+                        <LazyWorkImage
                           src={img.src}
                           alt={img.alt}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 576px) 50vw, (max-width: 768px) 34vw, (max-width: 992px) 26vw, 50vw"
-                          quality={90}
+                          priority={index < PRIORITY_GALLERY_COUNT}
+                          blurDataURL={BLUR_DATA_URL}
                         />
                       </button>
                     ))}
@@ -173,8 +253,8 @@ export default function WorkPageClient() {
               {/* Listing Shoots - 2 videos 50% width */}
               <section className="work-section work-section-alt">
                 <div className="container-fluid">
-                  <h2 className="work-section-title">Listing Shoots</h2>
-                  <div className="row g-4">
+                  <h2 className="work-section-title tp_fade_bottom">Listing Shoots</h2>
+                  <div className="row g-4 tp_fade_bottom">
                     {LISTING_VIDEOS.map((url, i) => (
                       <div key={i} className="col-md-6">
                         <WorkVideoBlock url={url} title={`Listing shoot ${i + 1}`} className="work-video-wrap" />
@@ -187,8 +267,8 @@ export default function WorkPageClient() {
               {/* Agent Social Media - 3 vertical videos */}
               <section className="work-section">
                 <div className="container-fluid">
-                  <h2 className="work-section-title">Agent Social Media Content</h2>
-                  <div className="row g-4 work-vertical-videos-row justify-content-center">
+                  <h2 className="work-section-title tp_fade_bottom">Agent Social Media Content</h2>
+                  <div className="row g-4 work-vertical-videos-row justify-content-center tp_fade_bottom">
                     {AGENT_SOCIAL_VIDEOS.map((url, i) => (
                       <div key={i} className="col-sm-6 col-lg-4">
                         <WorkVideoBlock url={url} title={`Agent social ${i + 1}`} className="work-video-vertical" />
@@ -201,8 +281,8 @@ export default function WorkPageClient() {
               {/* Agent Location Shoot - 2 vertical videos */}
               <section className="work-section work-section-alt">
                 <div className="container-fluid">
-                  <h2 className="work-section-title">Vertical Location Shoots</h2>
-                  <div className="row g-4 work-vertical-videos-row justify-content-center">
+                  <h2 className="work-section-title tp_fade_bottom">Vertical Location Shoots</h2>
+                  <div className="row g-4 work-vertical-videos-row justify-content-center tp_fade_bottom">
                     {AGENT_LOCATION_VIDEOS.map((url, i) => (
                       <div key={i} className="col-sm-6 col-md-5 col-lg-4">
                         <WorkVideoBlock url={url} title={`Agent location ${i + 1}`} className="work-video-vertical" />
@@ -212,7 +292,7 @@ export default function WorkPageClient() {
                 </div>
               </section>
 
-              <div className="container-fluid py-5 text-center">
+              <div className="container-fluid py-5 text-center tp_fade_bottom">
                 <Link className="tp-btn-black-2" href="/contact">
                   Get in touch
                   <span className="p-relative ms-2">→</span>
