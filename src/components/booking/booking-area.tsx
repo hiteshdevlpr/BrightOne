@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useBookingLogic } from '@/hooks/use-booking-logic';
 import { handleBookingSubmission, type BookingFormData } from './booking-form-handler';
 import { HONEYPOT_FIELD } from '@/lib/validation';
+import { createPaymentIntent } from '@/lib/booking-payment';
 import {
     trackBookingStart,
     trackBookingStepChange,
@@ -134,6 +135,7 @@ export default function BookingArea() {
         packages,
         addons,
         availableAddOns,
+        resolvedSelectedAddOns,
         propertyAddressInputRef,
         autocompleteListenerRef,
         setPropertyAddressInput,
@@ -334,30 +336,18 @@ export default function BookingArea() {
                 return;
             }
 
-            // Fetch Payment Intent
+            // Fetch Payment Intent (shared logic with /book)
             setIsSubmitting(true);
             try {
-                const res = await fetch('/api/create-payment-intent', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        selectedPackageId: formData.selectedPackage,
-                        selectedAddOns: formData.selectedAddOns,
-                        propertySize: formData.propertySize,
-                        preferredPartnerCode: formData.preferredPartnerCode,
-                    }),
+                const { clientSecret: secret, amount } = await createPaymentIntent({
+                    selectedPackageId: formData.selectedPackage || null,
+                    selectedAddOns: resolvedSelectedAddOns,
+                    propertySize: formData.propertySize,
+                    preferredPartnerCode: appliedPartnerCode || formData.preferredPartnerCode,
                 });
 
-                const data = await res.json();
-                if (!res.ok) {
-                    // If amount too low (e.g. 0), we might skip payment step?
-                    // For now, assume payment is required if > 0.
-                    // But if res fails, show error.
-                    throw new Error(data.error || 'Failed to initialize payment');
-                }
-
-                setClientSecret(data.clientSecret);
-                setPaymentAmount(data.amount);
+                setClientSecret(secret);
+                setPaymentAmount(amount);
                 setFormErrors([]);
                 setFieldErrors({});
                 setCurrentStep(6);

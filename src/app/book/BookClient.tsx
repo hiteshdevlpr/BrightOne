@@ -1,11 +1,19 @@
 'use client';
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ErrorMsg from "@/components/error-msg";
 import { useBookingLogic } from "@/hooks/use-booking-logic";
 import { HONEYPOT_FIELD } from "@/lib/validation";
+import { createPaymentIntent } from "@/lib/booking-payment";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
+import CheckoutForm from "@/components/booking/checkout-form";
+import BookingCalendar from "@/components/booking/booking-calendar";
+import TimeSlotGrid from "@/components/booking/time-slot-grid";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 type BookClientProps = {
     defaultCategory?: 'personal' | 'listing';
@@ -16,8 +24,15 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
     const step1SectionRef = useRef<HTMLDivElement>(null);
     const packagesSectionRef = useRef<HTMLDivElement>(null);
     const addonsSectionRef = useRef<HTMLDivElement>(null);
+    const schedulingSectionRef = useRef<HTMLDivElement>(null);
+    const paymentSectionRef = useRef<HTMLDivElement>(null);
     const bookingSectionRef = useRef<HTMLDivElement>(null);
-    
+
+    // Payment intent state (same business logic as /booking)
+    const [clientSecret, setClientSecret] = useState('');
+    const [paymentAmount, setPaymentAmount] = useState(0);
+    const [paymentIntentError, setPaymentIntentError] = useState<string | null>(null);
+
     // Use centralized booking logic hook
     const bookingLogic = useBookingLogic({ defaultCategory });
     
@@ -159,11 +174,93 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
     };
 
     const handleContinueFromAddons = () => {
+        setOpenAccordion('scheduling');
+        setTimeout(() => {
+            schedulingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    };
+
+    const handleContinueFromScheduling = () => {
         setOpenAccordion('booking');
         setTimeout(() => {
             bookingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
     };
+
+    const handleContinueToPayment = () => {
+        setOpenAccordion('payment');
+        setTimeout(() => {
+            paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    };
+
+    // Scheduling filled: same validation as /booking step 4
+    const schedulingFilled = !!(formData.preferredDate && formData.preferredTime);
+
+    // Can open Payment when package/addons selected, scheduling and contact details filled (same as /booking)
+    const canOpenPayment =
+        canCompleteBooking &&
+        schedulingFilled &&
+        !!formData.name?.trim() &&
+        !!formData.email?.trim() &&
+        !!formData.phone?.trim();
+
+    // Create payment intent when Payment accordion opens (same business logic as /booking)
+    useEffect(() => {
+        if (
+            openAccordion !== 'payment' ||
+            !canCompleteBooking ||
+            !selectedPackageId ||
+            clientSecret
+        ) {
+            return;
+        }
+        const displayPkgs =
+            selectedCategory === 'personal'
+                ? packages.filter((p) => ['growth', 'accelerator', 'tailored'].includes(p.id))
+                : packages.filter((p) => ['essential', 'premium', 'luxury'].includes(p.id));
+        const pkg = displayPkgs.find((p) => p.id === selectedPackageId);
+        const pkgPrice = pkg ? getPackagePrice(pkg.basePrice, pkg.id) : null;
+        if (pkgPrice == null) {
+            setPaymentIntentError(null);
+            return;
+        }
+        const totalCents = Math.round(calculateTotal() * 1.13 * 100);
+        if (totalCents < 50) {
+            setPaymentIntentError(null);
+            return;
+        }
+        setPaymentIntentError(null);
+        setIsSubmitting(true);
+        createPaymentIntent({
+            selectedPackageId,
+            selectedAddOns: resolvedSelectedAddOns,
+            propertySize: selectedCategory === 'listing' ? appliedPropertySize : undefined,
+            preferredPartnerCode: appliedPartnerCode || undefined,
+        })
+            .then(({ clientSecret: secret, amount }) => {
+                setClientSecret(secret);
+                setPaymentAmount(amount);
+            })
+            .catch((err: Error) => {
+                setPaymentIntentError(err.message || 'Failed to initialize payment');
+            })
+            .finally(() => {
+                setIsSubmitting(false);
+            });
+    }, [
+        openAccordion,
+        canCompleteBooking,
+        selectedPackageId,
+        resolvedSelectedAddOns,
+        appliedPropertySize,
+        appliedPartnerCode,
+        selectedCategory,
+        packages,
+        getPackagePrice,
+        calculateTotal,
+        clientSecret,
+    ]);
 
     const handleCategoryClick = (category: 'personal' | 'listing') => {
         router.push(category === 'personal' ? '/book/personal' : '/book/listing');
@@ -177,6 +274,12 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
     const displayPackages = selectedCategory === 'personal' 
         ? packages.filter(p => ['growth', 'accelerator', 'tailored'].includes(p.id))
         : packages.filter(p => ['essential', 'premium', 'luxury'].includes(p.id));
+
+    // Same as /booking: payment required when total >= 50 cents and we have a numeric price
+    const totalWithTaxCents = Math.round(calculateTotal() * 1.13 * 100);
+    const selectedPkg = selectedPackageId ? displayPackages.find((p) => p.id === selectedPackageId) : null;
+    const hasNumericPrice = selectedPkg && getPackagePrice(selectedPkg.basePrice, selectedPkg.id) != null;
+    const needsPayment = !!(hasNumericPrice && totalWithTaxCents >= 50);
 
     if (isSubmitted) {
         return (
@@ -635,22 +738,74 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                             </div>
                         )}
 
-                        {/* Accordion 4 (listing) / 2 (personal): Complete Your Booking */}
-                        <div ref={bookingSectionRef} className="book-accordion">
+                        {/* Accordion: Scheduling (same business logic as /booking step 4) */}
+                        <div ref={schedulingSectionRef} className="book-accordion">
                             <button
-                                onClick={() => canCompleteBooking && toggleAccordion('booking')}
+                                onClick={() => canCompleteBooking && toggleAccordion('scheduling')}
                                 disabled={!canCompleteBooking}
-                                className={`book-accordion-header ${openAccordion === 'booking' ? 'open' : ''} ${!canCompleteBooking ? 'disabled' : ''}`}
+                                className={`book-accordion-header ${openAccordion === 'scheduling' ? 'open' : ''} ${!canCompleteBooking ? 'disabled' : ''}`}
                             >
                                 <span className="book-accordion-title">
-                                    {selectedCategory === 'listing' ? '4. Complete Your Booking' : '2. Complete your Booking'}
-                                    {!canCompleteBooking && <span className="book-accordion-disabled-text"> (Select a package or add-on first)</span>}
+                                    {selectedCategory === 'listing' ? '4. Scheduling' : '2. Scheduling'}
+                                    {!canCompleteBooking && <span className="book-accordion-disabled-text"> (Select a package first)</span>}
                                 </span>
                                 {canCompleteBooking && (
+                                    <i className={`fa-solid fa-chevron-${openAccordion === 'scheduling' ? 'up' : 'down'}`}></i>
+                                )}
+                            </button>
+                            {openAccordion === 'scheduling' && canCompleteBooking && (
+                                <div className="book-accordion-content">
+                                    <p className="book-addons-subtitle">Select your preferred date and time</p>
+                                    <BookingCalendar
+                                        selectedDate={formData.preferredDate || ''}
+                                        onDateSelect={(date) => {
+                                            setFormData((prev: typeof formData) => ({ ...prev, preferredDate: date, preferredTime: '' }));
+                                            setFormErrors([]);
+                                        }}
+                                    />
+                                    <TimeSlotGrid
+                                        selectedDate={formData.preferredDate || null}
+                                        selectedTime={formData.preferredTime || null}
+                                        onTimeSelect={(time) => {
+                                            setFormData((prev: typeof formData) => ({ ...prev, preferredTime: time }));
+                                            setFormErrors([]);
+                                        }}
+                                    />
+                                    {formErrors.length > 0 && (
+                                        <div className="book-form-errors mb-20" role="alert">
+                                            {formErrors.map((err, i) => (
+                                                <ErrorMsg key={i} msg={err} />
+                                            ))}
+                                        </div>
+                                    )}
+                                    <button
+                                        type="button"
+                                        className="book-addons-continue-btn"
+                                        onClick={handleContinueFromScheduling}
+                                        disabled={!schedulingFilled}
+                                    >
+                                        Contact Information
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Accordion: Complete Your Booking (contact + message + breakup) */}
+                        <div ref={bookingSectionRef} className="book-accordion">
+                            <button
+                                onClick={() => canCompleteBooking && schedulingFilled && toggleAccordion('booking')}
+                                disabled={!canCompleteBooking || !schedulingFilled}
+                                className={`book-accordion-header ${openAccordion === 'booking' ? 'open' : ''} ${!canCompleteBooking || !schedulingFilled ? 'disabled' : ''}`}
+                            >
+                                <span className="book-accordion-title">
+                                    {selectedCategory === 'listing' ? '5. Contact Information' : '3. Contact Information'}
+                                    {(!canCompleteBooking || !schedulingFilled) && <span className="book-accordion-disabled-text"> (Select package and date/time first)</span>}
+                                </span>
+                                {canCompleteBooking && schedulingFilled && (
                                     <i className={`fa-solid fa-chevron-${openAccordion === 'booking' ? 'up' : 'down'}`}></i>
                                 )}
                             </button>
-                            {openAccordion === 'booking' && canCompleteBooking && (
+                            {openAccordion === 'booking' && canCompleteBooking && schedulingFilled && (
                                 <div className="book-accordion-content">
                                     {/* Preferred Partner Code - Real Estate (same design as property size) */}
                                     {selectedCategory === 'listing' && (
@@ -838,29 +993,6 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                             {fieldErrors.phone && <ErrorMsg msg={fieldErrors.phone} />}
                                         </div>
 
-                                        <div className="book-form-row-two">
-                                            <div className="book-form-group">
-                                                <label htmlFor="preferredDate">Preferred Date</label>
-                                                <input
-                                                    type="date"
-                                                    id="preferredDate"
-                                                    name="preferredDate"
-                                                    value={formData.preferredDate}
-                                                    onChange={handleFormChange}
-                                                />
-                                            </div>
-                                            <div className="book-form-group">
-                                                <label htmlFor="preferredTime">Preferred Time</label>
-                                                <input
-                                                    type="time"
-                                                    id="preferredTime"
-                                                    name="preferredTime"
-                                                    value={formData.preferredTime}
-                                                    onChange={handleFormChange}
-                                                />
-                                            </div>
-                                        </div>
-
                                         <div className="book-form-group">
                                             <label htmlFor="message">Message (Optional)</label>
                                             <textarea
@@ -883,15 +1015,76 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                         </div>
 
                                         <div className="book-form-actions">
-                                            <button
-                                                type="submit"
-                                                className="book-form-submit-btn"
-                                                disabled={isSubmitting}
-                                            >
-                                                {isSubmitting ? 'Submitting...' : 'Submit Booking Request'}
-                                            </button>
+                                            {needsPayment ? (
+                                                <button
+                                                    type="button"
+                                                    className="book-form-submit-btn"
+                                                    disabled={isSubmitting}
+                                                    onClick={handleContinueToPayment}
+                                                >
+                                                    Proceed to Payment
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    type="submit"
+                                                    className="book-form-submit-btn"
+                                                    disabled={isSubmitting}
+                                                >
+                                                    {isSubmitting ? 'Submitting...' : 'Submit Booking Request'}
+                                                </button>
+                                            )}
                                         </div>
                                     </form>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Accordion: Payment (same business logic as /booking step 6) */}
+                        <div ref={paymentSectionRef} className="book-accordion">
+                            <button
+                                onClick={() => canOpenPayment && toggleAccordion('payment')}
+                                disabled={!canOpenPayment}
+                                className={`book-accordion-header ${openAccordion === 'payment' ? 'open' : ''} ${!canOpenPayment ? 'disabled' : ''}`}
+                            >
+                                <span className="book-accordion-title">
+                                    {selectedCategory === 'listing' ? '6. Payment' : '4. Payment'}
+                                    {!canOpenPayment && <span className="book-accordion-disabled-text"> (Complete scheduling and contact details first)</span>}
+                                </span>
+                                {canOpenPayment && (
+                                    <i className={`fa-solid fa-chevron-${openAccordion === 'payment' ? 'up' : 'down'}`}></i>
+                                )}
+                            </button>
+                            {openAccordion === 'payment' && canOpenPayment && (
+                                <div className="book-accordion-content">
+                                    {paymentIntentError && (
+                                        <div className="book-form-errors mb-20" role="alert">
+                                            <ErrorMsg msg={paymentIntentError} />
+                                        </div>
+                                    )}
+                                    {!needsPayment && (
+                                        <p className="book-addons-subtitle">No payment required. Submit your booking from the previous step.</p>
+                                    )}
+                                    {needsPayment && clientSecret && (
+                                        <div className="book-payment-stripe-wrap">
+                                            <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'night', labels: 'floating' } }}>
+                                                <CheckoutForm
+                                                    amount={paymentAmount}
+                                                    onSuccess={(paymentIntentId) => {
+                                                        handleFormSubmit(undefined, {
+                                                            paymentIntentId,
+                                                            propertyAddress: appliedPropertyAddress,
+                                                            unitNumber: appliedPropertySuite,
+                                                            propertySize: appliedPropertySize,
+                                                        });
+                                                    }}
+                                                    onCancel={() => setOpenAccordion('booking')}
+                                                />
+                                            </Elements>
+                                        </div>
+                                    )}
+                                    {needsPayment && !clientSecret && !paymentIntentError && (
+                                        <p className="book-addons-subtitle">Initializing payment...</p>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -1996,6 +2189,10 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                 .book-virtual-staging-count-inline {
                     margin-top: 12px;
                     margin-bottom: 12px;
+                }
+
+                .book-payment-stripe-wrap {
+                    padding: 16px 0;
                 }
 
                 .book-form-breakup {
