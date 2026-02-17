@@ -7,6 +7,7 @@ import { RightArrowTwo } from '@/components/svg';
 
 const FOOTER_LINKS_LEFT = [
   { label: 'Home', href: '/' },
+  { label: 'Work', href: '/work' },
   { label: 'Booking', href: '/booking' },
   { label: 'Contact', href: '/contact' },
 ];

@@ -8,16 +8,21 @@ const menu_data: IMenuDT[] = [
     },
     {
         id: 2,
+        title: 'Work',
+        link: '/work',
+    },
+    {
+        id: 3,
         title: 'About',
         link: '/about-us',
     },
     {
-        id: 3,
+        id: 4,
         title: 'Book Now',
         link: '/booking',
     },
     {
-        id: 4,
+        id: 5,
         title: 'Contact',
         link: '/contact',
     },
