@@ -13,7 +13,8 @@ import CheckoutForm from "@/components/booking/checkout-form";
 import BookingCalendar from "@/components/booking/booking-calendar";
 import TimeSlotGrid from "@/components/booking/time-slot-grid";
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePublishableKey = typeof process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY === 'string' ? process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY : '';
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
 type BookClientProps = {
     defaultCategory?: 'personal' | 'listing';
@@ -1004,6 +1005,9 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                     )}
                                     {needsPayment && clientSecret && (
                                         <div className="book-payment-stripe-wrap">
+                                            {!stripePromise ? (
+                                                <p className="book-addons-subtitle">Payment is not configured. Please set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.</p>
+                                            ) : (
                                             <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'night', labels: 'floating' } }}>
                                                 <CheckoutForm
                                                     amount={paymentAmount}
@@ -1018,6 +1022,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                                     onCancel={() => setOpenAccordion('booking')}
                                                 />
                                             </Elements>
+                                            )}
                                         </div>
                                     )}
                                     {needsPayment && !clientSecret && !paymentIntentError && (

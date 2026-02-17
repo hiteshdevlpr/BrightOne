@@ -47,7 +47,8 @@ const HandIcon = () => (
     </svg>
 );
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePublishableKey = typeof process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY === 'string' ? process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY : '';
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
 // Package image carousel
 function PkgCarousel({ images, packageId }: { images: string[]; packageId: string }) {
@@ -1185,6 +1186,9 @@ export default function BookingArea() {
                                                 <div className="step2-layout">
                                                     <div className="step2-left">
                                                         <div className="booking-payment-wrapper p-4 border rounded bg-dark">
+                                                            {!stripePromise ? (
+                                                                <p className="text-white-50 mb-0">Payment is not configured. Please set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.</p>
+                                                            ) : (
                                                             <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'night', labels: 'floating' } }}>
                                                                 <CheckoutForm
                                                                     amount={paymentAmount}
@@ -1215,6 +1219,7 @@ export default function BookingArea() {
                                                                     onCancel={() => setCurrentStep(5)}
                                                                 />
                                                             </Elements>
+                                                            )}
                                                         </div>
                                                     </div>
                                                     <div className="step2-right">
