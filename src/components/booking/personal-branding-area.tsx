@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useBookingLogic } from '@/hooks/use-booking-logic';
+import type { BookingFormData } from '@/types/booking';
 import { HONEYPOT_FIELD } from '@/lib/validation';
 import {
     trackBookingStart,
@@ -145,7 +146,7 @@ export default function PersonalBrandingArea() {
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const combinedMessage = [sessionPurpose, sessionLocation, hookFormData.message].filter(Boolean).join('\n\n');
-        setHookFormData((prev) => ({ ...prev, message: combinedMessage }));
+        setHookFormData((prev: BookingFormData) => ({ ...prev, message: combinedMessage }));
         await handleFormSubmit(e, { message: combinedMessage });
     };
 
