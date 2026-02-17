@@ -34,4 +34,10 @@ docker compose -f "$COMPOSE_FILE" exec -T db psql -U brightone -d brightone_db <
 echo "Running seed-services.sql..."
 docker compose -f "$COMPOSE_FILE" exec -T db psql -U brightone -d brightone_db < database/seed-services.sql
 
+# Update package carousel images to local assets (so production shows /assets/img/booking/... not picsum)
+if [ -f database/migrate-booking-package-images.sql ]; then
+  echo "Running migrate-booking-package-images.sql..."
+  docker compose -f "$COMPOSE_FILE" exec -T db psql -U brightone -d brightone_db < database/migrate-booking-package-images.sql
+fi
+
 echo "Services migration and seed complete."
