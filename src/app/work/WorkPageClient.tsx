@@ -9,17 +9,19 @@ import { ScrollTrigger } from '@/plugins';
 import FooterFour from '@/layouts/footers/footer-four';
 import useScrollSmooth from '@/hooks/use-scroll-smooth';
 import { fadeAnimation } from '@/utils/title-animation';
+import { PortfolioPicture } from '@/components/portfolio-picture';
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const WORK_IMG_BASE = '/assets/img/work';
+// Use .jpg (compress script outputs JPG + AVIF; PNG sources were converted to .jpg)
 const workImageFiles = [
   'brightone-work1.jpg', 'brightone-work2.jpg', 'brightone-work3.jpg', 'brightone-work4.jpg',
   'brightone-work5.jpg', 'brightone-work6.jpg', 'brightone-work7.jpg', 'brightone-work8.jpg',
   'brightone-work9.jpg', 'brightone-work10.jpg', 'brightone-work11.jpg', 'brightone-work12.jpg',
-  'brightone-work13.jpg', 'brightone-work14.png', 'brightone-work15.png', 'brightone-work16.png',
-  'brightone-work17.jpg', 'brightone-work18.jpg', 'brightone-work19.png', 'brightone-work20.png',
-  'brightone-work21.png', 'brightone-work22.png', 'brightone-work23.jpg', 'brightone-work24.jpg',
+  'brightone-work13.jpg', 'brightone-work14.jpg', 'brightone-work15.jpg', 'brightone-work16.jpg',
+  'brightone-work17.jpg', 'brightone-work18.jpg', 'brightone-work19.jpg', 'brightone-work20.jpg',
+  'brightone-work21.jpg', 'brightone-work22.jpg', 'brightone-work23.jpg', 'brightone-work24.jpg',
 ];
 const galleryImages = workImageFiles.map((file, i) => ({
   src: `${WORK_IMG_BASE}/${file}`,
@@ -68,16 +70,13 @@ function LazyWorkImage({
   return (
     <div ref={containerRef} style={{ position: 'absolute', inset: 0 }}>
       {inView ? (
-        <Image
+        <PortfolioPicture
           src={src}
           alt={alt}
           fill
-          className="object-cover"
           sizes="(max-width: 576px) 50vw, (max-width: 768px) 34vw, (max-width: 992px) 26vw, 25vw"
-          quality={75}
           priority={priority}
-          placeholder="blur"
-          blurDataURL={blurDataURL}
+          className="object-cover"
         />
       ) : (
         <div
