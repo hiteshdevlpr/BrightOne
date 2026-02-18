@@ -7,7 +7,6 @@ import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from '@/plugins';
 import FooterFour from '@/layouts/footers/footer-four';
-import useScrollSmooth from '@/hooks/use-scroll-smooth';
 import { fadeAnimation } from '@/utils/title-animation';
 import { PortfolioPicture } from '@/components/portfolio-picture';
 
@@ -184,7 +183,7 @@ const AGENT_LOCATION_VIDEOS = [
 ];
 
 export default function WorkPageClient() {
-  useScrollSmooth();
+  // Native scroll only (no ScrollSmoother) to avoid jitter from smooth scroll + many ScrollTriggers + lazy images
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   // Same as homepage: GSAP ScrollTrigger fades in sections when they scroll into view
