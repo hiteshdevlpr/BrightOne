@@ -98,7 +98,15 @@
 .scroll-mt-nav { scroll-margin-top: 5rem; }
 
 /* Work page (/work) */
+.work-page-main { padding-left: 50px; padding-right: 50px; }
+@media (max-width: 767px) { .work-page-main { padding-left: 0; padding-right: 0; } }
 .work-hero { padding-top: 4rem; padding-bottom: 4rem; }
+.work-hero .work-hero-title { font-size: clamp(48px, 10vw, 120px); text-align: center; }
+@media (max-width: 767px) {
+  .work-hero { padding-bottom: 0; }
+  .work-hero .work-hero-title { font-size: clamp(28px, 12vw, 48px); line-height: 1.15; letter-spacing: 0px; }
+  .work-hero .tm-hero-content { text-align: center; }
+}
 .work-section { padding-top: 4rem; padding-bottom: 4rem; }
 .work-section-alt { background: rgba(255,255,255,0.06); }
 .work-section-title { font-size: 48px; font-weight: 700; color: #fff; margin-bottom: 2.5rem; text-align: center; }

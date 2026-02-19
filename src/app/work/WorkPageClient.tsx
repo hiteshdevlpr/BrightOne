@@ -204,7 +204,7 @@ export default function WorkPageClient() {
       <div id="smooth-wrapper">
         <div id="smooth-content">
           <div className="inner-bg" style={{ backgroundImage: 'url(/assets/img/home-01/team/team-details-bg.png)' }}>
-            <main style={{ paddingLeft: '50px', paddingRight: '50px' }}>
+            <main className="work-page-main">
               {/* Hero */}
               <section className="work-hero tm-hero-area tm-hero-ptb p-relative">
                 <div className="container-fluid">
@@ -212,7 +212,7 @@ export default function WorkPageClient() {
                     <div className="col-xl-12">
                       <div className="tm-hero-content">
                         <span className="tm-hero-subtitle tp_fade_left">BrightOne Creative</span>
-                        <h1 className="tm-hero-title-big tp_fade_bottom" style={{ fontSize: 'clamp(48px, 10vw, 120px)' }}>
+                        <h1 className="tm-hero-title-big work-hero-title tp_fade_bottom">
                           Our Work
                         </h1>
                         <p className="text-white-50 mt-3 mb-0 tp_fade_bottom" style={{ fontSize: '1.15rem', maxWidth: '36rem', marginLeft: 'auto', marginRight: 'auto' }}>
