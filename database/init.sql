@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS bookings (
     tax_amount DECIMAL(10,2),
     final_total DECIMAL(10,2),
     price_breakdown JSONB,
+    payment_intent_id VARCHAR(255),
+    payment_status VARCHAR(50) DEFAULT 'pending',
     status VARCHAR(20) DEFAULT 'pending',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -80,6 +82,7 @@ CREATE TABLE IF NOT EXISTS portfolio_items (
 CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id);
 CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
 CREATE INDEX IF NOT EXISTS idx_bookings_created_at ON bookings(created_at);
+CREATE INDEX IF NOT EXISTS idx_bookings_payment_intent_id ON bookings(payment_intent_id);
 CREATE INDEX IF NOT EXISTS idx_contact_messages_status ON contact_messages(status);
 CREATE INDEX IF NOT EXISTS idx_contact_messages_created_at ON contact_messages(created_at);
 CREATE INDEX IF NOT EXISTS idx_portfolio_items_category ON portfolio_items(category);
