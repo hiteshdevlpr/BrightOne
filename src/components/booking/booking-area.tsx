@@ -340,11 +340,13 @@ export default function BookingArea() {
             // Fetch Payment Intent (shared logic with /book)
             setIsSubmitting(true);
             try {
+                const totalWithTaxCents = Math.round(calculateTotal() * 100);
                 const { clientSecret: secret, amount } = await createPaymentIntent({
                     selectedPackageId: formData.selectedPackage || null,
                     selectedAddOns: resolvedSelectedAddOns,
                     propertySize: formData.propertySize,
                     preferredPartnerCode: appliedPartnerCode || formData.preferredPartnerCode,
+                    totalWithTaxCents,
                 });
 
                 setClientSecret(secret);

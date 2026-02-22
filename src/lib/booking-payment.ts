@@ -7,6 +7,8 @@ export interface CreatePaymentIntentBody {
     selectedAddOns: string[];
     propertySize?: string;
     preferredPartnerCode?: string;
+    /** Total including HST in cents (sidebar "Total Due") – server uses this when it matches its own calculation */
+    totalWithTaxCents?: number;
 }
 
 export interface CreatePaymentIntentResult {
@@ -25,6 +27,7 @@ export async function createPaymentIntent(
             selectedAddOns: body.selectedAddOns,
             propertySize: body.propertySize,
             preferredPartnerCode: body.preferredPartnerCode,
+            ...(body.totalWithTaxCents != null && body.totalWithTaxCents >= 50 && { totalWithTaxCents: body.totalWithTaxCents }),
         }),
     });
 

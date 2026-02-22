@@ -19,7 +19,8 @@ export async function POST(request: NextRequest) {
             selectedPackageId,
             selectedAddOns,
             propertySize,
-            preferredPartnerCode
+            preferredPartnerCode,
+            totalWithTaxCents: clientTotalCents,
         } = body;
 
         // 1. Calculate Package Price (listing from booking-data, personal from personal-branding-data)
@@ -94,9 +95,21 @@ export async function POST(request: NextRequest) {
 
         // 3. Total Calculation – include HST so Stripe amount matches sidebar "Total Due"
         const subtotal = packagePrice + addonsPrice;
+        const subtotalCents = Math.round(subtotal * 100);
         const taxAmount = subtotal * (TAX_RATE_HST / 100);
         const totalWithTax = subtotal + taxAmount;
-        const amountInCents = Math.round(totalWithTax * 100);
+        let amountInCents = Math.round(totalWithTax * 100);
+
+        // Safety: never send subtotal to Stripe; if we ever did, force tax-inclusive amount
+        if (amountInCents <= subtotalCents && subtotalCents > 0) {
+            amountInCents = Math.round(totalWithTax * 100);
+        }
+
+        // If client sent the exact total it shows in sidebar (within 1 cent), use it so Stripe matches UI
+        const clientCents = typeof clientTotalCents === 'number' && Number.isInteger(clientTotalCents) ? clientTotalCents : null;
+        if (clientCents != null && clientCents >= 50 && Math.abs(clientCents - amountInCents) <= 1) {
+            amountInCents = clientCents;
+        }
 
         if (amountInCents < 50) {
             return NextResponse.json(

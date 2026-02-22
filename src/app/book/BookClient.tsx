@@ -226,8 +226,8 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
             setPaymentIntentError(null);
             return;
         }
-        const totalCents = Math.round(calculateTotal() * 1.13 * 100);
-        if (totalCents < 50) {
+        const totalWithTaxCents = Math.round(calculateTotal() * 100);
+        if (totalWithTaxCents < 50) {
             setPaymentIntentError(null);
             return;
         }
@@ -238,6 +238,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
             selectedAddOns: resolvedSelectedAddOns,
             propertySize: selectedCategory === 'listing' ? appliedPropertySize : undefined,
             preferredPartnerCode: appliedPartnerCode || undefined,
+            totalWithTaxCents,
         })
             .then(({ clientSecret: secret, amount }) => {
                 setClientSecret(secret);
@@ -277,7 +278,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
         : packages.filter(p => ['essential', 'premium', 'luxury'].includes(p.id));
 
     // Same as /booking: payment required when total >= 50 cents and we have a numeric price
-    const totalWithTaxCents = Math.round(calculateTotal() * 1.13 * 100);
+    const totalWithTaxCents = Math.round(calculateTotal() * 100);
     const selectedPkg = selectedPackageId ? displayPackages.find((p) => p.id === selectedPackageId) : null;
     const hasNumericPrice = selectedPkg && getPackagePrice(selectedPkg.basePrice, selectedPkg.id) != null;
     const needsPayment = !!(hasNumericPrice && totalWithTaxCents >= 50);
