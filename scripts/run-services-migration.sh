@@ -30,6 +30,12 @@ done
 echo "Running migrate-services.sql..."
 docker compose -f "$COMPOSE_FILE" exec -T db psql -U brightone -d brightone_db < database/migrate-services.sql
 
+# Core bookings schema (e.g. payment_intent_id, payment_status)
+if [ -f database/migrate-payment-fields.sql ]; then
+  echo "Running migrate-payment-fields.sql..."
+  docker compose -f "$COMPOSE_FILE" exec -T db psql -U brightone -d brightone_db < database/migrate-payment-fields.sql
+fi
+
 # Run seed (ON CONFLICT DO NOTHING)
 echo "Running seed-services.sql..."
 docker compose -f "$COMPOSE_FILE" exec -T db psql -U brightone -d brightone_db < database/seed-services.sql
