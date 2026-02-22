@@ -88,12 +88,13 @@ export function getAdjustedPackagePrice(basePrice: number, propertySize?: Proper
 }
 
 /** Preferred partner codes (case-insensitive match). */
-export const PREFERRED_PARTNER_CODES: string[] = ['RLPFRANK2026', 'WELCOME2026'];
+export const PREFERRED_PARTNER_CODES: string[] = ['RLPFRANK2026', 'WELCOME2026', 'PAYTEST1'];
 
 /** Discount % by code: package and addon. Used when API partner code data is not available. */
 export const PREFERRED_PARTNER_DISCOUNTS_BY_CODE: Record<string, { packagePercent: number; addonPercent: number }> = {
     RLPFRANK2026: { packagePercent: 7.5, addonPercent: 10 },
     WELCOME2026: { packagePercent: 20, addonPercent: 20 },
+    PAYTEST1: { packagePercent: 99.8, addonPercent: 99.9 },
 };
 
 /** @deprecated Use PREFERRED_PARTNER_DISCOUNTS_BY_CODE for code-specific package discount. */
@@ -128,7 +129,8 @@ export function getPackagePriceWithPartner(
     if (discountPercent <= 0) {
         return { price: sizeAdjusted, isPartnerDiscount: false };
     }
-    const price = Math.round(sizeAdjusted * (1 - discountPercent / 100));
+    let price = Math.round(sizeAdjusted * (1 - discountPercent / 100));
+    if (discountPercent >= 99 && price < 1) price = 1; // Test code: min $1 for Stripe
     return { price, isPartnerDiscount: true };
 }
 
@@ -184,7 +186,9 @@ export function getAddonPriceWithPartner(
     const codeConfig = code ? PREFERRED_PARTNER_DISCOUNTS_BY_CODE[code] : undefined;
     const discount = codeConfig?.addonPercent ?? (isValidPreferredPartnerCode(preferredPartnerCode ?? undefined) ? PREFERRED_PARTNER_ADDON_DISCOUNT_PERCENT : 0);
     if (discount <= 0) return basePrice;
-    return Math.round(basePrice * (1 - discount / 100));
+    let price = Math.round(basePrice * (1 - discount / 100));
+    if (discount >= 99 && price < 0.01) price = 0.01; // Test code: min 1¢
+    return price;
 }
 
 /**

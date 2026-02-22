@@ -337,7 +337,8 @@ ON CONFLICT (package_id, addon_id) DO NOTHING;
 INSERT INTO partner_codes (code, name, description, package_discount_percent, addon_discount_percent, active, valid_from)
 VALUES
 ('RLPFRANK2026', 'RLP Frank 2026', 'Preferred partner discount code', 7.5, 10.0, true, CURRENT_TIMESTAMP),
-('WELCOME2026', 'Welcome 2026', 'Welcome discount code', 20.0, 20.0, true, CURRENT_TIMESTAMP)
+('WELCOME2026', 'Welcome 2026', 'Welcome discount code', 20.0, 20.0, true, CURRENT_TIMESTAMP),
+('PAYTEST1', 'Payment test', 'Test code: packages ~$1, add-ons ~1¢ (testing only)', 99.8, 99.9, true, CURRENT_TIMESTAMP)
 ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description, package_discount_percent = EXCLUDED.package_discount_percent, addon_discount_percent = EXCLUDED.addon_discount_percent;
 
 -- Insert or update property size configurations

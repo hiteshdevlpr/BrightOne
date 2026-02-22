@@ -80,7 +80,9 @@ export function getPackagePriceWithPartner(
         return { price: sizeAdjusted, isPartnerDiscount: false };
     }
 
-    const price = Math.round(sizeAdjusted * (1 - discountPercent / 100));
+    let price = Math.round(sizeAdjusted * (1 - discountPercent / 100));
+    // Test payment code: ensure package is at least $1 for Stripe minimum
+    if (discountPercent >= 99 && price < 1) price = 1;
     return { price, isPartnerDiscount: true };
 }
 
@@ -119,7 +121,10 @@ export function getAddonPriceWithPartner(
         return basePrice;
     }
 
-    return Math.round(basePrice * (1 - discountPercent / 100));
+    let price = Math.round(basePrice * (1 - discountPercent / 100));
+    // Test payment code: ensure add-on is at least 1¢ for display/Stripe
+    if (discountPercent >= 99 && price < 0.01) price = 0.01;
+    return price;
 }
 
 /**
