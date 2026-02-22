@@ -9,6 +9,9 @@ import { getPersonalPackages, PERSONAL_ADD_ONS } from '@/data/personal-branding-
 
 const PERSONAL_PACKAGE_IDS = ['growth', 'accelerator', 'tailored'];
 
+/** HST 13% – Stripe amount must match sidebar "Total Due" (subtotal + HST) */
+const TAX_RATE_HST = 13;
+
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -89,10 +92,11 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // 3. Total Calculation
+        // 3. Total Calculation – include HST so Stripe amount matches sidebar "Total Due"
         const subtotal = packagePrice + addonsPrice;
-        const totalWithTax = subtotal * 1.13; // 13% HST
-        let amountInCents = Math.round(totalWithTax * 100);
+        const taxAmount = subtotal * (TAX_RATE_HST / 100);
+        const totalWithTax = subtotal + taxAmount;
+        const amountInCents = Math.round(totalWithTax * 100);
 
         if (amountInCents < 50) {
             return NextResponse.json(
