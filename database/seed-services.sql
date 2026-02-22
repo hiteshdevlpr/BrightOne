@@ -333,16 +333,17 @@ INSERT INTO package_included_addons (package_id, addon_id)
 SELECT package_id, addon_id FROM package_addons
 ON CONFLICT (package_id, addon_id) DO NOTHING;
 
--- Insert partner codes
+-- Insert or update partner codes
 INSERT INTO partner_codes (code, name, description, package_discount_percent, addon_discount_percent, active, valid_from)
 VALUES
-('RLPFRANK2026', 'RLP Frank 2026', 'Preferred partner discount code', 7.5, 10.0, true, CURRENT_TIMESTAMP)
-ON CONFLICT (code) DO NOTHING;
+('RLPFRANK2026', 'RLP Frank 2026', 'Preferred partner discount code', 7.5, 10.0, true, CURRENT_TIMESTAMP),
+('WELCOME2026', 'Welcome 2026', 'Welcome discount code', 20.0, 20.0, true, CURRENT_TIMESTAMP)
+ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description, package_discount_percent = EXCLUDED.package_discount_percent, addon_discount_percent = EXCLUDED.addon_discount_percent;
 
--- Insert property size configurations
+-- Insert or update property size configurations
 INSERT INTO property_size_configs (code, label, multiplier, min_sqft, max_sqft, active, sort_order) VALUES
-('small', 'Up to 1499', 1.00, 0, 1499, true, 1),
-('medium', '1500 - 2999', 1.15, 1500, 2999, true, 2),
-('large', '3000 - 4999', 1.30, 3000, 4999, true, 3),
-('xlarge', 'Above 5000', 1.50, 5000, NULL, true, 4)
-ON CONFLICT (code) DO NOTHING;
+('small', 'Up to 1999', 1.00, 0, 1999, true, 1),
+('medium', '2000 - 3499', 1.20, 2000, 3499, true, 2),
+('large', '3500 - 4999', 1.30, 3500, 4999, true, 3),
+('xlarge', 'Above 5000', 1.30, 5000, NULL, true, 4)
+ON CONFLICT (code) DO UPDATE SET label = EXCLUDED.label, multiplier = EXCLUDED.multiplier, min_sqft = EXCLUDED.min_sqft, max_sqft = EXCLUDED.max_sqft, sort_order = EXCLUDED.sort_order;

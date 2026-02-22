@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function BrochurePage() {
-  redirect('/assets/BrightOne-brochure.pdf');
+  redirect('/assets/BrightOne_Creative_Service_Brochure.pdf');
 }

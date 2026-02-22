@@ -330,7 +330,7 @@ export function useBookingLogic(options: UseBookingLogicOptions = {}): UseBookin
         };
     }, [selectedCategory, placesReadyListing, enterManuallyListing, openAccordion]);
 
-    // Pricing functions
+    // Pricing functions - use current input so price updates as user types sq ft
     const getPackagePrice = useCallback(
         (basePrice: number, packageId: string): number | null => {
             if (selectedCategory === 'personal') {
@@ -346,13 +346,14 @@ export function useBookingLogic(options: UseBookingLogicOptions = {}): UseBookin
                 return price;
             }
             if (selectedCategory !== 'listing') return basePrice;
-            const sqft = appliedPropertySize.trim() ? parseInt(appliedPropertySize, 10) : NaN;
+            const effectiveSize = (propertySizeInput.trim() || appliedPropertySize.trim()) || undefined;
+            const sqft = effectiveSize ? parseInt(effectiveSize, 10) : NaN;
             if (!isNaN(sqft) && sqft >= 5000) {
                 return null; // Show "Contact for Price"
             }
             const { price } = getPackagePriceWithPartner(
                 basePrice,
-                appliedPropertySize.trim() || undefined,
+                effectiveSize,
                 packageId,
                 appliedPartnerCode || null,
                 partnerCodeData,
@@ -360,7 +361,7 @@ export function useBookingLogic(options: UseBookingLogicOptions = {}): UseBookin
             );
             return price;
         },
-        [selectedCategory, appliedPropertySize, appliedPartnerCode, partnerCodeData, propertySizeConfigs]
+        [selectedCategory, propertySizeInput, appliedPropertySize, appliedPartnerCode, partnerCodeData, propertySizeConfigs]
     );
 
     const getAddonPrice = useCallback(

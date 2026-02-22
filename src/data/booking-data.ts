@@ -45,10 +45,10 @@ export interface PropertySizeConfig {
 }
 
 export const PROPERTY_SIZE_CONFIGS: PropertySizeConfig[] = [
-    { id: 'small', label: 'Up to 1499', multiplier: 1.0, minSqft: 0, maxSqft: 1499 },
-    { id: 'medium', label: '1500 - 2999', multiplier: 1.15, minSqft: 1500, maxSqft: 2999 },
-    { id: 'large', label: '3000 - 4999', multiplier: 1.30, minSqft: 3000, maxSqft: 4999 },
-    { id: 'xlarge', label: 'Above 5000', multiplier: 1.50, minSqft: 5000, maxSqft: null },
+    { id: 'small', label: 'Up to 1999', multiplier: 1.0, minSqft: 0, maxSqft: 1999 },
+    { id: 'medium', label: '2000 - 3499', multiplier: 1.2, minSqft: 2000, maxSqft: 3499 },
+    { id: 'large', label: '3500 - 4999', multiplier: 1.3, minSqft: 3500, maxSqft: 4999 },
+    { id: 'xlarge', label: 'Above 5000', multiplier: 1.3, minSqft: 5000, maxSqft: null },
 ];
 
 /**
@@ -73,24 +73,30 @@ export function getAdjustedPackagePrice(basePrice: number, propertySize?: Proper
     else if (typeof propertySize === 'number' || (typeof propertySize === 'string' && !isNaN(Number(propertySize)))) {
         const sqft = typeof propertySize === 'string' ? parseInt(propertySize) : propertySize;
         
-        if (sqft < 1500) {
+        if (sqft < 2000) {
             multiplier = 1.0;
-        } else if (sqft >= 1500 && sqft < 3000) {
-            multiplier = 1.15;
-        } else if (sqft >= 3000 && sqft < 5000) {
+        } else if (sqft >= 2000 && sqft < 3500) {
+            multiplier = 1.2;
+        } else if (sqft >= 3500 && sqft < 5000) {
             multiplier = 1.30;
         } else if (sqft >= 5000) {
-            multiplier = 1.50;
+            multiplier = 1.3;
         }
     }
 
     return Math.round(basePrice * multiplier);
 }
 
-/** Preferred partner codes (case-insensitive match). First code: RLPFRANK2026 */
-export const PREFERRED_PARTNER_CODES: string[] = ['RLPFRANK2026'];
+/** Preferred partner codes (case-insensitive match). */
+export const PREFERRED_PARTNER_CODES: string[] = ['RLPFRANK2026', 'WELCOME2026'];
 
-/** Discount % by package id when a valid preferred partner code is used. RLPFRANK2026: 7.5% across all plans. */
+/** Discount % by code: package and addon. Used when API partner code data is not available. */
+export const PREFERRED_PARTNER_DISCOUNTS_BY_CODE: Record<string, { packagePercent: number; addonPercent: number }> = {
+    RLPFRANK2026: { packagePercent: 7.5, addonPercent: 10 },
+    WELCOME2026: { packagePercent: 20, addonPercent: 20 },
+};
+
+/** @deprecated Use PREFERRED_PARTNER_DISCOUNTS_BY_CODE for code-specific package discount. */
 export const PREFERRED_PARTNER_DISCOUNTS: Record<string, number> = {
     essential: 7.5,
     premium: 7.5,
@@ -116,9 +122,9 @@ export function getPackagePriceWithPartner(
     preferredPartnerCode?: string | null
 ): { price: number; isPartnerDiscount: boolean } {
     const sizeAdjusted = getAdjustedPackagePrice(basePrice, propertySize);
-    const hasValidCode = isValidPreferredPartnerCode(preferredPartnerCode ?? undefined);
-    const packageIdKey = packageId && typeof packageId === 'string' ? packageId.toLowerCase() : '';
-    const discountPercent = hasValidCode && packageIdKey ? (PREFERRED_PARTNER_DISCOUNTS[packageIdKey] ?? 0) : 0;
+    const code = typeof preferredPartnerCode === 'string' ? preferredPartnerCode.trim().toUpperCase() : '';
+    const codeConfig = code ? PREFERRED_PARTNER_DISCOUNTS_BY_CODE[code] : undefined;
+    const discountPercent = codeConfig?.packagePercent ?? 0;
     if (discountPercent <= 0) {
         return { price: sizeAdjusted, isPartnerDiscount: false };
     }
@@ -126,7 +132,7 @@ export function getPackagePriceWithPartner(
     return { price, isPartnerDiscount: true };
 }
 
-/** Add-on discount % when a valid preferred partner code is used. RLPFRANK2026: 10%. */
+/** Add-on discount % when a valid preferred partner code is used (fallback if code not in PREFERRED_PARTNER_DISCOUNTS_BY_CODE). */
 const PREFERRED_PARTNER_ADDON_DISCOUNT_PERCENT = 10;
 
 /**
@@ -174,8 +180,10 @@ export function getAddonPriceWithPartner(
     preferredPartnerCode?: string | null
 ): number {
     const basePrice = getAddonBasePrice(addonId, hasPackageSelected);
-    if (!isValidPreferredPartnerCode(preferredPartnerCode ?? undefined)) return basePrice;
-    const discount = PREFERRED_PARTNER_ADDON_DISCOUNT_PERCENT;
+    const code = typeof preferredPartnerCode === 'string' ? preferredPartnerCode.trim().toUpperCase() : '';
+    const codeConfig = code ? PREFERRED_PARTNER_DISCOUNTS_BY_CODE[code] : undefined;
+    const discount = codeConfig?.addonPercent ?? (isValidPreferredPartnerCode(preferredPartnerCode ?? undefined) ? PREFERRED_PARTNER_ADDON_DISCOUNT_PERCENT : 0);
+    if (discount <= 0) return basePrice;
     return Math.round(basePrice * (1 - discount / 100));
 }
 

@@ -576,8 +576,7 @@ export default function BookClient({ defaultCategory }: BookClientProps) {
                                         {displayPackages.map((pkg) => {
                                             const calculatedPrice = getPackagePrice(pkg.basePrice, pkg.id);
                                             const isSelected = selectedPackageId === pkg.id;
-                                            const sqftNum = appliedPropertySize ? parseInt(appliedPropertySize, 10) : NaN;
-                                            const showContactPrice = selectedCategory === 'listing' && !isNaN(sqftNum) && sqftNum >= 5000;
+                                            const showContactPrice = selectedCategory === 'listing' && calculatedPrice === null;
                                             
                                             return (
                                                 <div 
