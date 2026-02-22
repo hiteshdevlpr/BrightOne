@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
       phone: sanitized.phone || undefined,
       serviceType: sanitized.serviceType,
       propertyAddress: sanitized.propertyAddress,
+      unitNumber: sanitized.unitNumber,
       propertyType: sanitized.propertyType,
       propertySize: sanitized.propertySize,
       budget: sanitized.budget,

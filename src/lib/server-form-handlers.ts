@@ -26,6 +26,7 @@ export interface BookingFormData {
   propertyAddress: string;
   propertyType?: string;
   propertySize?: string;
+  unitNumber?: string;
   budget?: string;
   timeline?: string;
   serviceTier?: string;
@@ -323,13 +324,18 @@ export async function handleBookingSubmissionServer(formData: BookingFormData): 
     const priceBreakdown = await calculatePriceBreakdown(formData);
     console.log('APP_LOG:: Price breakdown calculated:', priceBreakdown);
 
-    // Submit booking to database directly
+    // Submit booking to database directly (unit number appended to address if present)
+    const propertyAddressFull =
+      formData.unitNumber?.trim()
+        ? `${formData.propertyAddress.trim()}, Unit ${formData.unitNumber.trim()}`
+        : formData.propertyAddress.trim();
+
     const booking = await db.createBooking({
       name: formData.name.trim(),
       email: formData.email.trim().toLowerCase(),
       phone: formData.phone?.trim() || undefined,
       serviceType: formData.serviceType,
-      propertyAddress: formData.propertyAddress.trim(),
+      propertyAddress: propertyAddressFull,
       propertyType: formData.propertyType || undefined,
       propertySize: formData.propertySize || undefined,
       budget: formData.budget || undefined,
@@ -347,7 +353,7 @@ export async function handleBookingSubmissionServer(formData: BookingFormData): 
       taxRate: priceBreakdown.taxRate,
       taxAmount: priceBreakdown.taxAmount,
       finalTotal: priceBreakdown.finalTotal,
-      priceBreakdown: JSON.stringify(priceBreakdown.breakdown),
+      priceBreakdown: priceBreakdown.breakdown,
       paymentIntentId: formData.paymentIntentId,
       paymentStatus: formData.paymentStatus,
     });
@@ -361,7 +367,7 @@ export async function handleBookingSubmissionServer(formData: BookingFormData): 
       customerEmail: formData.email,
       customerPhone: formData.phone || 'Not provided',
       serviceType: formData.serviceType,
-      propertyAddress: formData.propertyAddress,
+      propertyAddress: propertyAddressFull,
       preferredDate: formData.preferredDate || 'Not specified',
       preferredTime: formData.preferredTime || 'Not specified',
       message: formData.message || '',

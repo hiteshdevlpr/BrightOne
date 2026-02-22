@@ -64,6 +64,7 @@ export function sanitizeBookingInput(body: Record<string, unknown>): {
   preferredPartnerCode?: string;
   paymentIntentId?: string;
   paymentStatus?: string;
+  unitNumber?: string;
 } {
   const arr = body.selectedAddOns;
   const addOns = Array.isArray(arr)
@@ -75,6 +76,7 @@ export function sanitizeBookingInput(body: Record<string, unknown>): {
     phone: sanitizeString(String(body.phone ?? ''), MAX_LENGTHS.phone),
     serviceType: sanitizeString(String(body.serviceType ?? ''), 100),
     propertyAddress: sanitizeString(String(body.propertyAddress ?? ''), MAX_LENGTHS.propertyAddress),
+    unitNumber: body.unitNumber != null ? sanitizeString(String(body.unitNumber), MAX_LENGTHS.unitNumber) : undefined,
     propertyType: body.propertyType != null ? sanitizeString(String(body.propertyType), 100) : undefined,
     propertySize: body.propertySize != null ? sanitizeString(String(body.propertySize), MAX_LENGTHS.propertySize) : undefined,
     budget: body.budget != null ? sanitizeString(String(body.budget), 50) : undefined,
